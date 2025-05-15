@@ -105,10 +105,12 @@ export default function GoalsPage() {
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{t("goals")}</h1>
         {canCreateGoal && (
-          <Button className="bg-qatar-maroon hover:bg-maroon-800 text-white">
-            <Plus className="mr-2 h-4 w-4" />
-            <span>{t("newGoal")}</span>
-          </Button>
+          <Link href="/goals/new">
+            <Button className="bg-qatar-maroon hover:bg-maroon-800 text-white">
+              <Plus className="mr-2 h-4 w-4" />
+              <span>{t("newGoal")}</span>
+            </Button>
+          </Link>
         )}
       </div>
       

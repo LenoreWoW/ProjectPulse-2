@@ -11,6 +11,7 @@ import { MobileMenu } from "@/components/layout/mobile-menu";
 import AuthPage from "@/pages/auth-page";
 import Dashboard from "@/pages/dashboard";
 import ProjectsPage from "@/pages/projects-page";
+import NewProjectPage from "@/pages/projects/new-project-page";
 import CalendarPage from "@/pages/calendar-page";
 import TasksPage from "@/pages/tasks-page";
 import GoalsPage from "@/pages/goals-page";
@@ -33,6 +34,7 @@ function Router() {
     <Switch>
       <ProtectedRoute path="/" component={Dashboard} />
       <ProtectedRoute path="/projects" component={ProjectsPage} />
+      <ProtectedRoute path="/projects/new" component={NewProjectPage} />
       <ProtectedRoute path="/calendar" component={CalendarPage} />
       <ProtectedRoute path="/tasks" component={TasksPage} />
       <ProtectedRoute 
@@ -41,11 +43,22 @@ function Router() {
         requiredRoles={["Administrator", "MainPMO", "SubPMO", "DepartmentDirector", "Executive", "ProjectManager"]} 
       />
       <ProtectedRoute 
+        path="/goals/new" 
+        component={() => <div>New Goal - Page Under Construction</div>} 
+        requiredRoles={["Administrator", "MainPMO", "SubPMO", "DepartmentDirector", "Executive"]} 
+      />
+      <ProtectedRoute 
         path="/risks-issues" 
         component={RisksIssuesPage} 
         requiredPermissions={["canCreateProject", "canEditProject"]}
       />
+      <ProtectedRoute 
+        path="/risks-issues/new" 
+        component={() => <div>New Risk/Issue - Page Under Construction</div>} 
+        requiredPermissions={["canCreateProject", "canEditProject"]}
+      />
       <ProtectedRoute path="/assignments" component={AssignmentsPage} />
+      <ProtectedRoute path="/assignments/new" component={() => <div>New Assignment - Page Under Construction</div>} />
       <ProtectedRoute 
         path="/approvals" 
         component={ApprovalsPage}
