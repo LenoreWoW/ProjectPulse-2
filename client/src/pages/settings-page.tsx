@@ -288,7 +288,8 @@ export default function SettingsPage() {
               </>
             )}
 
-            <TabsContent value="notifications" className="m-0">
+            {activeTab === "notifications" && (
+              <>
               <CardHeader>
                 <CardTitle>{t("notificationSettings")}</CardTitle>
                 <CardDescription>
@@ -393,9 +394,11 @@ export default function SettingsPage() {
                   </form>
                 </Form>
               </CardContent>
-            </TabsContent>
+              </>
+            )}
 
-            <TabsContent value="language" className="m-0">
+            {activeTab === "language" && (
+              <>
               <CardHeader>
                 <CardTitle>{t("languageSettings")}</CardTitle>
                 <CardDescription>
@@ -405,14 +408,14 @@ export default function SettingsPage() {
               <CardContent className="space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div 
-                    className={`border rounded-lg p-4 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors ${locale === 'en' ? 'border-qatar-maroon bg-maroon-50 dark:bg-maroon-900/20' : ''}`}
+                    className="border rounded-lg p-4 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors border-qatar-maroon bg-maroon-50 dark:bg-maroon-900/20"
                     onClick={() => handleLanguageChange('en')}
                   >
                     <div className="font-medium">English</div>
                     <div className="text-sm text-gray-500 dark:text-gray-400">English (United States)</div>
                   </div>
                   <div 
-                    className={`border rounded-lg p-4 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors ${locale === 'ar' ? 'border-qatar-maroon bg-maroon-50 dark:bg-maroon-900/20' : ''}`}
+                    className="border rounded-lg p-4 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
                     onClick={() => handleLanguageChange('ar')}
                   >
                     <div className="font-medium">العربية</div>
@@ -420,9 +423,11 @@ export default function SettingsPage() {
                   </div>
                 </div>
               </CardContent>
-            </TabsContent>
+              </>
+            )}
 
-            <TabsContent value="security" className="m-0">
+            {activeTab === "security" && (
+              <>
               <CardHeader>
                 <CardTitle>{t("securitySettings")}</CardTitle>
                 <CardDescription>
