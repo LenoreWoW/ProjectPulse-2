@@ -155,7 +155,7 @@ export default function AuthPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-0 overflow-hidden relative">
+    <div className="h-screen flex items-center justify-center p-0 overflow-hidden relative">
       {/* Dynamic background with Qatar landmarks */}
       <div className="absolute inset-0 w-full h-full bg-black">
         {qatarLandmarks.map((landmark, index) => (
@@ -170,7 +170,8 @@ export default function AuthPage() {
               objectFit: 'cover',
               opacity: index === currentImageIndex ? 1 : 0,
               zIndex: 1,
-              transform: 'scale(1.02)' // Slight zoom for better edge coverage
+              transform: 'scale(1.05)', // Increased zoom for better edge coverage
+              height: '100vh'
             }}
           />
         ))}
