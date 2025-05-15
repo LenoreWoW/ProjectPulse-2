@@ -26,7 +26,7 @@ import DependenciesPage from "@/pages/dependencies-page";
 import AnalyticsDashboardPage from "@/pages/analytics-dashboard";
 import UserPermissionsPage from "@/pages/user-permissions-page";
 import { ThemeProvider } from "@/providers/theme-provider";
-import { I18nProvider } from "@/hooks/use-i18n";
+import { I18nProvider } from "@/hooks/use-i18n-new";
 
 function Router() {
   return (

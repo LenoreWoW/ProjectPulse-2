@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useI18n } from "@/hooks/use-i18n";
+import { useI18n } from "@/hooks/use-i18n-new";
 import { useAuth } from "@/hooks/use-auth";
 import { useTheme } from "@/providers/theme-provider";
 import { 
@@ -48,7 +48,7 @@ import {
 import UsersManagementPage from "./users-management-page";
 
 export default function SettingsPage() {
-  const { t, locale } = useI18n();
+  const { t, language } = useI18n();
   const { user } = useAuth();
   const { toast } = useToast();
   const { theme, setTheme } = useTheme();
