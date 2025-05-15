@@ -130,35 +130,35 @@ export default function AuthPage() {
   }
 
   return (
-    <div className="min-h-screen bg-maroon-700 flex flex-col items-center justify-center p-4">
-      {/* Top border with maroon color */}
-      <div className="fixed top-0 left-0 w-full h-2 bg-white"></div>
+    <div className="min-h-screen bg-maroon-700 flex flex-col items-center justify-center p-4 bg-gradient-to-b from-maroon-700 to-maroon-800">
+      {/* Top border with white color */}
+      <div className="fixed top-0 left-0 w-full h-3 bg-white"></div>
       
       <div className="w-full max-w-6xl grid grid-cols-1 lg:grid-cols-2 gap-8">
         {/* Left side: Auth forms */}
-        <Card className="w-full bg-white border-0 shadow-lg">
-          <CardHeader className="space-y-1 flex flex-col items-center bg-white rounded-t-lg">
-            <div className="flex items-center justify-center mb-4">
+        <Card className="w-full bg-white border-2 border-maroon-700 shadow-xl rounded-lg overflow-hidden">
+          <CardHeader className="space-y-1 flex flex-col items-center bg-white border-b-2 border-maroon-700 py-6">
+            <div className="flex items-center justify-center mb-6">
               <QatarLogo size="lg" />
             </div>
-            <CardTitle className="text-2xl text-center text-maroon-700">
+            <CardTitle className="text-2xl text-center text-maroon-700 font-bold">
               {activeTab === "login" ? t("login") : t("register")}
             </CardTitle>
-            <CardDescription className="text-center text-maroon-500">
+            <CardDescription className="text-center text-maroon-500 font-medium">
               {activeTab === "login" 
                 ? t("enterCredentials") 
                 : t("createAccount")}
             </CardDescription>
           </CardHeader>
-          <CardContent className="pt-4">
+          <CardContent className="pt-6 px-8">
             <Tabs 
               value={activeTab} 
               onValueChange={setActiveTab} 
               className="w-full"
             >
-              <TabsList className="grid w-full grid-cols-2 mb-8 bg-white border border-maroon-200">
-                <TabsTrigger value="login" className="data-[state=active]:bg-maroon-700 data-[state=active]:text-white text-maroon-700">{t("login")}</TabsTrigger>
-                <TabsTrigger value="register" className="data-[state=active]:bg-maroon-700 data-[state=active]:text-white text-maroon-700">{t("register")}</TabsTrigger>
+              <TabsList className="grid w-full grid-cols-2 mb-8 bg-white border-2 border-maroon-700 p-1 rounded-md">
+                <TabsTrigger value="login" className="data-[state=active]:bg-maroon-700 data-[state=active]:text-white text-maroon-700 font-bold p-3 rounded">{t("login")}</TabsTrigger>
+                <TabsTrigger value="register" className="data-[state=active]:bg-maroon-700 data-[state=active]:text-white text-maroon-700 font-bold p-3 rounded">{t("register")}</TabsTrigger>
               </TabsList>
               
               {/* Login Form */}
