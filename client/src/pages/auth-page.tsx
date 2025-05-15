@@ -10,12 +10,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
 // Import HD Qatar landmark images directly
-import landmark1 from "../assets/landmarks/hd/image_1747300730144.png";
-import landmark2 from "../assets/landmarks/hd/image_1747300807633.png";
-import landmark3 from "../assets/landmarks/hd/image_1747300874983.png";
-import landmark4 from "../assets/landmarks/hd/image_1747300899310.png";
-import landmark5 from "../assets/landmarks/hd/image_1747300922286.png";
-import landmark6 from "../assets/landmarks/hd/image_1747300962058.png";
+import landmark1 from "../assets/landmarks/hd_new/image_1747298441511.png"; // Higher resolution image
+import landmark2 from "../assets/landmarks/hd_new/image_1747298978551.png"; // Higher resolution image
+import landmark3 from "../assets/landmarks/hd_new/image_1747300730144.png";
+import landmark4 from "../assets/landmarks/hd_new/image_1747300807633.png";
+import landmark5 from "../assets/landmarks/hd_new/image_1747300874983.png";
+import landmark6 from "../assets/landmarks/hd_new/image_1747300899310.png";
 import {
   Form,
   FormControl,
