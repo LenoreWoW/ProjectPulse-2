@@ -49,9 +49,15 @@ const en: Record<string, string> = {
   
   // Dashboard
   activeProjects: "Active Projects",
+  allProjects: "All Projects",
   projectsCompleted: "Completed",
+  completed: "Completed",
   atRisk: "At Risk",
+  pending: "Pending",
+  planning: "Planning",
+  onHold: "On Hold",
   pendingApproval: "Pending Approval",
+  viewAll: "View All",
   budgetOverview: "Budget Overview",
   totalBudget: "Total Budget",
   actualSpend: "Actual Spend",
@@ -63,6 +69,10 @@ const en: Record<string, string> = {
   weeklyUpdateReminder: "Weekly Update Reminder",
   submissionDue: "Submission Due",
   submitUpdate: "Submit Update",
+  welcomeBack: "Welcome back",
+  dashboardIntro: "Track your project portfolio, monitor progress, and stay on top of approvals.",
+  allProjectsDescription: "View all projects in the system",
+  projectsInStatus: "Projects with status: {{status}}",
   
   // Projects
   newProject: "New Project",

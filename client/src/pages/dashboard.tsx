@@ -2,6 +2,7 @@ import { useI18n } from "@/hooks/use-i18n";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/use-auth";
 import { StatCard } from "@/components/dashboard/stat-card";
+import { StatusCard } from "@/components/dashboard/status-card";
 import { BudgetOverview } from "@/components/dashboard/budget-overview";
 import { RecentProjects } from "@/components/dashboard/recent-projects";
 import { PendingApprovals } from "@/components/dashboard/pending-approvals";
@@ -13,6 +14,9 @@ import {
   CheckSquare,
   AlertTriangle,
   Clock,
+  PauseCircle,
+  Factory,
+  ArrowUpCircle,
   Plus,
   Search,
   Bell,
@@ -39,26 +43,36 @@ export default function Dashboard() {
   // Calculate dashboard metrics
   const getMetrics = () => {
     if (!projects) return {
-      activeProjects: 0,
-      completedProjects: 0,
-      atRiskProjects: 0,
-      pendingApproval: 0
+      activeProjects: [],
+      completedProjects: [],
+      planningProjects: [],
+      onHoldProjects: [],
+      pendingProjects: [],
+      atRiskProjects: [],
+      allProjects: []
     };
     
-    const activeProjects = projects.filter(p => p.status === "InProgress").length;
-    const completedProjects = projects.filter(p => p.status === "Completed").length;
+    const activeProjects = projects.filter(p => p.status === "InProgress");
+    const completedProjects = projects.filter(p => p.status === "Completed");
+    const planningProjects = projects.filter(p => p.status === "Planning");
+    const onHoldProjects = projects.filter(p => p.status === "OnHold");
+    const pendingProjects = projects.filter(p => p.status === "Pending");
+    
+    // Calculate at risk projects - consider any InProgress project with passed deadline
     const atRiskProjects = projects.filter(p => {
       if (p.status !== "InProgress" || !p.deadline) return false;
       const deadlineDate = new Date(p.deadline);
       return deadlineDate <= new Date();
-    }).length;
-    const pendingApproval = projects.filter(p => p.status === "Pending").length;
+    });
     
     return {
       activeProjects,
       completedProjects,
+      planningProjects,
+      onHoldProjects,
+      pendingProjects,
       atRiskProjects,
-      pendingApproval
+      allProjects: projects
     };
   };
   
@@ -97,78 +111,68 @@ export default function Dashboard() {
         </div>
         
         {/* Stat Cards in Hero */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 relative z-10">
-          <div className="bg-white/10 backdrop-filter backdrop-blur-sm rounded-xl p-5 flex flex-col transition-all hover:bg-white/15 group">
-            <div className="flex items-center mb-3">
-              <div className="p-2 bg-white/20 rounded-lg text-white mr-3">
-                <LayoutList className="h-5 w-5" />
-              </div>
-              <span className="text-sm font-medium text-white/70">{t("activeProjects")}</span>
-            </div>
-            <div className="flex justify-between items-end">
-              <span className="text-2xl font-bold">{metrics.activeProjects}</span>
-              <span className="text-xs text-white/60 group-hover:text-white/80 transition-colors">
-                <Link href="/projects?status=InProgress" className="flex items-center">
-                  {t("viewAll")}
-                  <ChevronRight className="h-3 w-3 ml-1" />
-                </Link>
-              </span>
-            </div>
-          </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 relative z-10">
+          <StatusCard
+            icon={<LayoutList className="h-5 w-5" />}
+            title={t("allProjects")}
+            count={metrics.allProjects.length}
+            status="all"
+            projects={metrics.allProjects}
+          />
           
-          <div className="bg-white/10 backdrop-filter backdrop-blur-sm rounded-xl p-5 flex flex-col transition-all hover:bg-white/15 group">
-            <div className="flex items-center mb-3">
-              <div className="p-2 bg-white/20 rounded-lg text-white mr-3">
-                <CheckSquare className="h-5 w-5" />
-              </div>
-              <span className="text-sm font-medium text-white/70">{t("completed")}</span>
-            </div>
-            <div className="flex justify-between items-end">
-              <span className="text-2xl font-bold">{metrics.completedProjects}</span>
-              <span className="text-xs text-white/60 group-hover:text-white/80 transition-colors">
-                <Link href="/projects?status=Completed" className="flex items-center">
-                  {t("viewAll")}
-                  <ChevronRight className="h-3 w-3 ml-1" />
-                </Link>
-              </span>
-            </div>
-          </div>
+          <StatusCard
+            icon={<LayoutList className="h-5 w-5" />}
+            title={t("activeProjects")}
+            count={metrics.activeProjects.length}
+            status="InProgress"
+            projects={metrics.activeProjects}
+            color="blue"
+          />
           
-          <div className="bg-white/10 backdrop-filter backdrop-blur-sm rounded-xl p-5 flex flex-col transition-all hover:bg-white/15 group">
-            <div className="flex items-center mb-3">
-              <div className="p-2 bg-white/20 rounded-lg text-white mr-3">
-                <AlertTriangle className="h-5 w-5" />
-              </div>
-              <span className="text-sm font-medium text-white/70">{t("atRisk")}</span>
-            </div>
-            <div className="flex justify-between items-end">
-              <span className="text-2xl font-bold">{metrics.atRiskProjects}</span>
-              <span className="text-xs text-white/60 group-hover:text-white/80 transition-colors">
-                <Link href="/projects?risk=high" className="flex items-center">
-                  {t("viewAll")}
-                  <ChevronRight className="h-3 w-3 ml-1" />
-                </Link>
-              </span>
-            </div>
-          </div>
+          <StatusCard
+            icon={<CheckSquare className="h-5 w-5" />}
+            title={t("completed")}
+            count={metrics.completedProjects.length}
+            status="Completed"
+            projects={metrics.completedProjects}
+            color="green"
+          />
           
-          <div className="bg-white/10 backdrop-filter backdrop-blur-sm rounded-xl p-5 flex flex-col transition-all hover:bg-white/15 group">
-            <div className="flex items-center mb-3">
-              <div className="p-2 bg-white/20 rounded-lg text-white mr-3">
-                <Clock className="h-5 w-5" />
-              </div>
-              <span className="text-sm font-medium text-white/70">{t("pendingApproval")}</span>
-            </div>
-            <div className="flex justify-between items-end">
-              <span className="text-2xl font-bold">{metrics.pendingApproval}</span>
-              <span className="text-xs text-white/60 group-hover:text-white/80 transition-colors">
-                <Link href="/projects?status=Pending" className="flex items-center">
-                  {t("viewAll")}
-                  <ChevronRight className="h-3 w-3 ml-1" />
-                </Link>
-              </span>
-            </div>
-          </div>
+          <StatusCard
+            icon={<Factory className="h-5 w-5" />}
+            title={t("planning")}
+            count={metrics.planningProjects.length}
+            status="Planning"
+            projects={metrics.planningProjects}
+            color="purple"
+          />
+          
+          <StatusCard
+            icon={<PauseCircle className="h-5 w-5" />}
+            title={t("onHold")}
+            count={metrics.onHoldProjects.length}
+            status="OnHold"
+            projects={metrics.onHoldProjects}
+            color="amber"
+          />
+          
+          <StatusCard
+            icon={<Clock className="h-5 w-5" />}
+            title={t("pending")}
+            count={metrics.pendingProjects.length}
+            status="Pending"
+            projects={metrics.pendingProjects}
+            color="amber"
+          />
+          
+          <StatusCard
+            icon={<AlertTriangle className="h-5 w-5" />}
+            title={t("atRisk")}
+            count={metrics.atRiskProjects.length}
+            status="AtRisk"
+            projects={metrics.atRiskProjects}
+            color="red"
+          />
         </div>
       </div>
       
