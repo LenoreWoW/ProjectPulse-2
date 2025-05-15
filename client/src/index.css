@@ -5,7 +5,7 @@
 @layer base {
   /* Custom classes for auth page */
   .auth-input {
-    @apply h-11 bg-black/40 border border-white/30 focus:border-white/50 text-white placeholder:text-white/70 rounded-full px-5 py-2;
+    @apply h-11 bg-black/50 border border-white/40 focus:border-white/60 text-white placeholder:text-white/70 rounded-full px-5 py-2 shadow-sm;
   }
   
   :root {

@@ -10,12 +10,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
 // Import HD Qatar landmark images directly
-import landmark1 from "../assets/landmarks/hd_new/image_1747298441511.png"; // Higher resolution image
-import landmark2 from "../assets/landmarks/hd_new/image_1747298978551.png"; // Higher resolution image
-import landmark3 from "../assets/landmarks/hd_new/image_1747300730144.png";
-import landmark4 from "../assets/landmarks/hd_new/image_1747300807633.png";
-import landmark5 from "../assets/landmarks/hd_new/image_1747300874983.png";
-import landmark6 from "../assets/landmarks/hd_new/image_1747300899310.png";
+import landmark1 from "../assets/landmarks/hd/image_1747300730144.png"; // Qatar Islamic Cultural Center
+import landmark2 from "../assets/landmarks/hd/image_1747300807633.png"; // Museum of Islamic Art
+import landmark3 from "../assets/landmarks/hd/image_1747300874983.png"; // Al Zubarah Fort
+import landmark4 from "../assets/landmarks/hd/image_1747300899310.png"; // Katara Cultural Village
+import landmark5 from "../assets/landmarks/hd/image_1747300922286.png"; // Souq Waqif
+import landmark6 from "../assets/landmarks/hd/image_1747300962058.png"; // State Grand Mosque
 import {
   Form,
   FormControl,
@@ -175,7 +175,7 @@ export default function AuthPage() {
           />
         ))}
         {/* Overlay for better text readability */}
-        <div className="absolute inset-0 bg-black bg-opacity-60 z-2" />
+        <div className="absolute inset-0 bg-black bg-opacity-70 z-2" />
       </div>
       
       <div className="w-full max-w-md z-10">
