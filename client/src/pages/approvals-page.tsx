@@ -282,7 +282,7 @@ export default function ApprovalsPage() {
                           </span>
                           <div className="space-x-2">
                             <Button 
-                              className="bg-green-600 hover:bg-green-700 text-white"
+                              className="bg-qatar-maroon hover:bg-maroon-800 text-white"
                               onClick={() => handleApprove(request)}
                             >
                               <Check className="mr-2 h-4 w-4" />
@@ -335,7 +335,7 @@ export default function ApprovalsPage() {
           <AlertDialogFooter>
             <AlertDialogCancel>{t("cancel")}</AlertDialogCancel>
             <AlertDialogAction
-              className="bg-green-600 hover:bg-green-700 text-white"
+              className="bg-qatar-maroon hover:bg-maroon-800 text-white"
               onClick={() => selectedRequest && approveMutation.mutate({ id: selectedRequest.id, status: 'Approved' })}
             >
               {approveMutation.isPending ? (
