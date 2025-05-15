@@ -105,12 +105,13 @@ export default function ProjectsPage() {
   };
 
   // Format date for display
-  const formatDate = (dateString: string | Date) => {
+  const formatDate = (dateString: string | Date | null) => {
+    if (!dateString) return "";
     return new Date(dateString).toLocaleDateString();
   };
 
   // Calculate days until deadline
-  const getDaysRemaining = (deadline?: string | Date) => {
+  const getDaysRemaining = (deadline?: string | Date | null) => {
     if (!deadline) return null;
     
     const deadlineDate = new Date(deadline);
@@ -119,6 +120,12 @@ export default function ProjectsPage() {
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
     
     return diffDays;
+  };
+  
+  // Format budget value
+  const formatBudget = (budget: number | null) => {
+    if (!budget && budget !== 0) return "0";
+    return new Intl.NumberFormat('en-QA', { maximumFractionDigits: 0 }).format(budget);
   };
 
   return (
@@ -275,7 +282,7 @@ export default function ProjectsPage() {
                           <div className="flex justify-between">
                             <div>
                               <span className="text-sm font-medium text-gray-500 dark:text-gray-400">
-                                {t("budget")}: {new Intl.NumberFormat('en-QA', { maximumFractionDigits: 0 }).format(project.budget)} QAR
+                                {t("budget")}: {formatBudget(project.budget)} QAR
                               </span>
                             </div>
                             <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusClasses(project.status)}`}>
