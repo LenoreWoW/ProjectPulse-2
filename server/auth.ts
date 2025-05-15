@@ -151,11 +151,24 @@ export function setupAuth(app: Express) {
 
   app.post("/api/login", (req, res, next) => {
     passport.authenticate("local", (err: Error, user: Express.User, info: { message: string }) => {
-      if (err) return next(err);
-      if (!user) return res.status(401).json({ message: info.message || "Authentication failed" });
+      console.log("Authentication attempt:", req.body.username);
       
+      if (err) {
+        console.error("Login error:", err);
+        return next(err);
+      }
+      if (!user) {
+        console.log("Authentication failed:", info.message);
+        return res.status(401).json({ message: info.message || "Authentication failed" });
+      }
+      
+      console.log("Authentication successful for user:", user.id);
       req.login(user, (loginErr) => {
-        if (loginErr) return next(loginErr);
+        if (loginErr) {
+          console.error("Session login error:", loginErr);
+          return next(loginErr);
+        }
+        console.log("Session established for user:", user.id);
         return res.status(200).json(user);
       });
     })(req, res, next);
@@ -169,8 +182,13 @@ export function setupAuth(app: Express) {
   });
 
   app.get("/api/user", (req, res) => {
-    if (!req.isAuthenticated()) return res.sendStatus(401);
-    res.json(req.user);
+    console.log("Checking user session. Authenticated:", req.isAuthenticated());
+    if (req.isAuthenticated()) {
+      console.log("Current user ID:", req.user?.id);
+      return res.json(req.user);
+    } else {
+      return res.sendStatus(401);
+    }
   });
   
   // Update user profile

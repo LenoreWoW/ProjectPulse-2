@@ -36,11 +36,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return await res.json();
     },
     onSuccess: (user: User) => {
+      // Update user data in the cache
       queryClient.setQueryData(["/api/user"], user);
+      // Invalidate query to force a refresh
+      queryClient.invalidateQueries({ queryKey: ["/api/user"] });
+      
       toast({
         title: "Login successful",
         description: `Welcome back, ${user.name}!`,
       });
+      
+      // Force navigation to home page after successful login
+      window.location.href = "/";
     },
     onError: (error: Error) => {
       toast({
@@ -57,11 +64,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return await res.json();
     },
     onSuccess: (user: User) => {
+      // Update user data in the cache
       queryClient.setQueryData(["/api/user"], user);
+      // Invalidate query to force a refresh
+      queryClient.invalidateQueries({ queryKey: ["/api/user"] });
+      
       toast({
         title: "Registration successful",
         description: "Your account is pending approval. You'll be notified when it's approved.",
       });
+      
+      // Force navigation to home page after successful registration
+      window.location.href = "/";
     },
     onError: (error: Error) => {
       toast({

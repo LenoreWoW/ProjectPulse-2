@@ -22,7 +22,7 @@ export function ProtectedRoute({
         if (isLoading) {
           return (
             <div className="flex items-center justify-center min-h-screen">
-              <Loader2 className="h-8 w-8 animate-spin text-maroon-700 dark:text-maroon-400" />
+              <Loader2 className="h-8 w-8 animate-spin text-qatar-maroon" />
             </div>
           );
         }
