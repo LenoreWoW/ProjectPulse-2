@@ -1,13 +1,15 @@
-import kataraCulturalVillage from './katara-cultural-village.svg';
-import museumOfIslamicArt from './museum-of-islamic-art.svg';
-import pearlQatar from './pearl-qatar.svg';
-import aspireTower from './aspire-tower.svg';
-import nationalMuseum from './national-museum.svg';
+import landmark1 from './landmark1.jpg';
+import landmark2 from './landmark2.jpg';
+import landmark3 from './landmark3.jpg';
+import landmark4 from './landmark4.jpg';
+import landmark5 from './landmark5.jpg';
+import landmark6 from './landmark6.jpg';
 
 export const qatarLandmarks = [
-  kataraCulturalVillage,
-  museumOfIslamicArt,
-  pearlQatar,
-  aspireTower,
-  nationalMuseum
+  landmark1,
+  landmark2,
+  landmark3,
+  landmark4,
+  landmark5,
+  landmark6
 ];

@@ -18,6 +18,7 @@ const en: Record<string, string> = {
   assignments: "Assignments",
   approvals: "Approvals",
   settings: "Settings",
+  "Qatar Ministry of Defence": "Qatar Ministry of Defence",
   
   // User
   login: "Login",

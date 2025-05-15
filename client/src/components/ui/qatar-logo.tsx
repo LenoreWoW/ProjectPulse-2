@@ -12,9 +12,9 @@ export function QatarLogo({ className = "", size = "md", hideText = false }: Qat
   
   // Determine size classes
   const sizeClasses = {
-    sm: { logo: "h-8", text: "text-sm ml-1.5" },
-    md: { logo: "h-12", text: "text-lg ml-2" },
-    lg: { logo: "h-16", text: "text-xl ml-3" },
+    sm: { logo: "h-8" },
+    md: { logo: "h-12" },
+    lg: { logo: "h-16" },
   };
   
   return (
@@ -27,13 +27,7 @@ export function QatarLogo({ className = "", size = "md", hideText = false }: Qat
           className="h-full object-contain"
         />
       </div>
-      {!hideText && (
-        <div className={`font-semibold ${sizeClasses[size].text} ${isRtl ? 'mr-3 ml-0' : 'ml-3 mr-0'} flex flex-col`}>
-          <span className="text-white font-bold">
-            {t("projectManagementSystem")}
-          </span>
-        </div>
-      )}
+      {/* Removed the "projectManagementSystem" text that was previously to the left of the logo */}
     </div>
   );
 }

@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
 // Import Qatar landmark images
-import { qatarLandmarks } from "@/assets/landmarks/qatarLandmarks";
+import { qatarLandmarks } from "@/assets/landmarks/index";
 import {
   Form,
   FormControl,
