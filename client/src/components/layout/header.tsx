@@ -55,12 +55,12 @@ export function Header({ onMobileMenuToggle }: HeaderProps) {
   };
 
   return (
-    <header className="bg-white dark:bg-darker shadow-sm z-10 border-b border-gray-200 dark:border-gray-700">
-      <div className="flex items-center justify-between px-6 py-3">
+    <header className="bg-maroon-800 dark:bg-maroon-900 shadow-md z-10 border-b border-maroon-700 dark:border-maroon-800">
+      <div className="flex items-center justify-between px-6 py-4">
         <div className="flex items-center space-x-3 rtl:space-x-reverse">
           {/* Mobile Menu Button */}
           <button
-            className="md:hidden p-2 rounded-lg text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700"
+            className="md:hidden p-2 rounded-lg text-white hover:bg-maroon-700 dark:text-gray-200 dark:hover:bg-maroon-800"
             onClick={onMobileMenuToggle}
           >
             <Menu className="h-6 w-6" />
@@ -71,9 +71,9 @@ export function Header({ onMobileMenuToggle }: HeaderProps) {
             <Input
               type="text"
               placeholder={t("search") + "..."}
-              className={`w-64 ${isRtl ? 'pr-10 pl-4' : 'pl-10 pr-4'} py-2 text-sm rounded-lg`}
+              className={`w-64 ${isRtl ? 'pr-10 pl-4' : 'pl-10 pr-4'} py-2 text-sm rounded-lg bg-maroon-700/50 border-maroon-600 text-white placeholder:text-white/70 focus:border-white focus:ring-white/30`}
             />
-            <Search className={`h-5 w-5 absolute ${isRtl ? 'right-3' : 'left-3'} top-2.5 text-gray-400`} />
+            <Search className={`h-5 w-5 absolute ${isRtl ? 'right-3' : 'left-3'} top-2.5 text-white/70`} />
           </div>
         </div>
 
@@ -82,7 +82,7 @@ export function Header({ onMobileMenuToggle }: HeaderProps) {
           <Button
             variant="ghost"
             size="sm"
-            className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"
+            className="p-1.5 rounded-lg text-white hover:bg-maroon-700 dark:text-gray-200 dark:hover:bg-maroon-800"
             onClick={toggleLanguage}
           >
             <span className="text-xs font-medium">
@@ -94,7 +94,7 @@ export function Header({ onMobileMenuToggle }: HeaderProps) {
           <Button
             variant="ghost"
             size="sm"
-            className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"
+            className="p-1.5 rounded-lg text-white hover:bg-maroon-700 dark:text-gray-200 dark:hover:bg-maroon-800"
             onClick={toggleDarkMode}
           >
             {darkMode ? (
@@ -110,7 +110,7 @@ export function Header({ onMobileMenuToggle }: HeaderProps) {
               <Button
                 variant="ghost"
                 size="sm"
-                className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 relative"
+                className="p-1.5 rounded-lg text-white hover:bg-maroon-700 dark:text-gray-200 dark:hover:bg-maroon-800 relative"
               >
                 <Bell className="h-5 w-5" />
                 <span className="absolute top-0 right-0 w-2 h-2 bg-red-500 rounded-full"></span>
@@ -135,15 +135,18 @@ export function Header({ onMobileMenuToggle }: HeaderProps) {
               <Button
                 variant="ghost"
                 size="sm"
-                className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"
+                className="p-1.5 rounded-lg text-white hover:bg-maroon-700 dark:text-gray-200 dark:hover:bg-maroon-800 flex items-center gap-2"
               >
-                <User className="h-5 w-5" />
+                <div className="w-6 h-6 rounded-full bg-white/20 text-white flex items-center justify-center font-bold text-xs">
+                  {user?.name?.charAt(0).toUpperCase() || "U"}
+                </div>
+                <span className="hidden md:inline-block">{user?.name?.split(' ')[0]}</span>
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
               <DropdownMenuLabel>{user?.name}</DropdownMenuLabel>
               <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={handleLogout}>
+              <DropdownMenuItem onClick={handleLogout} className="text-red-600 dark:text-red-400">
                 <LogOut className="mr-2 h-4 w-4" />
                 <span>{t("logout")}</span>
               </DropdownMenuItem>
