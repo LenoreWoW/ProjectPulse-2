@@ -169,9 +169,45 @@ export class MemStorage implements IStorage {
   private seedInitialData() {
     // Add departments
     const departments = [
-      { id: 1, name: "Security", nameAr: "الأمن", directorUserId: 4 },
-      { id: 2, name: "Operations", nameAr: "العمليات", directorUserId: 5 },
-      { id: 3, name: "Technology", nameAr: "التكنولوجيا", directorUserId: 6 }
+      { 
+        id: 1, 
+        name: "Security", 
+        nameAr: "الأمن", 
+        code: "SEC-001",
+        description: "Responsible for all security related operations",
+        directorUserId: 4,
+        headUserId: null,
+        budget: 1000000,
+        location: "Building A, Floor 2",
+        phone: "+974 5000 1111",
+        email: "security@qaf.mil.qa"
+      },
+      { 
+        id: 2, 
+        name: "Operations", 
+        nameAr: "العمليات", 
+        code: "OPS-002",
+        description: "Handles day-to-day operational activities",
+        directorUserId: 5,
+        headUserId: null,
+        budget: 1500000,
+        location: "Building B, Floor 1",
+        phone: "+974 5000 2222",
+        email: "operations@qaf.mil.qa"
+      },
+      { 
+        id: 3, 
+        name: "Technology", 
+        nameAr: "التكنولوجيا", 
+        code: "TECH-003",
+        description: "Manages all IT and technology systems",
+        directorUserId: 6,
+        headUserId: null,
+        budget: 2000000,
+        location: "Building C, Floor 3",
+        phone: "+974 5000 3333",
+        email: "technology@qaf.mil.qa"
+      }
     ];
     
     departments.forEach(dept => {

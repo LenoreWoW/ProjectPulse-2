@@ -18,7 +18,14 @@ export const departments = pgTable('departments', {
   id: serial('id').primaryKey(),
   name: text('name').notNull(),
   nameAr: text('name_ar').notNull(),
+  code: text('code'),
+  description: text('description'),
   directorUserId: integer('director_user_id'),
+  headUserId: integer('head_user_id'),
+  budget: doublePrecision('budget'),
+  location: text('location'),
+  phone: text('phone'),
+  email: text('email'),
 });
 
 // User
