@@ -425,7 +425,7 @@ export default function DepartmentsPage() {
                           <FormItem>
                             <FormLabel>{t("phone")}</FormLabel>
                             <FormControl>
-                              <Input {...field} placeholder={t("enterPhone")} />
+                              <Input {...field} value={field.value ?? ""} placeholder={t("enterPhone")} />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
@@ -440,7 +440,7 @@ export default function DepartmentsPage() {
                         <FormItem>
                           <FormLabel>{t("email")}</FormLabel>
                           <FormControl>
-                            <Input {...field} type="email" placeholder={t("enterEmail")} />
+                            <Input {...field} type="email" value={field.value ?? ""} placeholder={t("enterEmail")} />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -564,6 +564,7 @@ export default function DepartmentsPage() {
                             <Input 
                               type="number"
                               {...field}
+                              value={field.value ?? undefined}
                               onChange={(e) => field.onChange(e.target.value ? parseFloat(e.target.value) : null)}
                               placeholder={t("enterBudget")} 
                             />
@@ -582,7 +583,7 @@ export default function DepartmentsPage() {
                         <FormItem>
                           <FormLabel>{t("location")}</FormLabel>
                           <FormControl>
-                            <Input {...field} placeholder={t("enterLocation")} />
+                            <Input {...field} value={field.value ?? ""} placeholder={t("enterLocation")} />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -734,7 +735,7 @@ export default function DepartmentsPage() {
                           </div>
                           <div>
                             <p className="font-medium">{member.name}</p>
-                            <p className="text-xs text-gray-500 dark:text-gray-400">{t(member.role.toLowerCase())}</p>
+                            <p className="text-xs text-gray-500 dark:text-gray-400">{member.role ? t(member.role.toLowerCase()) : t('user')}</p>
                           </div>
                         </div>
                       ))}
