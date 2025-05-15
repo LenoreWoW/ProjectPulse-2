@@ -392,7 +392,6 @@ const ar: Record<string, string> = {
   selected: "محدد",
   selectForUpdate: "حدد للتحديث",
   enterWeeklyUpdate: "أدخل تفاصيل التحديث الأسبوعي...",
-  weeklyUpdates: "التحديثات الأسبوعية",
 };
 
 const translations: Translations = {
