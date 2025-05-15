@@ -189,6 +189,9 @@ const ar: Record<string, string> = {
   acrossAllActiveProjects: "عبر جميع المشاريع النشطة",
   ofTotalBudget: "من إجمالي الميزانية",
   potentialOverspend: "تجاوز محتمل للميزانية",
+  weeklyUpdateReminder: "تذكير التحديث الأسبوعي",
+  submissionDue: "موعد التسليم",
+  submitUpdate: "إرسال التحديث",
   
   // Projects
   newProject: "مشروع جديد",

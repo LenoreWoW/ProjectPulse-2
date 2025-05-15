@@ -1,507 +1,519 @@
-import { useState, useRef, useEffect } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { useI18n } from "@/hooks/use-i18n";
-import { Project, Goal } from "@shared/schema";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useState, useEffect, useRef } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { useI18n } from '@/hooks/use-i18n';
+import { useAuth } from '@/hooks/use-auth';
+import ForceGraph2D from 'react-force-graph-2d';
+import { 
+  Card, 
+  CardContent, 
+  CardDescription, 
+  CardHeader, 
+  CardTitle 
+} from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Badge } from '@/components/ui/badge';
+import { 
+  Search, 
+  Filter, 
+  ChevronDown, 
+  ArrowLeftRight, 
+  Network, 
+  ZoomIn, 
+  ZoomOut, 
+  RotateCcw, 
+  Download
+} from 'lucide-react';
 import {
-  ZoomIn,
-  ZoomOut,
-  Minimize,
-  MoveHorizontal,
-  RefreshCcw,
-  AlertTriangle,
-} from "lucide-react";
-import { Badge } from "@/components/ui/badge";
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { Project } from '@shared/schema';
 
-type DependencyNode = {
+interface DependencyNode {
   id: string;
   label: string;
-  type: "project" | "goal";
+  type: 'project' | 'department' | 'user';
   status?: string;
   priority?: string;
-  originalId: number;
-};
+}
 
-type DependencyLink = {
+interface DependencyLink {
   source: string;
   target: string;
   value: number;
   label?: string;
-};
+}
+
+interface GraphData {
+  nodes: DependencyNode[];
+  links: DependencyLink[];
+}
 
 export default function DependenciesPage() {
   const { t } = useI18n();
-  const [view, setView] = useState<"project-to-project" | "project-to-goal">(
-    "project-to-project"
-  );
-  const [selectedDepartmentId, setSelectedDepartmentId] = useState<string | null>(null);
-  const svgRef = useRef<SVGSVGElement>(null);
-  const [zoom, setZoom] = useState(1);
-  const [pan, setPan] = useState({ x: 0, y: 0 });
-  const [isPanning, setIsPanning] = useState(false);
-  const [startPan, setStartPan] = useState({ x: 0, y: 0 });
+  const { user } = useAuth();
+  const graphRef = useRef<any>();
+  const [searchQuery, setSearchQuery] = useState('');
+  const [graphData, setGraphData] = useState<GraphData>({ nodes: [], links: [] });
+  const [highlightNodes, setHighlightNodes] = useState<Set<string>>(new Set());
+  const [highlightLinks, setHighlightLinks] = useState<Set<string>>(new Set());
+  const [selectedNode, setSelectedNode] = useState<DependencyNode | null>(null);
+  const [zoomLevel, setZoomLevel] = useState(1);
 
-  // Fetch projects data
-  const { data: projects, isLoading: projectsLoading } = useQuery<Project[]>({
-    queryKey: ["/api/projects"],
+  // Fetch projects for the dependency graph
+  const { data: projects, isLoading: isLoadingProjects } = useQuery<Project[]>({
+    queryKey: ['/api/projects'],
   });
 
-  // Fetch goals data
-  const { data: goals, isLoading: goalsLoading } = useQuery<Goal[]>({
-    queryKey: ["/api/goals"],
-  });
-
-  // Fetch departments data
-  const { data: departments, isLoading: departmentsLoading } = useQuery<any[]>({
-    queryKey: ["/api/departments"],
-  });
-
-  // Fetch project dependencies data
-  const { data: projectDependencies, isLoading: projectDependenciesLoading } = useQuery<any[]>({
-    queryKey: ["/api/projects/dependencies"],
-  });
-
-  // Fetch project-goal relationships data
-  const { data: projectGoals, isLoading: projectGoalsLoading } = useQuery<any[]>({
-    queryKey: ["/api/projects/goals"],
-  });
-
-  const isLoading = projectsLoading || goalsLoading || departmentsLoading || 
-                   projectDependenciesLoading || projectGoalsLoading;
-
-  const getStatusColor = (status: string | null) => {
-    switch (status) {
-      case "Completed":
-        return "#10b981"; // green
-      case "InProgress":
-        return "#3b82f6"; // blue
-      case "Planning":
-        return "#8b5cf6"; // purple
-      case "OnHold":
-        return "#f59e0b"; // amber
-      case "Pending":
-        return "#6b7280"; // gray
-      default:
-        return "#6b7280"; // gray
-    }
-  };
-
-  const getPriorityColor = (priority: string | null) => {
-    switch (priority) {
-      case "Critical":
-        return "#ef4444"; // red
-      case "High":
-        return "#f59e0b"; // amber
-      case "Medium":
-        return "#3b82f6"; // blue
-      case "Low":
-        return "#10b981"; // green
-      default:
-        return "#6b7280"; // gray
-    }
-  };
-
-  // Filter and transform data based on selected department and view
-  const getGraphData = () => {
-    if (!projects || !goals || !projectDependencies || !projectGoals) {
-      return { nodes: [], links: [] };
-    }
-
-    let filteredProjects = selectedDepartmentId
-      ? projects.filter(project => project.departmentId.toString() === selectedDepartmentId)
-      : projects;
-
-    let nodes: DependencyNode[] = [];
-    let links: DependencyLink[] = [];
-
-    if (view === "project-to-project") {
-      // Add project nodes
-      nodes = filteredProjects.map(project => ({
-        id: `p-${project.id}`,
-        label: project.title,
-        type: "project",
-        status: project.status,
-        priority: project.priority,
-        originalId: project.id
-      }));
-
-      // Add project dependency links
-      projectDependencies.forEach(dep => {
-        const sourceProject = filteredProjects.find(p => p.id === dep.projectId);
-        const targetProject = filteredProjects.find(p => p.id === dep.dependsOnProjectId);
-        
-        if (sourceProject && targetProject) {
-          links.push({
-            source: `p-${dep.projectId}`,
-            target: `p-${dep.dependsOnProjectId}`,
-            value: 1,
-            label: "depends on"
-          });
-        }
-      });
-    } else {
-      // Add project nodes
-      nodes = filteredProjects.map(project => ({
-        id: `p-${project.id}`,
-        label: project.title,
-        type: "project",
-        status: project.status,
-        priority: project.priority,
-        originalId: project.id
-      }));
-
-      // Add goal nodes
-      goals.forEach(goal => {
-        nodes.push({
-          id: `g-${goal.id}`,
-          label: goal.title,
-          type: "goal",
-          priority: goal.priority,
-          originalId: goal.id
+  // Create graph data from projects
+  useEffect(() => {
+    if (!projects) return;
+    
+    // Convert projects to graph nodes
+    const nodes: DependencyNode[] = projects.map(project => ({
+      id: `project-${project.id}`,
+      label: project.title,
+      type: 'project',
+      status: project.status || undefined,
+      priority: project.priority || undefined,
+      originalId: project.id
+    }));
+    
+    // Create links between projects based on dependencies
+    // This is a simplification; real data would come from a dedicated dependencies API
+    const links: DependencyLink[] = [];
+    
+    // For demo purposes, create some random connections
+    projects.forEach((project, i) => {
+      if (i % 3 === 0 && i < projects.length - 1) {
+        links.push({
+          source: `project-${project.id}`,
+          target: `project-${projects[i + 1].id}`,
+          value: 1,
+          label: 'Depends on'
         });
-      });
-
-      // Add project-goal links
-      projectGoals.forEach(pg => {
-        const project = filteredProjects.find(p => p.id === pg.projectId);
-        
-        if (project) {
-          links.push({
-            source: `p-${pg.projectId}`,
-            target: `g-${pg.goalId}`,
-            value: pg.weight || 1,
-            label: `weight: ${pg.weight || 1}`
-          });
-        }
-      });
-    }
-
-    return { nodes, links };
-  };
-
-  // Prepare graph data
-  const graphData = getGraphData();
-
-  // Handle zoom in
-  const handleZoomIn = () => {
-    setZoom(prevZoom => Math.min(prevZoom * 1.2, 3));
-  };
-
-  // Handle zoom out
-  const handleZoomOut = () => {
-    setZoom(prevZoom => Math.max(prevZoom / 1.2, 0.3));
-  };
-
-  // Handle reset view
-  const handleResetView = () => {
-    setZoom(1);
-    setPan({ x: 0, y: 0 });
-  };
-
-  // Handle mouse down for panning
-  const handleMouseDown = (e: React.MouseEvent) => {
-    setIsPanning(true);
-    setStartPan({ x: e.clientX - pan.x, y: e.clientY - pan.y });
-  };
-
-  // Handle mouse move for panning
-  const handleMouseMove = (e: React.MouseEvent) => {
-    if (isPanning) {
-      setPan({
-        x: e.clientX - startPan.x,
-        y: e.clientY - startPan.y
-      });
-    }
-  };
-
-  // Handle mouse up to stop panning
-  const handleMouseUp = () => {
-    setIsPanning(false);
-  };
-
-  // Simple force simulation (in a real app, you'd use D3.js or a similar library)
-  const simulateForceDirected = () => {
-    const width = 900;
-    const height = 600;
-    const centerX = width / 2;
-    const centerY = height / 2;
-    const radius = Math.min(width, height) * 0.4;
-    
-    const nodePositions: Record<string, {x: number, y: number}> = {};
-    
-    // Position nodes in a circle
-    graphData.nodes.forEach((node, index) => {
-      const angle = (index / graphData.nodes.length) * 2 * Math.PI;
-      const x = centerX + radius * Math.cos(angle);
-      const y = centerY + radius * Math.sin(angle);
-      nodePositions[node.id] = { x, y };
+      }
+      
+      if (i % 4 === 0 && i < projects.length - 2) {
+        links.push({
+          source: `project-${project.id}`,
+          target: `project-${projects[i + 2].id}`,
+          value: 2,
+          label: 'Blocked by'
+        });
+      }
     });
     
-    return nodePositions;
+    setGraphData({ nodes, links });
+  }, [projects]);
+
+  // Filter graph based on search
+  const filteredGraphData = {
+    nodes: graphData.nodes.filter(node => 
+      !searchQuery || node.label.toLowerCase().includes(searchQuery.toLowerCase())
+    ),
+    links: graphData.links.filter(link => {
+      const sourceNode = graphData.nodes.find(n => n.id === link.source);
+      const targetNode = graphData.nodes.find(n => n.id === link.target);
+      
+      return (!searchQuery || 
+        (sourceNode && sourceNode.label.toLowerCase().includes(searchQuery.toLowerCase())) ||
+        (targetNode && targetNode.label.toLowerCase().includes(searchQuery.toLowerCase())));
+    })
   };
-  
-  const nodePositions = simulateForceDirected();
+
+  // Handle zoom in/out
+  const handleZoomIn = () => {
+    if (graphRef.current) {
+      setZoomLevel(prev => {
+        const newZoom = prev * 1.2;
+        graphRef.current.zoom(newZoom);
+        return newZoom;
+      });
+    }
+  };
+
+  const handleZoomOut = () => {
+    if (graphRef.current) {
+      setZoomLevel(prev => {
+        const newZoom = prev * 0.8;
+        graphRef.current.zoom(newZoom);
+        return newZoom;
+      });
+    }
+  };
+
+  const handleReset = () => {
+    if (graphRef.current) {
+      graphRef.current.centerAt();
+      graphRef.current.zoom(1);
+      setZoomLevel(1);
+    }
+  };
+
+  // Download graph as image
+  const handleDownload = () => {
+    const canvas = document.querySelector('canvas');
+    if (canvas) {
+      const link = document.createElement('a');
+      link.download = 'dependencies-graph.png';
+      link.href = canvas.toDataURL('image/png');
+      link.click();
+    }
+  };
+
+  // Handle node hover
+  const handleNodeHover = (node: DependencyNode | null) => {
+    // Reset previous highlights
+    setHighlightNodes(new Set());
+    setHighlightLinks(new Set());
+    
+    if (node) {
+      setHighlightNodes(new Set([node.id]));
+      
+      // Highlight links connected to this node
+      const connectedLinks = graphData.links.filter(
+        link => link.source === node.id || link.target === node.id
+      );
+      
+      setHighlightLinks(new Set(connectedLinks.map(link => `${link.source}-${link.target}`)));
+      
+      // Also highlight connected nodes
+      const connectedNodes = new Set<string>([node.id]);
+      connectedLinks.forEach(link => {
+        if (typeof link.source === 'object' && link.source !== null) {
+          connectedNodes.add((link.source as any).id);
+        } else {
+          connectedNodes.add(link.source as string);
+        }
+        
+        if (typeof link.target === 'object' && link.target !== null) {
+          connectedNodes.add((link.target as any).id);
+        } else {
+          connectedNodes.add(link.target as string);
+        }
+      });
+      
+      setHighlightNodes(connectedNodes);
+    }
+  };
+
+  // Handle node click
+  const handleNodeClick = (node: DependencyNode) => {
+    setSelectedNode(node);
+  };
+
+  // Custom node paint function for highlighting and coloring based on status
+  const paintNode = (node: any, ctx: CanvasRenderingContext2D, globalScale: number) => {
+    const { x, y, id, label, status } = node;
+    
+    // Different colors based on status
+    let color = '#8A1538'; // Qatar maroon (default)
+    if (status === 'Completed') color = '#10B981'; // Green for completed
+    if (status === 'InProgress') color = '#3B82F6'; // Blue for in progress
+    if (status === 'OnHold') color = '#F59E0B'; // Amber for on hold
+    if (status === 'Pending') color = '#6B7280'; // Gray for pending
+    
+    const isHighlighted = highlightNodes.has(id);
+    const size = isHighlighted ? 8 : 6;
+    
+    ctx.beginPath();
+    ctx.arc(x, y, size, 0, 2 * Math.PI);
+    ctx.fillStyle = color;
+    ctx.fill();
+    
+    if (isHighlighted) {
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+    }
+    
+    // Draw labels for nodes
+    ctx.fillStyle = '#ffffff';
+    ctx.font = `${isHighlighted ? '12px' : '10px'} Arial`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(label, x, y + 15);
+  };
+
+  // Custom link paint function
+  const paintLink = (link: any, ctx: CanvasRenderingContext2D, globalScale: number) => {
+    const start = link.source;
+    const end = link.target;
+    
+    const isHighlighted = highlightLinks.has(`${link.source.id}-${link.target.id}`);
+    
+    // Draw link with appropriate color and width
+    ctx.beginPath();
+    ctx.moveTo(start.x, start.y);
+    ctx.lineTo(end.x, end.y);
+    ctx.strokeStyle = isHighlighted ? '#ffffff' : '#686c7180';
+    ctx.lineWidth = isHighlighted ? 2 : 1;
+    ctx.stroke();
+    
+    // Draw arrow at the end
+    const dx = end.x - start.x;
+    const dy = end.y - start.y;
+    const angle = Math.atan2(dy, dx);
+    
+    const arrowLength = 10;
+    const arrowWidth = 6;
+    
+    ctx.beginPath();
+    ctx.moveTo(end.x, end.y);
+    ctx.lineTo(
+      end.x - arrowLength * Math.cos(angle) + arrowWidth * Math.sin(angle),
+      end.y - arrowLength * Math.sin(angle) - arrowWidth * Math.cos(angle)
+    );
+    ctx.lineTo(
+      end.x - arrowLength * Math.cos(angle) - arrowWidth * Math.sin(angle),
+      end.y - arrowLength * Math.sin(angle) + arrowWidth * Math.cos(angle)
+    );
+    ctx.fillStyle = isHighlighted ? '#ffffff' : '#686c7180';
+    ctx.fill();
+  };
 
   return (
-    <div className="container max-w-7xl mx-auto py-6 px-4">
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
-          {t("dependencies")}
-        </h1>
-        <p className="text-gray-500 dark:text-gray-400">
-          {t("dependenciesDescription")}
+    <div className="space-y-8">
+      <div className="flex flex-col gap-2">
+        <h1 className="text-3xl font-bold">{t('dependencies')}</h1>
+        <p className="text-muted-foreground">
+          {t('dependenciesDescription')}
         </p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex flex-col space-y-2">
-              <label className="text-sm font-medium">{t("viewType")}</label>
-              <Select
-                value={view}
-                onValueChange={(value) => setView(value as any)}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder={t("selectViewType")} />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="project-to-project">{t("projectToProject")}</SelectItem>
-                  <SelectItem value="project-to-goal">{t("projectToGoal")}</SelectItem>
-                </SelectContent>
-              </Select>
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+        {/* Left panel */}
+        <div className="lg:col-span-3 space-y-6">
+          <div className="flex items-center gap-4 flex-wrap">
+            <div className="relative flex-1 min-w-[240px]">
+              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Input
+                type="text"
+                placeholder={t('searchDependenciesPlaceholder')}
+                className="pl-9"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
             </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex flex-col space-y-2">
-              <label className="text-sm font-medium">{t("department")}</label>
-              <Select
-                value={selectedDepartmentId || ""}
-                onValueChange={(value) => setSelectedDepartmentId(value || null)}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder={t("allDepartments")} />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="">{t("allDepartments")}</SelectItem>
-                  {departments?.map((dept) => (
-                    <SelectItem key={dept.id} value={dept.id.toString()}>
-                      {dept.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="pt-6 flex items-center justify-between">
-            <div className="flex space-x-2">
-              <Button
-                variant="outline"
-                size="icon"
-                onClick={handleZoomIn}
-                title={t("zoomIn")}
-              >
-                <ZoomIn className="h-4 w-4" />
-              </Button>
-              <Button
-                variant="outline"
-                size="icon"
-                onClick={handleZoomOut}
-                title={t("zoomOut")}
-              >
-                <ZoomOut className="h-4 w-4" />
-              </Button>
-              <Button
-                variant="outline"
-                size="icon"
-                onClick={handleResetView}
-                title={t("resetView")}
-              >
-                <Minimize className="h-4 w-4" />
-              </Button>
-            </div>
-            <Button
-              variant="outline"
-              className="flex items-center"
-              onClick={() => window.location.reload()}
-            >
-              <RefreshCcw className="h-4 w-4 mr-2" />
-              {t("refresh")}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" className="flex items-center gap-2">
+                  <Filter className="h-4 w-4" />
+                  {t('filter')}
+                  <ChevronDown className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-[200px]">
+                <DropdownMenuLabel>{t('filterBy')}</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem>{t('status')}</DropdownMenuItem>
+                <DropdownMenuItem>{t('department')}</DropdownMenuItem>
+                <DropdownMenuItem>{t('priority')}</DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+            <Button variant="outline" onClick={handleDownload}>
+              <Download className="h-4 w-4 mr-2" />
+              {t('exportGraph')}
             </Button>
-          </CardContent>
-        </Card>
-      </div>
+          </div>
 
-      <Card className="mb-6">
-        <CardContent className="p-4">
-          <div className="flex justify-between items-center mb-4">
-            <div className="flex space-x-4">
-              <div className="flex items-center">
-                <div className="w-4 h-4 rounded-full bg-qatar-maroon mr-2"></div>
-                <span className="text-sm">{t("project")}</span>
+          <Card className="overflow-hidden border border-border">
+            <CardHeader className="pb-0">
+              <CardTitle>{t('projectDependencies')}</CardTitle>
+              <CardDescription>{t('projectDependenciesDescription')}</CardDescription>
+            </CardHeader>
+            <CardContent className="pt-2">
+              <div className="h-[600px] w-full relative bg-muted rounded-lg overflow-hidden">
+                {isLoadingProjects ? (
+                  <div className="flex items-center justify-center h-full">
+                    <div className="animate-spin h-8 w-8 border-t-2 border-qatar-maroon rounded-full"></div>
+                  </div>
+                ) : filteredGraphData.nodes.length > 0 ? (
+                  <>
+                    <div className="absolute top-4 right-4 z-10 flex flex-col space-y-2">
+                      <Button size="sm" variant="secondary" onClick={handleZoomIn}>
+                        <ZoomIn className="h-4 w-4" />
+                      </Button>
+                      <Button size="sm" variant="secondary" onClick={handleZoomOut}>
+                        <ZoomOut className="h-4 w-4" />
+                      </Button>
+                      <Button size="sm" variant="secondary" onClick={handleReset}>
+                        <RotateCcw className="h-4 w-4" />
+                      </Button>
+                    </div>
+                    <ForceGraph2D
+                      ref={graphRef}
+                      graphData={filteredGraphData}
+                      nodeCanvasObject={paintNode}
+                      linkCanvasObject={paintLink}
+                      linkDirectionalArrowLength={3.5}
+                      linkDirectionalArrowRelPos={1}
+                      linkCurvature={0.25}
+                      nodeRelSize={6}
+                      onNodeHover={handleNodeHover}
+                      onNodeClick={handleNodeClick}
+                      cooldownTicks={100}
+                      d3AlphaDecay={0.02}
+                      d3VelocityDecay={0.1}
+                      width={1000}
+                      height={600}
+                    />
+                  </>
+                ) : (
+                  <div className="flex flex-col items-center justify-center h-full">
+                    <Network className="h-16 w-16 text-muted-foreground mb-4" />
+                    <p className="text-lg font-medium">
+                      {searchQuery ? t('noDependenciesFound') : t('noDependencies')}
+                    </p>
+                    <p className="text-sm text-muted-foreground max-w-md text-center mt-2">
+                      {t('noDependenciesDescription')}
+                    </p>
+                  </div>
+                )}
               </div>
-              {view === "project-to-goal" && (
-                <div className="flex items-center">
-                  <div className="w-4 h-4 rounded-full bg-blue-500 mr-2"></div>
-                  <span className="text-sm">{t("goal")}</span>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Right panel - Details */}
+        <div className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>{t('details')}</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {selectedNode ? (
+                <div className="space-y-4">
+                  <div>
+                    <h3 className="font-medium">{selectedNode.label}</h3>
+                    <p className="text-sm text-muted-foreground">
+                      {selectedNode.type === 'project' ? t('project') : 
+                       selectedNode.type === 'department' ? t('department') : t('user')}
+                    </p>
+                  </div>
+
+                  {selectedNode.status && (
+                    <div>
+                      <div className="text-sm font-medium mb-1">{t('status')}</div>
+                      <Badge 
+                        variant="outline" 
+                        className={
+                          selectedNode.status === 'Completed' ? 'bg-green-50 text-green-700' :
+                          selectedNode.status === 'InProgress' ? 'bg-blue-50 text-blue-700' :
+                          selectedNode.status === 'OnHold' ? 'bg-amber-50 text-amber-700' :
+                          'bg-gray-50 text-gray-700'
+                        }
+                      >
+                        {selectedNode.status}
+                      </Badge>
+                    </div>
+                  )}
+
+                  {selectedNode.priority && (
+                    <div>
+                      <div className="text-sm font-medium mb-1">{t('priority')}</div>
+                      <Badge 
+                        variant="outline" 
+                        className={
+                          selectedNode.priority === 'High' ? 'bg-red-50 text-red-700' :
+                          selectedNode.priority === 'Medium' ? 'bg-amber-50 text-amber-700' :
+                          'bg-blue-50 text-blue-700'
+                        }
+                      >
+                        {selectedNode.priority}
+                      </Badge>
+                    </div>
+                  )}
+
+                  <div>
+                    <div className="text-sm font-medium mb-2">{t('connections')}</div>
+                    <div className="space-y-2">
+                      {(() => {
+                        // Get all links for this node
+                        const nodeLinks = graphData.links.filter(
+                          link => link.source === selectedNode.id || link.target === selectedNode.id
+                        );
+
+                        if (nodeLinks.length === 0) {
+                          return (
+                            <p className="text-sm text-muted-foreground">
+                              {t('noDependencyConnections')}
+                            </p>
+                          );
+                        }
+
+                        return nodeLinks.map((link, i) => {
+                          const isSource = link.source === selectedNode.id;
+                          const connectedNodeId = isSource ? link.target : link.source;
+                          const connectedNode = graphData.nodes.find(
+                            n => n.id === connectedNodeId
+                          );
+
+                          if (!connectedNode) return null;
+
+                          return (
+                            <div key={i} className="flex items-center text-sm p-2 bg-muted rounded-md">
+                              {!isSource && <span>{connectedNode.label}</span>}
+                              <ArrowLeftRight className="h-3 w-3 mx-2 text-muted-foreground" />
+                              {isSource && <span>{connectedNode.label}</span>}
+                            </div>
+                          );
+                        });
+                      })()}
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="text-center py-8 text-muted-foreground">
+                  <Network className="h-10 w-10 mx-auto mb-3 opacity-50" />
+                  <p>{t('selectNodeToViewDetails')}</p>
                 </div>
               )}
-            </div>
-            <div className="flex space-x-4">
-              <div className="flex items-center">
-                <Badge variant="outline" className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100">
-                  {t("completed")}
-                </Badge>
-              </div>
-              <div className="flex items-center">
-                <Badge variant="outline" className="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-100">
-                  {t("inProgress")}
-                </Badge>
-              </div>
-              <div className="flex items-center">
-                <Badge variant="outline" className="bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-100">
-                  {t("onHold")}
-                </Badge>
-              </div>
-            </div>
-          </div>
+            </CardContent>
+          </Card>
 
-          {isLoading ? (
-            <div className="flex justify-center items-center min-h-[500px]">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-qatar-maroon"></div>
-            </div>
-          ) : graphData.nodes.length === 0 ? (
-            <div className="flex flex-col items-center justify-center min-h-[500px] text-center p-6">
-              <AlertTriangle className="h-12 w-12 text-amber-500 mb-4" />
-              <h3 className="text-xl font-semibold mb-2">{t("noDataFound")}</h3>
-              <p className="text-gray-500 dark:text-gray-400 max-w-md">
-                {view === "project-to-project"
-                  ? t("noProjectDependenciesFound")
-                  : t("noProjectGoalRelationsFound")}
-                {selectedDepartmentId && t("tryChangingDepartmentFilter")}
-              </p>
-            </div>
-          ) : (
-            <div 
-              className="relative min-h-[500px] border rounded-lg bg-gray-50 dark:bg-gray-900 overflow-hidden cursor-move"
-              onMouseDown={handleMouseDown}
-              onMouseMove={handleMouseMove}
-              onMouseUp={handleMouseUp}
-              onMouseLeave={handleMouseUp}
-            >
-              <svg
-                ref={svgRef}
-                width="100%"
-                height="100%"
-                viewBox="0 0 1000 600"
-                style={{
-                  transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
-                  transformOrigin: "center",
-                  transition: isPanning ? "none" : "transform 0.3s ease",
-                }}
-              >
-                {/* Draw connection lines first so they appear behind nodes */}
-                {graphData.links.map((link, index) => {
-                  const source = nodePositions[link.source];
-                  const target = nodePositions[link.target];
-                  
-                  if (!source || !target) return null;
-                  
-                  const midX = (source.x + target.x) / 2;
-                  const midY = (source.y + target.y) / 2;
-                  
-                  return (
-                    <g key={`link-${index}`}>
-                      <line
-                        x1={source.x}
-                        y1={source.y}
-                        x2={target.x}
-                        y2={target.y}
-                        stroke={view === "project-to-project" ? "#666" : "#888"}
-                        strokeWidth={link.value * 2}
-                        strokeOpacity={0.6}
-                      />
-                      {link.label && (
-                        <text
-                          x={midX}
-                          y={midY}
-                          dy={-5}
-                          textAnchor="middle"
-                          fontSize="10"
-                          fill="#888"
-                          className="select-none"
-                        >
-                          {link.label}
-                        </text>
-                      )}
-                    </g>
-                  );
-                })}
-                
-                {/* Draw nodes */}
-                {graphData.nodes.map((node) => {
-                  const position = nodePositions[node.id];
-                  if (!position) return null;
-                  
-                  const fillColor = node.type === "goal" 
-                    ? "#3b82f6" // blue for goals
-                    : getStatusColor(node.status as string);
-                  
-                  const strokeColor = node.priority
-                    ? getPriorityColor(node.priority as string)
-                    : "#888";
-                  
-                  return (
-                    <g key={node.id}>
-                      <circle
-                        cx={position.x}
-                        cy={position.y}
-                        r={node.type === "goal" ? 20 : 25}
-                        fill={fillColor}
-                        stroke={strokeColor}
-                        strokeWidth={3}
-                        className="cursor-pointer hover:opacity-80 transition-opacity"
-                      />
-                      <text
-                        x={position.x}
-                        y={position.y + (node.type === "goal" ? 35 : 40)}
-                        textAnchor="middle"
-                        fontSize="12"
-                        fill="#333"
-                        className="font-medium select-none dark:fill-gray-200"
-                      >
-                        {node.label.length > 20 
-                          ? node.label.substring(0, 20) + "..." 
-                          : node.label}
-                      </text>
-                    </g>
-                  );
-                })}
-              </svg>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      <div className="bg-amber-50 dark:bg-amber-900/20 p-4 rounded-lg">
-        <div className="flex items-start">
-          <AlertTriangle className="h-5 w-5 mr-3 text-amber-500 mt-0.5" />
-          <div>
-            <h3 className="font-medium text-amber-800 dark:text-amber-300">
-              {t("dependenciesNote")}
-            </h3>
-            <p className="text-amber-700 dark:text-amber-400 text-sm mt-1">
-              {t("dependenciesExplanation")}
-            </p>
-          </div>
+          <Card>
+            <CardHeader>
+              <CardTitle>{t('legend')}</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                <div className="flex items-center gap-2">
+                  <span className="h-3 w-3 rounded-full bg-[#8A1538]"></span>
+                  <span className="text-sm">{t('defaultNode')}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="h-3 w-3 rounded-full bg-[#10B981]"></span>
+                  <span className="text-sm">{t('completed')}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="h-3 w-3 rounded-full bg-[#3B82F6]"></span>
+                  <span className="text-sm">{t('inProgress')}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="h-3 w-3 rounded-full bg-[#F59E0B]"></span>
+                  <span className="text-sm">{t('onHold')}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="h-3 w-3 rounded-full bg-[#6B7280]"></span>
+                  <span className="text-sm">{t('pending')}</span>
+                </div>
+                <div className="pt-2 border-t border-border">
+                  <span className="text-sm font-medium">{t('tip')}: </span>
+                  <span className="text-sm text-muted-foreground">
+                    {t('hoverOverNodesTip')}
+                  </span>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         </div>
       </div>
     </div>

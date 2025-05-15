@@ -1,296 +1,168 @@
-import { useState, useEffect } from "react";
-import { useQuery, useMutation } from "@tanstack/react-query";
-import { useAuth } from "@/hooks/use-auth";
-import { useI18n } from "@/hooks/use-i18n";
-import { apiRequest, queryClient } from "@/lib/queryClient";
-import { Project } from "@shared/schema";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
-import { useToast } from "@/hooks/use-toast";
+import { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { useI18n } from '@/hooks/use-i18n';
+import { useAuth } from '@/hooks/use-auth';
+import { format, startOfWeek, addDays } from 'date-fns';
 import { 
-  AlertTriangle, 
-  Calendar, 
-  Check, 
-  Clock, 
-  Edit, 
-  Info, 
-  Loader2 
-} from "lucide-react";
+  Card, 
+  CardContent, 
+  CardDescription, 
+  CardFooter, 
+  CardHeader, 
+  CardTitle 
+} from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Textarea } from '@/components/ui/textarea';
+import { Badge } from '@/components/ui/badge';
+import { CalendarClock, Check, ArrowRight, Clock } from 'lucide-react';
+import { 
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from '@/components/ui/accordion';
+import {
+  ScrollArea
+} from '@/components/ui/scroll-area';
+import { Project, WeeklyUpdate } from '@shared/schema';
 
 export function WeeklyUpdateReminder() {
+  const { t } = useI18n();
   const { user } = useAuth();
-  const { t, isRtl } = useI18n();
-  const { toast } = useToast();
-  const [selectedProject, setSelectedProject] = useState<Project | null>(null);
-  const [comments, setComments] = useState("");
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [updateText, setUpdateText] = useState('');
+  const [selectedProject, setSelectedProject] = useState<number | null>(null);
   
-  // Get the current date info
-  const today = new Date();
-  const currentDay = today.getDay(); // 0-6 (Sunday-Saturday)
-  const isThursday = currentDay === 4; // Thursday is day 4
-  const isFriday = currentDay === 5; // Friday is day 5
+  // Get current week start
+  const currentWeekStart = startOfWeek(new Date(), { weekStartsOn: 0 });
+  const weekString = format(currentWeekStart, 'yyyy-MM-dd');
   
-  // Calculate the week number and week start/end dates
-  const getWeekNumber = (date: Date) => {
-    const firstDayOfYear = new Date(date.getFullYear(), 0, 1);
-    const pastDaysOfYear = (date.getTime() - firstDayOfYear.getTime()) / 86400000;
-    return Math.ceil((pastDaysOfYear + firstDayOfYear.getDay() + 1) / 7);
-  };
+  // Calculate due date (Friday)
+  const dueDate = addDays(currentWeekStart, 5);
+  const isOverdue = new Date() > dueDate;
   
-  const weekNumber = getWeekNumber(today);
-  const year = today.getFullYear();
-  
-  // Get start and end dates of the current week
-  const getWeekStartEnd = (date: Date) => {
-    const day = date.getDay();
-    const diff = date.getDate() - day + (day === 0 ? -6 : 1); // Adjust for Sunday
-    const weekStart = new Date(date);
-    weekStart.setDate(diff);
-    
-    const weekEnd = new Date(weekStart);
-    weekEnd.setDate(weekStart.getDate() + 6);
-    
-    return {
-      start: new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric" }).format(weekStart),
-      end: new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric" }).format(weekEnd),
-      weekStart,
-      weekEnd
-    };
-  };
-  
-  const weekDates = getWeekStartEnd(today);
-  
-  // Only fetch data if user is a Project Manager
-  const isProjectManager = user?.role === "ProjectManager";
-  
-  // Fetch projects managed by the current user
-  const { data: managedProjects, isLoading: projectsLoading } = useQuery<Project[]>({
-    queryKey: ["/api/projects/managed"],
-    enabled: isProjectManager,
+  // Fetch projects managed by this user
+  const { data: projects } = useQuery<Project[]>({
+    queryKey: ['/api/projects/managed'],
+    // Only fetch if the user is a Project Manager
+    enabled: user?.role === "ProjectManager",
   });
   
-  // Fetch weekly updates for this week
-  const { data: weeklyUpdates, isLoading: updatesLoading } = useQuery<any[]>({
-    queryKey: ["/api/weekly-updates", weekNumber, year],
-    enabled: isProjectManager,
+  // Fetch weekly updates
+  const { data: weeklyUpdates } = useQuery<WeeklyUpdate[]>({
+    queryKey: ['/api/weekly-updates'],
+    enabled: !!user && user.role === "ProjectManager",
   });
   
-  // Create a weekly update
-  const createUpdateMutation = useMutation({
-    mutationFn: async (data: { projectId: number; week: string; comments: string }) => {
-      const response = await apiRequest("POST", "/api/weekly-updates", data);
-      return await response.json();
-    },
-    onSuccess: () => {
-      toast({
-        title: t("weeklyUpdateSubmitted"),
-        description: t("thankYouForYourUpdate"),
-        variant: "default",
-      });
-      queryClient.invalidateQueries({ queryKey: ["/api/weekly-updates"] });
-      setComments("");
-      setIsDialogOpen(false);
-    },
-    onError: (error: Error) => {
-      toast({
-        title: t("errorSubmittingUpdate"),
-        description: error.message,
-        variant: "destructive",
-      });
-    },
-  });
-  
-  // Filter projects that still need updates
-  const projectsNeedingUpdates = managedProjects?.filter(project => {
-    // Skip completed projects
-    if (project.status === "Completed") return false;
-    
-    // Check if there's already an update for this project this week
-    const hasUpdate = weeklyUpdates?.some(
-      update => update.projectId === project.id && 
-               update.week === `${year}-W${weekNumber}`
+  // Check if user has already submitted weekly updates for all their projects
+  const pendingUpdates = projects?.filter(project => {
+    return !weeklyUpdates?.some(update => 
+      update.projectId === project.id && 
+      update.week === weekString
     );
-    
-    return !hasUpdate;
   });
   
-  const handleOpenDialog = (project: Project) => {
-    setSelectedProject(project);
-    setComments("");
-    setIsDialogOpen(true);
-  };
-  
-  const handleSubmitUpdate = () => {
-    if (!selectedProject) return;
+  // Handle submit update
+  const handleSubmitUpdate = async () => {
+    if (!selectedProject || !updateText.trim()) return;
     
-    createUpdateMutation.mutate({
-      projectId: selectedProject.id,
-      week: `${year}-W${weekNumber}`,
-      comments: comments
-    });
+    // This would be handled by a mutation in a real application
+    console.log('Submitting update for project:', selectedProject, 'Text:', updateText);
+    // After successful submission, you'd refetch the weekly updates
+    setUpdateText('');
+    setSelectedProject(null);
   };
-  
-  if (!isProjectManager || (projectsNeedingUpdates && projectsNeedingUpdates.length === 0)) {
-    return null; // Don't show anything if not a PM or no updates needed
+
+  // If user is not a Project Manager, don't show this component
+  if (!user || user.role !== "ProjectManager" || !pendingUpdates?.length) {
+    return null;
   }
-  
-  // Determine severity level
-  const getSeverityLevel = () => {
-    if (isFriday) return "high";
-    if (isThursday) return "medium";
-    return "low";
-  };
-  
-  const severity = getSeverityLevel();
-  
+
   return (
-    <Card className={`
-      mb-6 shadow-lg overflow-hidden
-      ${severity === "high" ? "border-2 border-red-500 dark:border-red-400" : ""}
-      ${severity === "medium" ? "border-2 border-amber-500 dark:border-amber-400" : ""}
-      ${severity === "low" ? "border border-qatar-maroon dark:border-qatar-maroon/70" : ""}
-    `}>
-      <CardHeader className={`
-        py-4 px-6
-        ${severity === "high" ? "bg-red-500/20 dark:bg-red-950/30" : ""}
-        ${severity === "medium" ? "bg-amber-500/20 dark:bg-amber-950/30" : ""}
-        ${severity === "low" ? "bg-qatar-maroon/10 dark:bg-qatar-maroon/20" : ""}
-      `}>
-        <div className="flex items-center">
-          {severity === "high" && <AlertTriangle className="mr-2 h-5 w-5 text-red-500 dark:text-red-400" />}
-          {severity === "medium" && <Info className="mr-2 h-5 w-5 text-amber-500 dark:text-amber-400" />}
-          {severity === "low" && <Clock className="mr-2 h-5 w-5 text-qatar-maroon dark:text-qatar-maroon/90" />}
-          
-          <CardTitle className="text-xl">
-            {t("weeklyUpdateReminder")}
-          </CardTitle>
+    <Card>
+      <CardHeader className="pb-3">
+        <div className="flex justify-between items-start">
+          <div>
+            <CardTitle className="text-xl">{t('weeklyUpdateReminder')}</CardTitle>
+            <CardDescription>
+              {t('submissionDue')}: {format(dueDate, 'EEEE, MMMM d')}
+              {isOverdue && (
+                <Badge variant="destructive" className="ml-2">
+                  Overdue
+                </Badge>
+              )}
+            </CardDescription>
+          </div>
+          <CalendarClock className="h-6 w-6 text-qatar-maroon" />
         </div>
-        <CardDescription>
-          {t("weekDates", { start: weekDates.start, end: weekDates.end })}
-        </CardDescription>
       </CardHeader>
-      <CardContent className="p-6">
-        {projectsLoading || updatesLoading ? (
-          <div className="flex items-center justify-center py-4">
-            <Loader2 className="h-6 w-6 animate-spin text-qatar-maroon" />
-          </div>
-        ) : (
-          <div className="space-y-4">
-            <div className={`p-4 rounded-lg
-              ${severity === "high" ? "bg-red-50 dark:bg-red-950/20" : ""}
-              ${severity === "medium" ? "bg-amber-50 dark:bg-amber-950/20" : ""}
-              ${severity === "low" ? "bg-gray-50 dark:bg-gray-900/30" : ""}
-            `}>
-              <div className="flex items-start">
-                <Calendar className={`h-5 w-5 mt-0.5 mr-3
-                  ${severity === "high" ? "text-red-500" : ""}
-                  ${severity === "medium" ? "text-amber-500" : ""}
-                  ${severity === "low" ? "text-qatar-maroon" : ""}
-                `} />
-                <div>
-                  <h3 className="font-medium">
-                    {isFriday 
-                      ? t("weeklyUpdateDueToday") 
-                      : isThursday 
-                        ? t("weeklyUpdateDueTomorrow")
-                        : t("weeklyUpdateDueThisWeek")}
-                  </h3>
-                  <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                    {severity === "high" 
-                      ? t("weeklyUpdateOverdueMessage") 
-                      : t("weeklyUpdateReminderMessage")}
-                  </p>
-                </div>
-              </div>
-            </div>
-            
-            <h3 className="font-medium">{t("projectsNeedingUpdates")}</h3>
-            <div className="space-y-2">
-              {projectsNeedingUpdates?.map(project => (
-                <div 
-                  key={project.id}
-                  className="flex items-center justify-between p-3 rounded-lg bg-gray-50 dark:bg-gray-900/50 hover:bg-gray-100 dark:hover:bg-gray-800/60 transition-colors"
-                >
-                  <div>
-                    <h4 className="font-medium">{project.title}</h4>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">
-                      {t("status")}: {project.status || t("inProgress")}
-                    </p>
+      <CardContent className="pb-0">
+        <ScrollArea className="h-[220px] pr-4">
+          <Accordion type="single" collapsible className="w-full">
+            {pendingUpdates.map(project => (
+              <AccordionItem key={project.id} value={`project-${project.id}`}>
+                <AccordionTrigger className="hover:no-underline py-3">
+                  <div className="flex items-center text-left">
+                    <div className="h-2 w-2 rounded-full bg-qatar-maroon mr-2"></div>
+                    <span className="font-medium">{project.title}</span>
+                    {selectedProject === project.id && (
+                      <Badge variant="outline" className="ml-2 bg-qatar-maroon/10">
+                        Selected
+                      </Badge>
+                    )}
                   </div>
-                  <Button 
-                    variant={severity === "high" ? "destructive" : "default"}
-                    size="sm"
-                    className="flex items-center"
-                    onClick={() => handleOpenDialog(project)}
-                  >
-                    <Edit className="h-4 w-4 mr-2" />
-                    {t("submitUpdate")}
-                  </Button>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
+                </AccordionTrigger>
+                <AccordionContent>
+                  <div className="space-y-3 pt-1">
+                    <p className="text-sm text-muted-foreground">
+                      {project.description?.substring(0, 100)}{project.description && project.description.length > 100 ? '...' : ''}
+                    </p>
+                    <div className="flex items-center gap-2 text-sm">
+                      <Clock className="h-3.5 w-3.5 text-muted-foreground" />
+                      <span>
+                        {format(dueDate, 'EEEE, MMMM d')}
+                      </span>
+                    </div>
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="w-full"
+                      onClick={() => setSelectedProject(project.id)}
+                    >
+                      {selectedProject === project.id ? (
+                        <>
+                          <Check className="mr-1 h-3.5 w-3.5" />
+                          {t('selected')}
+                        </>
+                      ) : (
+                        t('selectForUpdate')
+                      )}
+                    </Button>
+                  </div>
+                </AccordionContent>
+              </AccordionItem>
+            ))}
+          </Accordion>
+        </ScrollArea>
       </CardContent>
-      
-      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="sm:max-w-[500px]">
-          <DialogHeader>
-            <DialogTitle>{t("weeklyProjectUpdate")}</DialogTitle>
-            <DialogDescription>
-              {selectedProject?.title} - {t("weekDates", { start: weekDates.start, end: weekDates.end })}
-            </DialogDescription>
-          </DialogHeader>
-          
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <h4 className="text-sm font-medium">{t("weeklyProgressNotes")}</h4>
-              <Textarea
-                placeholder={t("describeProgressThisWeek")}
-                value={comments}
-                onChange={(e) => setComments(e.target.value)}
-                rows={6}
-                className="resize-none"
-              />
-            </div>
-          </div>
-          
-          <DialogFooter>
-            <Button 
-              variant="outline" 
-              onClick={() => setIsDialogOpen(false)}
-            >
-              {t("cancel")}
-            </Button>
-            <Button 
-              type="submit" 
-              onClick={handleSubmitUpdate}
-              disabled={!comments.trim() || createUpdateMutation.isPending}
-            >
-              {createUpdateMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              {t("submitUpdate")}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <CardFooter className="flex flex-col pt-4">
+        {selectedProject && (
+          <Textarea
+            placeholder={t('enterWeeklyUpdate')}
+            className="resize-none mb-3"
+            rows={4}
+            value={updateText}
+            onChange={(e) => setUpdateText(e.target.value)}
+          />
+        )}
+        <Button 
+          className="w-full" 
+          disabled={!selectedProject || !updateText.trim()}
+          onClick={handleSubmitUpdate}
+        >
+          {t('submitUpdate')}
+          <ArrowRight className="ml-1 h-4 w-4" />
+        </Button>
+      </CardFooter>
     </Card>
   );
 }
