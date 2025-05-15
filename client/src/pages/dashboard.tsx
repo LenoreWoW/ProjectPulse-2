@@ -1,7 +1,7 @@
 import { useI18n } from "@/hooks/use-i18n";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/use-auth";
-import { PermissionGate } from "@/hooks/use-permissions";
+import { PermissionGate, usePermissions } from "@/hooks/use-permissions";
 import { StatCard } from "@/components/dashboard/stat-card";
 import { StatusCard } from "@/components/dashboard/status-card";
 import { BudgetOverview } from "@/components/dashboard/budget-overview";
@@ -179,57 +179,71 @@ export default function Dashboard() {
       
       {/* Quick Access Section */}
       <div className="mt-8 grid grid-cols-2 md:grid-cols-4 gap-5">
+        {/* Projects link is always visible */}
         <Link href="/projects" className="flex flex-col items-center justify-center p-6 bg-white dark:bg-gray-800 rounded-xl shadow-md border border-gray-200 dark:border-gray-700 hover:shadow-lg hover:border-maroon-200 dark:hover:border-maroon-700 transition-all group">
           <div className="p-3 bg-maroon-50 dark:bg-maroon-900/20 rounded-full mb-3 group-hover:bg-maroon-100 dark:group-hover:bg-maroon-900/30 transition-colors">
             <Briefcase className="h-8 w-8 text-maroon-700 dark:text-maroon-300" />
           </div>
           <span className="text-gray-900 dark:text-white font-bold">{t("projects")}</span>
         </Link>
-        <Link href="/departments" className="flex flex-col items-center justify-center p-6 bg-white dark:bg-gray-800 rounded-xl shadow-md border border-gray-200 dark:border-gray-700 hover:shadow-lg hover:border-maroon-200 dark:hover:border-maroon-700 transition-all group">
-          <div className="p-3 bg-maroon-50 dark:bg-maroon-900/20 rounded-full mb-3 group-hover:bg-maroon-100 dark:group-hover:bg-maroon-900/30 transition-colors">
-            <Users2 className="h-8 w-8 text-maroon-700 dark:text-maroon-300" />
-          </div>
-          <span className="text-gray-900 dark:text-white font-bold">{t("departments")}</span>
-        </Link>
+        
+        {/* Departments link requires permissions */}
+        <PermissionGate permission="canViewAllDepartments">
+          <Link href="/departments" className="flex flex-col items-center justify-center p-6 bg-white dark:bg-gray-800 rounded-xl shadow-md border border-gray-200 dark:border-gray-700 hover:shadow-lg hover:border-maroon-200 dark:hover:border-maroon-700 transition-all group">
+            <div className="p-3 bg-maroon-50 dark:bg-maroon-900/20 rounded-full mb-3 group-hover:bg-maroon-100 dark:group-hover:bg-maroon-900/30 transition-colors">
+              <Users2 className="h-8 w-8 text-maroon-700 dark:text-maroon-300" />
+            </div>
+            <span className="text-gray-900 dark:text-white font-bold">{t("departments")}</span>
+          </Link>
+        </PermissionGate>
+        
+        {/* Calendar link is always visible */}
         <Link href="/calendar" className="flex flex-col items-center justify-center p-6 bg-white dark:bg-gray-800 rounded-xl shadow-md border border-gray-200 dark:border-gray-700 hover:shadow-lg hover:border-maroon-200 dark:hover:border-maroon-700 transition-all group">
           <div className="p-3 bg-maroon-50 dark:bg-maroon-900/20 rounded-full mb-3 group-hover:bg-maroon-100 dark:group-hover:bg-maroon-900/30 transition-colors">
             <CalendarClock className="h-8 w-8 text-maroon-700 dark:text-maroon-300" />
           </div>
           <span className="text-gray-900 dark:text-white font-bold">{t("calendar")}</span>
         </Link>
-        <Link href="/reports" className="flex flex-col items-center justify-center p-6 bg-white dark:bg-gray-800 rounded-xl shadow-md border border-gray-200 dark:border-gray-700 hover:shadow-lg hover:border-maroon-200 dark:hover:border-maroon-700 transition-all group">
-          <div className="p-3 bg-maroon-50 dark:bg-maroon-900/20 rounded-full mb-3 group-hover:bg-maroon-100 dark:group-hover:bg-maroon-900/30 transition-colors">
-            <BarChart3 className="h-8 w-8 text-maroon-700 dark:text-maroon-300" />
-          </div>
-          <span className="text-gray-900 dark:text-white font-bold">{t("reports")}</span>
-        </Link>
+        
+        {/* Reports link requires permissions */}
+        <PermissionGate permission="canViewReports">
+          <Link href="/reports" className="flex flex-col items-center justify-center p-6 bg-white dark:bg-gray-800 rounded-xl shadow-md border border-gray-200 dark:border-gray-700 hover:shadow-lg hover:border-maroon-200 dark:hover:border-maroon-700 transition-all group">
+            <div className="p-3 bg-maroon-50 dark:bg-maroon-900/20 rounded-full mb-3 group-hover:bg-maroon-100 dark:group-hover:bg-maroon-900/30 transition-colors">
+              <BarChart3 className="h-8 w-8 text-maroon-700 dark:text-maroon-300" />
+            </div>
+            <span className="text-gray-900 dark:text-white font-bold">{t("reports")}</span>
+          </Link>
+        </PermissionGate>
       </div>
       
-      {/* Budget Overview */}
-      <div className="mt-10">
-        <div className="flex justify-between items-center mb-5">
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center">
-            <div className="p-2 bg-maroon-50 dark:bg-maroon-900/20 rounded-lg mr-3">
-              <BarChart3 className="h-6 w-6 text-maroon-700 dark:text-maroon-300" />
-            </div>
-            {t("budgetOverview")}
-          </h2>
-          <Link href="/reports/budget" 
-            className="text-sm text-maroon-700 dark:text-maroon-400 hover:text-maroon-900 dark:hover:text-maroon-300 
-            flex items-center gap-1 px-3 py-1.5 rounded-full bg-maroon-50 dark:bg-maroon-900/20 
-            hover:bg-maroon-100 dark:hover:bg-maroon-900/30 transition-colors"
-          >
-            {t("detailedView")}
-            <ChevronRight className="h-4 w-4" />
-          </Link>
+      {/* Budget Overview - Only visible to users with reports permission */}
+      <PermissionGate permission="canViewReports">
+        <div className="mt-10">
+          <div className="flex justify-between items-center mb-5">
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center">
+              <div className="p-2 bg-maroon-50 dark:bg-maroon-900/20 rounded-lg mr-3">
+                <BarChart3 className="h-6 w-6 text-maroon-700 dark:text-maroon-300" />
+              </div>
+              {t("budgetOverview")}
+            </h2>
+            <Link href="/reports/budget" 
+              className="text-sm text-maroon-700 dark:text-maroon-400 hover:text-maroon-900 dark:hover:text-maroon-300 
+              flex items-center gap-1 px-3 py-1.5 rounded-full bg-maroon-50 dark:bg-maroon-900/20 
+              hover:bg-maroon-100 dark:hover:bg-maroon-900/30 transition-colors"
+            >
+              {t("detailedView")}
+              <ChevronRight className="h-4 w-4" />
+            </Link>
+          </div>
+          <div className="bg-white dark:bg-gray-800 shadow-lg rounded-xl overflow-hidden border border-gray-200 dark:border-gray-700">
+            <BudgetOverview />
+          </div>
         </div>
-        <div className="bg-white dark:bg-gray-800 shadow-lg rounded-xl overflow-hidden border border-gray-200 dark:border-gray-700">
-          <BudgetOverview />
-        </div>
-      </div>
+      </PermissionGate>
       
       {/* Projects and Approvals */}
       <div className="mt-10 grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Recent Projects - Available to all authorized users */}
         <div className="lg:col-span-2">
           <div className="flex justify-between items-center mb-5">
             <h2 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center">
@@ -252,15 +266,43 @@ export default function Dashboard() {
           </div>
         </div>
         
-        <div>
+        {/* Pending Approvals - Only for users who can approve */}
+        <PermissionGate permission="canApproveProject">
+          <div>
+            <div className="flex justify-between items-center mb-5">
+              <h2 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center">
+                <div className="p-2 bg-maroon-50 dark:bg-maroon-900/20 rounded-lg mr-3">
+                  <Clock className="h-6 w-6 text-maroon-700 dark:text-maroon-300" />
+                </div>
+                {t("pendingApprovals")}
+              </h2>
+              <Link href="/approvals" 
+                className="text-sm text-maroon-700 dark:text-maroon-400 hover:text-maroon-900 dark:hover:text-maroon-300 
+                flex items-center gap-1 px-3 py-1.5 rounded-full bg-maroon-50 dark:bg-maroon-900/20 
+                hover:bg-maroon-100 dark:hover:bg-maroon-900/30 transition-colors"
+              >
+                {t("viewAll")}
+                <ChevronRight className="h-4 w-4" />
+              </Link>
+            </div>
+            <div className="bg-white dark:bg-gray-800 shadow-lg rounded-xl overflow-hidden border border-gray-200 dark:border-gray-700">
+              <PendingApprovals />
+            </div>
+          </div>
+        </PermissionGate>
+      </div>
+      
+      {/* Weekly Update Reminders - Only for project managers and above */}
+      <PermissionGate permission="canCreateProject">
+        <div className="mt-10">
           <div className="flex justify-between items-center mb-5">
             <h2 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center">
               <div className="p-2 bg-maroon-50 dark:bg-maroon-900/20 rounded-lg mr-3">
-                <Clock className="h-6 w-6 text-maroon-700 dark:text-maroon-300" />
+                <FileText className="h-6 w-6 text-maroon-700 dark:text-maroon-300" />
               </div>
-              {t("pendingApprovals")}
+              {t("weeklyUpdates")}
             </h2>
-            <Link href="/approvals" 
+            <Link href="/projects" 
               className="text-sm text-maroon-700 dark:text-maroon-400 hover:text-maroon-900 dark:hover:text-maroon-300 
               flex items-center gap-1 px-3 py-1.5 rounded-full bg-maroon-50 dark:bg-maroon-900/20 
               hover:bg-maroon-100 dark:hover:bg-maroon-900/30 transition-colors"
@@ -270,33 +312,10 @@ export default function Dashboard() {
             </Link>
           </div>
           <div className="bg-white dark:bg-gray-800 shadow-lg rounded-xl overflow-hidden border border-gray-200 dark:border-gray-700">
-            <PendingApprovals />
+            <WeeklyUpdateReminder />
           </div>
         </div>
-      </div>
-      
-      {/* Weekly Update Reminders */}
-      <div className="mt-10">
-        <div className="flex justify-between items-center mb-5">
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center">
-            <div className="p-2 bg-maroon-50 dark:bg-maroon-900/20 rounded-lg mr-3">
-              <FileText className="h-6 w-6 text-maroon-700 dark:text-maroon-300" />
-            </div>
-            {t("weeklyUpdates")}
-          </h2>
-          <Link href="/projects" 
-            className="text-sm text-maroon-700 dark:text-maroon-400 hover:text-maroon-900 dark:hover:text-maroon-300 
-            flex items-center gap-1 px-3 py-1.5 rounded-full bg-maroon-50 dark:bg-maroon-900/20 
-            hover:bg-maroon-100 dark:hover:bg-maroon-900/30 transition-colors"
-          >
-            {t("viewAll")}
-            <ChevronRight className="h-4 w-4" />
-          </Link>
-        </div>
-        <div className="bg-white dark:bg-gray-800 shadow-lg rounded-xl overflow-hidden border border-gray-200 dark:border-gray-700">
-          <WeeklyUpdateReminder />
-        </div>
-      </div>
+      </PermissionGate>
     </div>
   );
 }
