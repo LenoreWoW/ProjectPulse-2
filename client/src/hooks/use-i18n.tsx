@@ -362,6 +362,35 @@ const ar: Record<string, string> = {
   somethingWentWrong: "حدث خطأ ما",
   tryAgain: "يرجى المحاولة مرة أخرى",
   
+  // User Permissions
+  userPermissionsManagement: "إدارة صلاحيات المستخدمين",
+  manageUserRolesAndPermissions: "إدارة أدوار المستخدمين والصلاحيات المخصصة",
+  editPermissions: "تعديل الصلاحيات",
+  searchUsers: "البحث عن المستخدمين بالاسم أو البريد الإلكتروني أو الدور...",
+  noUsersFound: "لم يتم العثور على مستخدمين",
+  noUsersMatchSearch: "لا يوجد مستخدمين يطابقون معايير البحث",
+  editUserPermissions: "تعديل صلاحيات المستخدم",
+  editingPermissionsFor: "تعديل صلاحيات المستخدم",
+  role: "الدور",
+  selectRole: "اختر دورًا",
+  useCustomPermissions: "استخدام صلاحيات مخصصة",
+  customPermissions: "صلاحيات مخصصة",
+  saveChanges: "حفظ التغييرات",
+  permissionsUpdated: "تم تحديث الصلاحيات",
+  userPermissionsUpdatedSuccessfully: "تم تحديث صلاحيات المستخدم بنجاح",
+  errorLoadingUsers: "خطأ في تحميل المستخدمين",
+  accessDenied: "تم رفض الوصول",
+  noPermissionToManageUsers: "ليس لديك صلاحية لإدارة المستخدمين",
+  
+  // User Roles
+  User: "مستخدم",
+  ProjectManager: "مدير مشروع",
+  SubPMO: "مكتب إدارة مشاريع فرعي",
+  MainPMO: "مكتب إدارة مشاريع رئيسي",
+  DepartmentDirector: "مدير قسم",
+  Executive: "تنفيذي",
+  Administrator: "مسؤول النظام",
+  
   // Languages and theme
   language: "اللغة",
   english: "الإنجليزية",
@@ -511,7 +540,8 @@ export function I18nProvider({ children }: { children: ReactNode }) {
   );
 }
 
-export function useI18n() {
+// This export pattern is compatible with Fast Refresh
+export const useI18n = () => {
   const context = useContext(I18nContext);
   if (!context) {
     throw new Error('useI18n must be used within an I18nProvider');
