@@ -74,33 +74,33 @@ export function BudgetOverview() {
   const overspend = getOverspend(data.predictedCost, data.totalBudget);
   
   return (
-    <div className="mb-6 bg-white dark:bg-darker shadow rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
-      <div className="p-6 border-b border-gray-200 dark:border-gray-700">
-        <h2 className="text-lg font-semibold text-gray-900 dark:text-white">{t("budgetOverview")}</h2>
+    <div className="mb-8 bg-white dark:bg-darker shadow rounded-lg border border-maroon-200 dark:border-maroon-800 hover:border-maroon-300 dark:hover:border-maroon-700 transition-colors overflow-hidden">
+      <div className="p-6 border-b border-maroon-200 dark:border-maroon-800 bg-gradient-to-r from-maroon-50 to-white dark:from-maroon-900/20 dark:to-darker">
+        <h2 className="text-lg font-semibold text-maroon-700 dark:text-maroon-300">{t("budgetOverview")}</h2>
       </div>
-      <div className="grid grid-cols-1 md:grid-cols-4 divide-y md:divide-y-0 md:divide-x divide-gray-200 dark:divide-gray-700">
+      <div className="grid grid-cols-1 md:grid-cols-4 divide-y md:divide-y-0 md:divide-x divide-maroon-100 dark:divide-maroon-800">
         <div className="p-6">
           <p className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">{t("totalBudget")}</p>
-          <p className="text-2xl font-bold text-gray-900 dark:text-white">{formatCurrency(data.totalBudget)}</p>
+          <p className="text-2xl font-bold text-maroon-700 dark:text-maroon-300">{formatCurrency(data.totalBudget)}</p>
           <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{t("acrossAllActiveProjects")}</p>
         </div>
         <div className="p-6">
           <p className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">{t("actualSpend")}</p>
-          <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">{formatCurrency(data.actualCost)}</p>
+          <p className="text-2xl font-bold text-maroon-600 dark:text-maroon-400">{formatCurrency(data.actualCost)}</p>
           <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
             {getPercentage(data.actualCost, data.totalBudget)} {t("ofTotalBudget")}
           </p>
         </div>
         <div className="p-6">
           <p className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">{t("remaining")}</p>
-          <p className="text-2xl font-bold text-green-600 dark:text-green-400">{formatCurrency(data.remainingBudget)}</p>
+          <p className="text-2xl font-bold text-maroon-600 dark:text-maroon-400">{formatCurrency(data.remainingBudget)}</p>
           <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
             {getPercentage(data.remainingBudget, data.totalBudget)} {t("ofTotalBudget")}
           </p>
         </div>
         <div className="p-6">
           <p className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">{t("predictedCost")}</p>
-          <p className="text-2xl font-bold text-orange-600 dark:text-orange-400">{formatCurrency(data.predictedCost)}</p>
+          <p className="text-2xl font-bold text-maroon-600 dark:text-maroon-400">{formatCurrency(data.predictedCost)}</p>
           {overspend && (
             <p className="text-xs text-red-500 dark:text-red-400 mt-1">
               {t("potentialOverspend")} {overspend}

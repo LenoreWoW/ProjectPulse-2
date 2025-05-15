@@ -11,7 +11,11 @@ import {
   Clock
 } from "lucide-react";
 
-export function RecentProjects() {
+interface RecentProjectsProps {
+  className?: string;
+}
+
+export function RecentProjects({ className = "" }: RecentProjectsProps) {
   const { t, isRtl } = useI18n();
   
   const { data: projects, isLoading, error } = useQuery<Project[]>({
@@ -90,8 +94,12 @@ export function RecentProjects() {
       progress = 100;
     } else if (project.status === 'InProgress') {
       // Simple logic: based on time elapsed between start date and deadline
+      if (!project.startDate) return 0;
+      
       const start = new Date(project.startDate).getTime();
-      const end = project.deadline ? new Date(project.deadline).getTime() : Date.now() + 30 * 24 * 60 * 60 * 1000;
+      const end = project.deadline 
+        ? new Date(project.deadline).getTime() 
+        : Date.now() + 30 * 24 * 60 * 60 * 1000;
       const now = Date.now();
       
       progress = Math.min(100, Math.max(0, Math.round(((now - start) / (end - start)) * 100)));
@@ -130,8 +138,8 @@ export function RecentProjects() {
   
   if (isLoading) {
     return (
-      <div className="bg-white dark:bg-darker shadow rounded-lg border border-gray-200 dark:border-gray-700">
-        <div className="p-6 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
+      <div className={`bg-white dark:bg-darker shadow rounded-lg border ${className || 'border-gray-200 dark:border-gray-700'}`}>
+        <div className="p-6 border-b border-maroon-200 dark:border-maroon-800 bg-gradient-to-r from-maroon-50 to-white dark:from-maroon-900/20 dark:to-darker flex justify-between items-center">
           <Skeleton className="h-7 w-36" />
           <Skeleton className="h-5 w-20" />
         </div>
@@ -166,36 +174,39 @@ export function RecentProjects() {
   
   // Sort projects by most recent updated date and take most recent 3
   const recentProjects = [...projects]
-    .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
+    .sort((a, b) => {
+      if (!a.updatedAt || !b.updatedAt) return 0;
+      return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime();
+    })
     .slice(0, 3);
   
   return (
-    <div className="lg:col-span-2 bg-white dark:bg-darker shadow rounded-lg border border-gray-200 dark:border-gray-700">
-      <div className="p-6 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
-        <h2 className="text-lg font-semibold text-gray-900 dark:text-white">{t("recentProjects")}</h2>
+    <div className={`lg:col-span-2 bg-white dark:bg-darker shadow rounded-lg border ${className || 'border-gray-200 dark:border-gray-700'}`}>
+      <div className="p-6 border-b border-maroon-200 dark:border-maroon-800 bg-gradient-to-r from-maroon-50 to-white dark:from-maroon-900/20 dark:to-darker flex justify-between items-center">
+        <h2 className="text-lg font-semibold text-maroon-700 dark:text-maroon-300">{t("recentProjects")}</h2>
         <Link href="/projects">
           <a className="text-sm text-maroon-700 dark:text-maroon-400 hover:underline">{t("viewAll")}</a>
         </Link>
       </div>
       <div className="overflow-x-auto">
-        <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-          <thead className="bg-gray-50 dark:bg-gray-800">
+        <table className="min-w-full divide-y divide-maroon-100 dark:divide-maroon-800">
+          <thead className="bg-maroon-50 dark:bg-maroon-900/10">
             <tr>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-maroon-500 dark:text-maroon-400 uppercase tracking-wider">
                 {t("project")}
               </th>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-maroon-500 dark:text-maroon-400 uppercase tracking-wider">
                 {t("department")}
               </th>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-maroon-500 dark:text-maroon-400 uppercase tracking-wider">
                 {t("status")}
               </th>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-maroon-500 dark:text-maroon-400 uppercase tracking-wider">
                 {t("progress")}
               </th>
             </tr>
           </thead>
-          <tbody className="bg-white dark:bg-darker divide-y divide-gray-200 dark:divide-gray-700">
+          <tbody className="bg-white dark:bg-darker divide-y divide-maroon-100 dark:divide-maroon-800">
             {recentProjects.length === 0 ? (
               <tr>
                 <td colSpan={4} className="px-6 py-4 text-center text-gray-500 dark:text-gray-400">
@@ -215,7 +226,7 @@ export function RecentProjects() {
                             {project.title}
                           </div>
                           <div className="text-xs text-gray-500 dark:text-gray-400">
-                            {getDaysUntilDeadline(project.deadline)}
+                            {project.deadline ? getDaysUntilDeadline(project.deadline) : ''}
                           </div>
                         </div>
                       </div>
@@ -229,8 +240,8 @@ export function RecentProjects() {
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusClasses(project.status)}`}>
-                        {formatStatus(project.status)}
+                      <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusClasses(project.status || '')}`}>
+                        {formatStatus(project.status || '')}
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
@@ -239,7 +250,7 @@ export function RecentProjects() {
                           className={`${
                             project.status === 'OnHold' ? 'bg-orange-600' :
                             project.status === 'Pending' ? 'bg-red-600' :
-                            'bg-green-600'
+                            'bg-maroon-600'
                           } h-2.5 rounded-full`} 
                           style={{ width: `${progress}%` }}
                         ></div>

@@ -1,5 +1,6 @@
 import { useI18n } from "@/hooks/use-i18n";
 import { useQuery } from "@tanstack/react-query";
+import { useAuth } from "@/hooks/use-auth";
 import { StatCard } from "@/components/dashboard/stat-card";
 import { BudgetOverview } from "@/components/dashboard/budget-overview";
 import { RecentProjects } from "@/components/dashboard/recent-projects";
@@ -37,10 +38,11 @@ export default function Dashboard() {
     
     const activeProjects = projects.filter(p => p.status === "InProgress").length;
     const completedProjects = projects.filter(p => p.status === "Completed").length;
-    const atRiskProjects = projects.filter(p => 
-      p.status === "InProgress" && 
-      new Date(p.deadline) <= new Date()
-    ).length;
+    const atRiskProjects = projects.filter(p => {
+      if (p.status !== "InProgress" || !p.deadline) return false;
+      const deadlineDate = new Date(p.deadline);
+      return deadlineDate <= new Date();
+    }).length;
     const pendingApproval = projects.filter(p => p.status === "Pending").length;
     
     return {
@@ -113,8 +115,12 @@ export default function Dashboard() {
       
       {/* Projects and Approvals */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <RecentProjects />
-        <PendingApprovals />
+        <div className="lg:col-span-2">
+          <RecentProjects className="border-maroon-200 dark:border-maroon-800 hover:border-maroon-300 dark:hover:border-maroon-700 transition-colors h-full" />
+        </div>
+        <div>
+          <PendingApprovals className="border-maroon-200 dark:border-maroon-800 hover:border-maroon-300 dark:hover:border-maroon-700 transition-colors h-full" />
+        </div>
       </div>
     </>
   );

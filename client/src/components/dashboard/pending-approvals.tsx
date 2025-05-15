@@ -7,13 +7,17 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
 
-export function PendingApprovals() {
+interface PendingApprovalsProps {
+  className?: string;
+}
+
+export function PendingApprovals({ className = "" }: PendingApprovalsProps) {
   const { t } = useI18n();
   const { toast } = useToast();
   const { user } = useAuth();
   
   // Only show if user has appropriate role
-  const canViewApprovals = user && ["Administrator", "MainPMO", "SubPMO", "DepartmentDirector"].includes(user.role);
+  const canViewApprovals = user && ["Administrator", "MainPMO", "SubPMO", "DepartmentDirector"].includes(user.role || "");
   
   const { 
     data: pendingRequests, 
@@ -21,7 +25,7 @@ export function PendingApprovals() {
     error 
   } = useQuery<ChangeRequest[]>({
     queryKey: ["/api/change-requests/pending"],
-    enabled: canViewApprovals,
+    enabled: Boolean(canViewApprovals),
   });
   
   const approveMutation = useMutation({
@@ -81,14 +85,14 @@ export function PendingApprovals() {
   
   if (isLoading) {
     return (
-      <div className="bg-white dark:bg-darker shadow rounded-lg border border-gray-200 dark:border-gray-700">
-        <div className="p-6 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
+      <div className={`bg-white dark:bg-darker shadow rounded-lg border ${className || 'border-gray-200 dark:border-gray-700'}`}>
+        <div className="p-6 border-b border-maroon-200 dark:border-maroon-800 bg-gradient-to-r from-maroon-50 to-white dark:from-maroon-900/20 dark:to-darker flex justify-between items-center">
           <Skeleton className="h-7 w-40" />
           <Skeleton className="h-6 w-16 rounded-full" />
         </div>
         <div className="p-6 space-y-4">
           {[1, 2, 3].map((i) => (
-            <div key={i} className="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+            <div key={i} className="border border-maroon-100 dark:border-maroon-800 rounded-lg p-4">
               <div className="flex justify-between items-start">
                 <Skeleton className="h-5 w-40" />
                 <Skeleton className="h-6 w-20 rounded-full" />
@@ -123,9 +127,9 @@ export function PendingApprovals() {
   const recentApprovals = pendingRequests.slice(0, 3);
   
   return (
-    <div className="bg-white dark:bg-darker shadow rounded-lg border border-gray-200 dark:border-gray-700">
-      <div className="p-6 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
-        <h2 className="text-lg font-semibold text-gray-900 dark:text-white">{t("pendingApprovals")}</h2>
+    <div className={`bg-white dark:bg-darker shadow rounded-lg border ${className || 'border-gray-200 dark:border-gray-700'}`}>
+      <div className="p-6 border-b border-maroon-200 dark:border-maroon-800 bg-gradient-to-r from-maroon-50 to-white dark:from-maroon-900/20 dark:to-darker flex justify-between items-center">
+        <h2 className="text-lg font-semibold text-maroon-700 dark:text-maroon-300">{t("pendingApprovals")}</h2>
         {pendingRequests.length > 0 && (
           <span className="px-2 py-1 rounded-full text-xs font-medium bg-maroon-100 text-maroon-800 dark:bg-maroon-900/30 dark:text-maroon-300">
             {pendingRequests.length} {t("new")}
@@ -139,15 +143,15 @@ export function PendingApprovals() {
           </p>
         ) : (
           recentApprovals.map((request) => (
-            <div key={request.id} className="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+            <div key={request.id} className="border border-maroon-100 dark:border-maroon-800 hover:border-maroon-200 dark:hover:border-maroon-700 transition-colors rounded-lg p-4">
               <div className="flex justify-between items-start">
                 <div>
-                  <h3 className="font-medium text-gray-900 dark:text-white">{formatType(request.type)}</h3>
+                  <h3 className="font-medium text-gray-900 dark:text-white">{formatType(request.type || '')}</h3>
                   <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
                     Project ID: {request.projectId}
                   </p>
                 </div>
-                <span className={`${getTypeClasses(request.type)} text-xs px-2 py-1 rounded-full`}>
+                <span className={`${getTypeClasses(request.type || '')} text-xs px-2 py-1 rounded-full`}>
                   {request.type}
                 </span>
               </div>
@@ -164,6 +168,7 @@ export function PendingApprovals() {
                 <Button
                   size="sm"
                   variant="outline"
+                  className="border-maroon-200 text-maroon-700 hover:border-maroon-300 hover:bg-maroon-50 dark:border-maroon-800 dark:text-maroon-300 dark:hover:border-maroon-700 dark:hover:bg-maroon-900/10"
                   onClick={() => approveMutation.mutate({ id: request.id, status: 'Rejected' })}
                   disabled={approveMutation.isPending}
                 >
