@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useI18n } from "@/hooks/use-i18n-new";
 import { useQuery } from "@tanstack/react-query";
 import { Task } from "@shared/schema";
+import { useAuth } from "@/hooks/use-auth";
 import { 
   Card, 
   CardContent, 
@@ -36,7 +37,8 @@ export default function TasksPage() {
   });
   
   // Format priority badge
-  const getPriorityBadge = (priority: string) => {
+  const getPriorityBadge = (priority: string | null) => {
+    if (!priority) return null;
     switch (priority) {
       case 'Critical':
         return (
@@ -70,7 +72,8 @@ export default function TasksPage() {
   };
   
   // Format status badge
-  const getStatusBadge = (status: string) => {
+  const getStatusBadge = (status: string | null) => {
+    if (!status) return null;
     switch (status) {
       case 'Todo':
         return (
@@ -106,7 +109,7 @@ export default function TasksPage() {
   };
   
   // Format date for display
-  const formatDate = (dateString?: string | Date) => {
+  const formatDate = (dateString?: string | Date | null) => {
     if (!dateString) return "";
     return new Intl.DateTimeFormat('en-US', { 
       year: 'numeric', 
@@ -116,7 +119,7 @@ export default function TasksPage() {
   };
   
   // Get days until deadline
-  const getDaysUntilDeadline = (deadline?: string | Date) => {
+  const getDaysUntilDeadline = (deadline?: string | Date | null) => {
     if (!deadline) return null;
     
     const deadlineDate = new Date(deadline);
