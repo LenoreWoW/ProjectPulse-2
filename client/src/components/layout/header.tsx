@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useI18n } from "@/hooks/use-i18n";
+import { useI18n } from "@/hooks/use-i18n-new";
 import { useAuth } from "@/hooks/use-auth";
 import { 
   Search, 

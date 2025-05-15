@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useLocation } from "wouter";
-import { useI18n } from "@/hooks/use-i18n";
+import { useI18n } from "@/hooks/use-i18n-new";
 import { useAuth } from "@/hooks/use-auth";
 import { PermissionGate } from "@/hooks/use-permissions";
 import { Logo } from "@/components/ui/logo";
