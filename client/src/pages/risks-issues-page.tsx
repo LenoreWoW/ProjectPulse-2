@@ -161,7 +161,7 @@ export default function RisksIssuesPage() {
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{t("risksAndIssues")}</h1>
         {canCreate && (
-          <Button className="bg-maroon-700 hover:bg-maroon-800">
+          <Button className="bg-maroon-700 hover:bg-maroon-800 text-white">
             <Plus className="mr-2 h-4 w-4" />
             <span>{t("newRiskIssue")}</span>
           </Button>
@@ -169,7 +169,7 @@ export default function RisksIssuesPage() {
       </div>
       
       {/* Filters */}
-      <div className="bg-white dark:bg-darker shadow rounded-lg p-6 mb-6 border border-gray-200 dark:border-gray-700">
+      <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-6 mb-6 border border-gray-200 dark:border-gray-700">
         <div className="flex flex-col md:flex-row gap-4 items-end">
           <div className="grid gap-1.5 flex-1">
             <label htmlFor="search" className="text-sm font-medium leading-none">{t("search")}</label>

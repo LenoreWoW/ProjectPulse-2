@@ -246,7 +246,7 @@ export default function ProjectsPage() {
         viewMode === "list" ? (
           <>
             {filteredProjects?.length === 0 ? (
-              <div className="text-center p-8 bg-white dark:bg-darker border border-gray-200 dark:border-gray-700 rounded-lg">
+              <div className="text-center p-8 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg">
                 <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">{t("noProjects")}</h3>
                 <p className="text-gray-500 dark:text-gray-400">{t("noProjectsMatch")}</p>
               </div>
