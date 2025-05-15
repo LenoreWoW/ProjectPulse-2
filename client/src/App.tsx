@@ -17,6 +17,7 @@ import GoalsPage from "@/pages/goals-page";
 import RisksIssuesPage from "@/pages/risks-issues-page";
 import AssignmentsPage from "@/pages/assignments-page";
 import ApprovalsPage from "@/pages/approvals-page";
+import SettingsPage from "@/pages/settings-page";
 
 function Router() {
   return (
@@ -33,6 +34,7 @@ function Router() {
         component={ApprovalsPage}
         requiredRoles={["Administrator", "MainPMO", "SubPMO", "DepartmentDirector"]}
       />
+      <ProtectedRoute path="/settings" component={SettingsPage} />
       <Route path="/auth" component={AuthPage} />
       <Route component={NotFound} />
     </Switch>

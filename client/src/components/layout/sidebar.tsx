@@ -56,7 +56,7 @@ export function Sidebar() {
     <aside 
       className={`${
         collapsed ? "w-20" : "w-64"
-      } hidden md:flex flex-col bg-maroon-800 dark:bg-maroon-900 shadow-lg transition-all duration-300 ease-in-out z-20 shrink-0 border-r border-maroon-700 dark:border-maroon-800 h-screen`}
+      } hidden md:flex flex-col bg-qatar-maroon dark:bg-qatar-maroon shadow-lg transition-all duration-300 ease-in-out z-20 shrink-0 border-r border-maroon-700 dark:border-maroon-800 h-screen`}
     >
       <div className="p-4 flex items-center justify-between border-b border-maroon-700 dark:border-maroon-800">
         <Logo hideText={collapsed} />

@@ -55,7 +55,7 @@ export function Header({ onMobileMenuToggle }: HeaderProps) {
   };
 
   return (
-    <header className="bg-maroon-800 dark:bg-maroon-900 shadow-md z-10 border-b border-maroon-700 dark:border-maroon-800">
+    <header className="bg-qatar-maroon dark:bg-qatar-maroon shadow-md z-10 border-b border-maroon-700 dark:border-maroon-800">
       <div className="flex items-center justify-between px-6 py-4">
         <div className="flex items-center space-x-3 rtl:space-x-reverse">
           {/* Mobile Menu Button */}
