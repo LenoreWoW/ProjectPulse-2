@@ -24,6 +24,7 @@ import BudgetReportPage from "@/pages/reports/budget-page";
 import RepositoryPage from "@/pages/repository-page";
 import DependenciesPage from "@/pages/dependencies-page";
 import AnalyticsDashboardPage from "@/pages/analytics-dashboard";
+import UserPermissionsPage from "@/pages/user-permissions-page";
 import { ThemeProvider } from "@/providers/theme-provider";
 
 function Router() {
@@ -83,6 +84,11 @@ function Router() {
         path="/dependencies" 
         component={DependenciesPage} 
         requiredPermissions={["canViewReports"]}
+      />
+      <ProtectedRoute 
+        path="/user-permissions" 
+        component={UserPermissionsPage} 
+        requiredPermissions={["canManageUsers"]}
       />
       <Route path="/auth" component={AuthPage} />
       <Route component={NotFound} />
