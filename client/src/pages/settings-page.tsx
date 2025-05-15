@@ -48,7 +48,7 @@ import {
 import UsersManagementPage from "./users-management-page";
 
 export default function SettingsPage() {
-  const { t, language } = useI18n();
+  const { t, language, setLanguage } = useI18n();
   const { user } = useAuth();
   const { toast } = useToast();
   const { theme, setTheme } = useTheme();
@@ -112,8 +112,8 @@ export default function SettingsPage() {
   };
 
   // Handle language change
-  const handleLanguageChange = (newLocale: string) => {
-    // This would be implemented when language switching is implemented
+  const handleLanguageChange = (newLanguage: string) => {
+    setLanguage(newLanguage);
     toast({
       title: t("languageChanged"),
       description: t("languageChangeSuccess"),
@@ -424,14 +424,14 @@ export default function SettingsPage() {
               <CardContent className="space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div 
-                    className="border rounded-lg p-4 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors border-qatar-maroon bg-maroon-50 dark:bg-maroon-900/20"
+                    className={`border rounded-lg p-4 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors ${language === 'en' ? 'border-qatar-maroon bg-maroon-50 dark:bg-maroon-900/20' : ''}`}
                     onClick={() => handleLanguageChange('en')}
                   >
                     <div className="font-medium">English</div>
                     <div className="text-sm text-gray-500 dark:text-gray-400">English (United States)</div>
                   </div>
                   <div 
-                    className="border rounded-lg p-4 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+                    className={`border rounded-lg p-4 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors ${language === 'ar' ? 'border-qatar-maroon bg-maroon-50 dark:bg-maroon-900/20' : ''}`}
                     onClick={() => handleLanguageChange('ar')}
                   >
                     <div className="font-medium">العربية</div>
