@@ -130,35 +130,40 @@ export default function AuthPage() {
   }
 
   return (
-    <div className="min-h-screen bg-maroon-700 flex flex-col items-center justify-center p-4 bg-gradient-to-b from-maroon-700 to-maroon-800">
-      {/* Top border with white color */}
-      <div className="fixed top-0 left-0 w-full h-3 bg-white"></div>
+    <div className="min-h-screen bg-maroon-700 flex flex-col items-center justify-center p-0 overflow-hidden relative">
+      {/* Fixed white stripe at top */}
+      <div className="fixed top-0 left-0 w-full h-8 bg-white"></div>
       
-      <div className="w-full max-w-6xl grid grid-cols-1 lg:grid-cols-2 gap-8">
+      {/* Decorative elements inspired by Qatar flag */}
+      <div className="absolute top-8 left-0 w-full h-1 bg-white opacity-30"></div>
+      <div className="absolute top-0 right-0 h-full w-32 bg-white opacity-5 transform rotate-12 translate-x-16"></div>
+      <div className="absolute bottom-0 left-0 h-full w-32 bg-white opacity-5 transform -rotate-12 -translate-x-16"></div>
+      
+      <div className="w-full max-w-6xl grid grid-cols-1 lg:grid-cols-2 gap-8 p-4 z-10">
         {/* Left side: Auth forms */}
-        <Card className="w-full bg-white border-2 border-maroon-700 shadow-xl rounded-lg overflow-hidden">
-          <CardHeader className="space-y-1 flex flex-col items-center bg-white border-b-2 border-maroon-700 py-6">
+        <Card className="w-full bg-white border-4 border-maroon-700 shadow-2xl rounded-lg overflow-hidden">
+          <CardHeader className="space-y-1 flex flex-col items-center bg-maroon-700 py-8 px-4">
             <div className="flex items-center justify-center mb-6">
               <QatarLogo size="lg" />
             </div>
-            <CardTitle className="text-2xl text-center text-maroon-700 font-bold">
+            <CardTitle className="text-3xl text-center text-white font-bold">
               {activeTab === "login" ? t("login") : t("register")}
             </CardTitle>
-            <CardDescription className="text-center text-maroon-500 font-medium">
+            <CardDescription className="text-center text-white/80 font-medium mt-2">
               {activeTab === "login" 
                 ? t("enterCredentials") 
                 : t("createAccount")}
             </CardDescription>
           </CardHeader>
-          <CardContent className="pt-6 px-8">
+          <CardContent className="pt-8 px-10">
             <Tabs 
               value={activeTab} 
               onValueChange={setActiveTab} 
               className="w-full"
             >
-              <TabsList className="grid w-full grid-cols-2 mb-8 bg-white border-2 border-maroon-700 p-1 rounded-md">
-                <TabsTrigger value="login" className="data-[state=active]:bg-maroon-700 data-[state=active]:text-white text-maroon-700 font-bold p-3 rounded">{t("login")}</TabsTrigger>
-                <TabsTrigger value="register" className="data-[state=active]:bg-maroon-700 data-[state=active]:text-white text-maroon-700 font-bold p-3 rounded">{t("register")}</TabsTrigger>
+              <TabsList className="grid w-full grid-cols-2 mb-8 bg-gray-100 border-2 border-maroon-700 p-1 rounded-md overflow-hidden">
+                <TabsTrigger value="login" className="data-[state=active]:bg-maroon-700 data-[state=active]:text-white text-maroon-700 font-bold py-4 rounded">{t("login")}</TabsTrigger>
+                <TabsTrigger value="register" className="data-[state=active]:bg-maroon-700 data-[state=active]:text-white text-maroon-700 font-bold py-4 rounded">{t("register")}</TabsTrigger>
               </TabsList>
               
               {/* Login Form */}
@@ -169,10 +174,14 @@ export default function AuthPage() {
                       control={loginForm.control}
                       name="username"
                       render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>{t("username")}</FormLabel>
+                        <FormItem className="mb-4">
+                          <FormLabel className="text-maroon-700 font-semibold mb-1.5">{t("username")}</FormLabel>
                           <FormControl>
-                            <Input placeholder={t("username")} {...field} />
+                            <Input 
+                              placeholder={t("username")} 
+                              {...field} 
+                              className="h-12 border-2 border-maroon-700 bg-white focus:ring-maroon-700 focus:border-maroon-700 rounded-md px-4 py-2 text-base shadow-sm"
+                            />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -182,10 +191,15 @@ export default function AuthPage() {
                       control={loginForm.control}
                       name="password"
                       render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>{t("password")}</FormLabel>
+                        <FormItem className="mb-6">
+                          <FormLabel className="text-maroon-700 font-semibold mb-1.5">{t("password")}</FormLabel>
                           <FormControl>
-                            <Input type="password" placeholder={t("password")} {...field} />
+                            <Input 
+                              type="password" 
+                              placeholder={t("password")} 
+                              {...field} 
+                              className="h-12 border-2 border-maroon-700 bg-white focus:ring-maroon-700 focus:border-maroon-700 rounded-md px-4 py-2 text-base shadow-sm"
+                            />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -193,11 +207,11 @@ export default function AuthPage() {
                     />
                     <Button 
                       type="submit" 
-                      className="w-full bg-maroon-700 hover:bg-maroon-800"
+                      className="w-full bg-maroon-700 hover:bg-maroon-800 text-white text-lg font-bold py-6 border-2 border-white shadow-lg rounded-md transition-all duration-200"
                       disabled={loginMutation.isPending}
                     >
                       {loginMutation.isPending && (
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        <Loader2 className="mr-2 h-5 w-5 animate-spin" />
                       )}
                       {t("login")}
                     </Button>
