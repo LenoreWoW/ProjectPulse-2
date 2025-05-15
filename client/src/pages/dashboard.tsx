@@ -1,6 +1,7 @@
 import { useI18n } from "@/hooks/use-i18n";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/use-auth";
+import { PermissionGate } from "@/hooks/use-permissions";
 import { StatCard } from "@/components/dashboard/stat-card";
 import { StatusCard } from "@/components/dashboard/status-card";
 import { BudgetOverview } from "@/components/dashboard/budget-overview";

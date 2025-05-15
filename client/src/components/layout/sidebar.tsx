@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link, useLocation } from "wouter";
 import { useI18n } from "@/hooks/use-i18n";
 import { useAuth } from "@/hooks/use-auth";
+import { PermissionGate } from "@/hooks/use-permissions";
 import { Logo } from "@/components/ui/logo";
 import {
   Calendar,
@@ -28,21 +29,7 @@ export function Sidebar() {
   const { user } = useAuth();
   const [collapsed, setCollapsed] = useState(false);
 
-  const navItems = [
-    { icon: Home, label: t("dashboard"), path: "/" },
-    { icon: Calendar, label: t("calendar"), path: "/calendar" },
-    { icon: LayoutList, label: t("projects"), path: "/projects" },
-    { icon: CheckSquare, label: t("tasks"), path: "/tasks" },
-    { icon: Target, label: t("goals"), path: "/goals" },
-    { icon: AlertTriangle, label: t("risksAndIssues"), path: "/risks-issues" },
-    { icon: Users, label: t("assignments"), path: "/assignments" },
-    { icon: MessageSquare, label: t("approvals"), path: "/approvals" },
-    { icon: Network, label: t("dependencies"), path: "/dependencies" },
-    { icon: BookCopy, label: t("repository"), path: "/repository" },
-    { icon: Building, label: t("departments"), path: "/departments" },
-    { icon: BarChart3, label: t("reports"), path: "/reports" },
-    { icon: LineChart, label: t("analytics"), path: "/reports/analytics" },
-  ];
+  // Navigation rendering logic defined below directly with PermissionGate controls
 
   const isActive = (path: string) => location === path;
 
@@ -84,10 +71,38 @@ export function Sidebar() {
 
       <nav className="flex-1 overflow-y-auto p-4">
         <ul className="space-y-2">
-          {navItems.map(renderNavItem)}
+          {/* Always visible items */}
+          {renderNavItem({ icon: Home, label: t("dashboard"), path: "/" })}
+          {renderNavItem({ icon: Calendar, label: t("calendar"), path: "/calendar" })}
+          {renderNavItem({ icon: LayoutList, label: t("projects"), path: "/projects" })}
+          {renderNavItem({ icon: CheckSquare, label: t("tasks"), path: "/tasks" })}
+          {renderNavItem({ icon: Target, label: t("goals"), path: "/goals" })}
+          {renderNavItem({ icon: AlertTriangle, label: t("risksAndIssues"), path: "/risks-issues" })}
+          {renderNavItem({ icon: Users, label: t("assignments"), path: "/assignments" })}
+          
+          {/* Permission-based items */}
+          <PermissionGate permission="canApproveProject">
+            {renderNavItem({ icon: MessageSquare, label: t("approvals"), path: "/approvals" })}
+          </PermissionGate>
+          
+          <PermissionGate permission="canViewReports">
+            {renderNavItem({ icon: Network, label: t("dependencies"), path: "/dependencies" })}
+            {renderNavItem({ icon: BookCopy, label: t("repository"), path: "/repository" })}
+            {renderNavItem({ icon: BarChart3, label: t("reports"), path: "/reports" })}
+          </PermissionGate>
+          
+          <PermissionGate permission="canViewAnalytics">
+            {renderNavItem({ icon: LineChart, label: t("analytics"), path: "/reports/analytics" })}
+          </PermissionGate>
+          
+          <PermissionGate permission="canViewAllDepartments">
+            {renderNavItem({ icon: Building, label: t("departments"), path: "/departments" })}
+          </PermissionGate>
 
           <li className="pt-4 mt-4 border-t border-maroon-700 dark:border-maroon-800">
-            {renderNavItem({ icon: Settings, label: t("settings"), path: "/settings" })}
+            <PermissionGate permission="canAccessAdminSettings">
+              {renderNavItem({ icon: Settings, label: t("settings"), path: "/settings" })}
+            </PermissionGate>
           </li>
         </ul>
       </nav>
