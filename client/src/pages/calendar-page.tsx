@@ -22,8 +22,8 @@ interface CalendarEvent {
   title: string;
   date: Date;
   type: 'project' | 'task' | 'assignment';
-  status: string;
-  priority: string;
+  status?: string | null;
+  priority?: string | null;
 }
 
 export default function CalendarPage() {
@@ -59,11 +59,11 @@ export default function CalendarPage() {
         if (project.deadline) {
           events.push({
             id: project.id,
-            title: project.title,
+            title: project.title || 'Unnamed Project',
             date: new Date(project.deadline),
             type: 'project',
-            status: project.status,
-            priority: project.priority
+            status: project.status || 'Unknown',
+            priority: project.priority || 'Medium'
           });
         }
       });
@@ -71,16 +71,17 @@ export default function CalendarPage() {
     
     // Add task deadlines
     if (tasks) {
-      const allTasks = [...(tasks.assignedToMe || []), ...(tasks.assignedByMe || [])];
+      // Create an array of all tasks (casting to ensure type safety)
+      const allTasks = Array.isArray(tasks) ? tasks : [];
       allTasks.forEach(task => {
         if (task.deadline) {
           events.push({
             id: task.id,
-            title: task.title,
+            title: task.title || 'Unnamed Task',
             date: new Date(task.deadline),
             type: 'task',
-            status: task.status,
-            priority: task.priority
+            status: task.status || 'Unknown',
+            priority: task.priority || 'Medium'
           });
         }
       });
@@ -88,16 +89,17 @@ export default function CalendarPage() {
     
     // Add assignment deadlines
     if (assignments) {
-      const allAssignments = [...(assignments.assignedToMe || []), ...(assignments.assignedByMe || [])];
+      // Create an array of all assignments (casting to ensure type safety)
+      const allAssignments = Array.isArray(assignments) ? assignments : [];
       allAssignments.forEach(assignment => {
         if (assignment.deadline) {
           events.push({
             id: assignment.id,
-            title: assignment.title,
+            title: assignment.title || 'Unnamed Assignment',
             date: new Date(assignment.deadline),
             type: 'assignment',
-            status: assignment.status,
-            priority: assignment.priority
+            status: assignment.status || 'Unknown', 
+            priority: assignment.priority || 'Medium'
           });
         }
       });
