@@ -9,13 +9,13 @@ import { insertUserSchema } from "@shared/schema";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
-// Import Qatar landmark images directly
-import landmark1 from "../assets/landmarks/landmark1.jpg";
-import landmark2 from "../assets/landmarks/landmark2.jpg";
-import landmark3 from "../assets/landmarks/landmark3.jpg";
-import landmark4 from "../assets/landmarks/landmark4.jpg";
-import landmark5 from "../assets/landmarks/landmark5.jpg";
-import landmark6 from "../assets/landmarks/landmark6.jpg";
+// Import HD Qatar landmark images directly
+import landmark1 from "../assets/landmarks/hd/image_1747300730144.png";
+import landmark2 from "../assets/landmarks/hd/image_1747300807633.png";
+import landmark3 from "../assets/landmarks/hd/image_1747300874983.png";
+import landmark4 from "../assets/landmarks/hd/image_1747300899310.png";
+import landmark5 from "../assets/landmarks/hd/image_1747300922286.png";
+import landmark6 from "../assets/landmarks/hd/image_1747300962058.png";
 import {
   Form,
   FormControl,
@@ -166,8 +166,11 @@ export default function AuthPage() {
               backgroundImage: `url(${landmark})`,
               backgroundSize: 'cover',
               backgroundPosition: 'center',
+              backgroundRepeat: 'no-repeat',
+              objectFit: 'cover',
               opacity: index === currentImageIndex ? 1 : 0,
-              zIndex: 1
+              zIndex: 1,
+              transform: 'scale(1.02)' // Slight zoom for better edge coverage
             }}
           />
         ))}
@@ -192,7 +195,7 @@ export default function AuthPage() {
               onValueChange={setActiveTab} 
               className="w-full"
             >
-              <TabsList className="grid w-full grid-cols-2 mb-6 bg-white/10 p-1 rounded-full overflow-hidden">
+              <TabsList className="grid w-full grid-cols-2 mb-6 bg-black/40 p-1 rounded-full overflow-hidden border border-maroon-600">
                 <TabsTrigger value="login" className="data-[state=active]:bg-maroon-700 data-[state=active]:text-white text-white font-medium py-2 rounded-full">{t("login")}</TabsTrigger>
                 <TabsTrigger value="register" className="data-[state=active]:bg-maroon-700 data-[state=active]:text-white text-white font-medium py-2 rounded-full">{t("register")}</TabsTrigger>
               </TabsList>
@@ -210,7 +213,7 @@ export default function AuthPage() {
                             <Input 
                               placeholder={t("username")} 
                               {...field} 
-                              className="h-11 bg-white/10 border border-white/20 focus:border-white/30 text-white placeholder:text-white/50 rounded-full px-5 py-2"
+                              className="auth-input"
                             />
                           </FormControl>
                           <FormMessage className="text-red-300 text-sm ml-2" />

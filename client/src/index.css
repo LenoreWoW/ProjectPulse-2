@@ -3,6 +3,11 @@
 @tailwind utilities;
 
 @layer base {
+  /* Custom classes for auth page */
+  .auth-input {
+    @apply h-11 bg-black/40 border border-white/30 focus:border-white/50 text-white placeholder:text-white/70 rounded-full px-5 py-2;
+  }
+  
   :root {
     --background: 0 0% 100%;
     --foreground: 20 14.3% 4.1%;
