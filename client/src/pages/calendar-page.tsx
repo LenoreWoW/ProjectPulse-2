@@ -271,7 +271,10 @@ export default function CalendarPage() {
               variant={view === "month" ? "default" : "outline"}
               size="sm"
               onClick={() => setView("month")}
-              className={view === "month" ? "bg-maroon-700 hover:bg-maroon-800" : ""}
+              className={view === "month" 
+                ? "bg-maroon-700 hover:bg-maroon-800 text-white" 
+                : "dark:border-gray-700 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-white"
+              }
             >
               <CalendarIcon className="mr-2 h-4 w-4" />
               {t("month")}
@@ -280,7 +283,10 @@ export default function CalendarPage() {
               variant={view === "week" ? "default" : "outline"}
               size="sm"
               onClick={() => setView("week")}
-              className={view === "week" ? "bg-maroon-700 hover:bg-maroon-800" : ""}
+              className={view === "week" 
+                ? "bg-maroon-700 hover:bg-maroon-800 text-white" 
+                : "dark:border-gray-700 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-white"
+              }
             >
               <LayoutGrid className="mr-2 h-4 w-4" />
               {t("week")}
@@ -289,7 +295,10 @@ export default function CalendarPage() {
               variant={view === "day" ? "default" : "outline"}
               size="sm"
               onClick={() => setView("day")}
-              className={view === "day" ? "bg-maroon-700 hover:bg-maroon-800" : ""}
+              className={view === "day" 
+                ? "bg-maroon-700 hover:bg-maroon-800 text-white" 
+                : "dark:border-gray-700 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-white"
+              }
             >
               <List className="mr-2 h-4 w-4" />
               {t("day")}
@@ -303,7 +312,7 @@ export default function CalendarPage() {
               mode="single"
               selected={date}
               onSelect={(newDate) => newDate && setDate(newDate)}
-              className="rounded-md border"
+              className="rounded-md border border-gray-200 dark:border-gray-700 dark:bg-gray-800 dark:text-white"
               components={{
                 DayContent: (props: DayProps) => (
                   <div>
@@ -396,20 +405,20 @@ export default function CalendarPage() {
       </div>
       
       {/* Legend */}
-      <div className="bg-white dark:bg-darker shadow rounded-lg p-4 border border-gray-200 dark:border-gray-700">
-        <h3 className="font-medium mb-3">{t("legend")}</h3>
+      <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-4 border border-gray-200 dark:border-gray-700">
+        <h3 className="font-medium mb-3 text-gray-900 dark:text-white">{t("legend")}</h3>
         <div className="flex flex-wrap gap-4">
           <div className="flex items-center">
-            <div className="w-4 h-4 rounded-full bg-maroon-500 mr-2"></div>
-            <span>{t("projectDeadlines")}</span>
+            <div className="w-4 h-4 rounded-full bg-maroon-500 mr-2 border border-maroon-600"></div>
+            <span className="text-gray-700 dark:text-gray-200">{t("projectDeadlines")}</span>
           </div>
           <div className="flex items-center">
-            <div className="w-4 h-4 rounded-full bg-blue-500 mr-2"></div>
-            <span>{t("taskDeadlines")}</span>
+            <div className="w-4 h-4 rounded-full bg-blue-500 mr-2 border border-blue-600"></div>
+            <span className="text-gray-700 dark:text-gray-200">{t("taskDeadlines")}</span>
           </div>
           <div className="flex items-center">
-            <div className="w-4 h-4 rounded-full bg-green-500 mr-2"></div>
-            <span>{t("assignmentDeadlines")}</span>
+            <div className="w-4 h-4 rounded-full bg-green-500 mr-2 border border-green-600"></div>
+            <span className="text-gray-700 dark:text-gray-200">{t("assignmentDeadlines")}</span>
           </div>
         </div>
       </div>
