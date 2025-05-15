@@ -33,7 +33,7 @@ export default function GoalsPage() {
   const { user } = useAuth();
   
   // Determine if user can create goals based on role
-  const canCreateGoal = user && ["Administrator", "MainPMO", "DepartmentDirector", "Executive"].includes(user.role);
+  const canCreateGoal = user && user.role && ["Administrator", "MainPMO", "DepartmentDirector", "Executive"].includes(user.role);
   
   const { data, isLoading, error } = useQuery<{strategic: Goal[], annual: Goal[]}>({
     queryKey: ["/api/goals"],
@@ -43,7 +43,8 @@ export default function GoalsPage() {
   const goals = data ? [...(data.strategic || []), ...(data.annual || [])] : [];
   
   // Format priority badge
-  const getPriorityBadge = (priority: string) => {
+  const getPriorityBadge = (priority: string | null) => {
+    if (!priority) return null;
     switch (priority) {
       case 'High':
         return (
