@@ -8,7 +8,10 @@ import {
   FlaskConical, 
   Server, 
   Briefcase,
-  Clock
+  Clock,
+  ArrowRight,
+  Folder,
+  Building
 } from "lucide-react";
 
 interface RecentProjectsProps {
