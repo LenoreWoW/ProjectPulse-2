@@ -172,7 +172,7 @@ export default function AuthPage() {
         <div className="auth-overlay" />
       </div>
       
-      <div className="w-full max-w-md z-10">
+      <div className="w-full max-w-md" style={{ position: 'relative', zIndex: 9999 }}>
         {/* Auth Card */}
         <Card className="w-full bg-black/60 backdrop-blur-md shadow-2xl rounded-2xl overflow-hidden border-2 border-qatar-maroon">
           <CardHeader className="space-y-1 flex flex-col items-center pt-8 pb-6 px-6">
