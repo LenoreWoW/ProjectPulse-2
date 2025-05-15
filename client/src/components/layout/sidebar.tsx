@@ -15,6 +15,8 @@ import {
   Settings,
   ChevronLeft,
   ChevronRight,
+  Building,
+  BarChart3,
 } from "lucide-react";
 
 export function Sidebar() {
@@ -32,6 +34,8 @@ export function Sidebar() {
     { icon: AlertTriangle, label: t("risksAndIssues"), path: "/risks-issues" },
     { icon: Users, label: t("assignments"), path: "/assignments" },
     { icon: MessageSquare, label: t("approvals"), path: "/approvals" },
+    { icon: Building, label: t("departments"), path: "/departments" },
+    { icon: BarChart3, label: t("reports"), path: "/reports" },
   ];
 
   const isActive = (path: string) => location === path;

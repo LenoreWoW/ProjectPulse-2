@@ -39,6 +39,9 @@ function Router() {
         requiredRoles={["Administrator", "MainPMO", "SubPMO", "DepartmentDirector"]}
       />
       <ProtectedRoute path="/settings" component={SettingsPage} />
+      <ProtectedRoute path="/departments" component={DepartmentsPage} />
+      <ProtectedRoute path="/reports" component={ReportsPage} />
+      <ProtectedRoute path="/reports/budget" component={BudgetReportPage} />
       <Route path="/auth" component={AuthPage} />
       <Route component={NotFound} />
     </Switch>
