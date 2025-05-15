@@ -18,7 +18,7 @@ const en: Record<string, string> = {
   assignments: "Assignments",
   approvals: "Approvals",
   settings: "Settings",
-  "Qatar Ministry of Defence": "Qatar Ministry of Defence",
+  "Project Management System": "Project Management System",
   
   // User
   login: "Login",
@@ -128,8 +128,8 @@ const en: Record<string, string> = {
 
 // Arabic translations
 const ar: Record<string, string> = {
-  // Ministry name
-  "Qatar Ministry of Defence": "وزارة الدفاع القطرية",
+  // App name
+  "Project Management System": "نظام إدارة المشاريع",
   // Common
   dashboard: "لوحة التحكم",
   calendar: "التقويم",

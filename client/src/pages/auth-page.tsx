@@ -172,17 +172,17 @@ export default function AuthPage() {
           />
         ))}
         {/* Overlay for better text readability */}
-        <div className="absolute inset-0 bg-black bg-opacity-40 z-2" />
+        <div className="absolute inset-0 bg-black bg-opacity-60 z-2" />
       </div>
       
       <div className="w-full max-w-md z-10">
         {/* Auth Card */}
-        <Card className="w-full bg-white/10 backdrop-blur-md shadow-2xl rounded-2xl overflow-hidden border border-white/20">
+        <Card className="w-full bg-black/50 backdrop-blur-md shadow-2xl rounded-2xl overflow-hidden border-2 border-maroon-700">
           <CardHeader className="space-y-1 flex flex-col items-center pt-8 pb-6 px-6">
             <div className="flex flex-col items-center justify-center mb-4">
               <QatarLogo size="lg" className="mb-2" />
               <h2 className="text-lg font-semibold text-white">
-                {t("Qatar Ministry of Defence")}
+                {t("Project Management System")}
               </h2>
             </div>
           </CardHeader>
