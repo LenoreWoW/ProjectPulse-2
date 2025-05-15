@@ -1,5 +1,5 @@
 import { useAuth } from "@/hooks/use-auth";
-import { useI18n } from "@/hooks/use-i18n";
+import { useI18n } from "@/hooks/use-i18n-new";
 import { useEffect, useState, useRef } from "react";
 import { Redirect } from "wouter";
 import { z } from "zod";
