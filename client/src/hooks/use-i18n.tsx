@@ -128,6 +128,8 @@ const en: Record<string, string> = {
 
 // Arabic translations
 const ar: Record<string, string> = {
+  // Ministry name
+  "Qatar Ministry of Defence": "وزارة الدفاع القطرية",
   // Common
   dashboard: "لوحة التحكم",
   calendar: "التقويم",

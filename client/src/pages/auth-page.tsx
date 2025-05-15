@@ -9,8 +9,13 @@ import { insertUserSchema } from "@shared/schema";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
-// Import Qatar landmark images
-import { qatarLandmarks } from "@/assets/landmarks/index";
+// Import Qatar landmark images directly
+import landmark1 from "../assets/landmarks/landmark1.jpg";
+import landmark2 from "../assets/landmarks/landmark2.jpg";
+import landmark3 from "../assets/landmarks/landmark3.jpg";
+import landmark4 from "../assets/landmarks/landmark4.jpg";
+import landmark5 from "../assets/landmarks/landmark5.jpg";
+import landmark6 from "../assets/landmarks/landmark6.jpg";
 import {
   Form,
   FormControl,
@@ -43,7 +48,10 @@ export default function AuthPage() {
     return <Redirect to="/" />;
   }
   
-  // Using Qatar landmarks imported from qatarLandmarks.ts
+  // Create array of Qatar landmark images
+  const qatarLandmarks = [
+    landmark1, landmark2, landmark3, landmark4, landmark5, landmark6
+  ];
   
   // Image slider state
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
@@ -149,20 +157,23 @@ export default function AuthPage() {
   return (
     <div className="min-h-screen flex items-center justify-center p-0 overflow-hidden relative">
       {/* Dynamic background with Qatar landmarks */}
-      {qatarLandmarks.map((landmark, index) => (
-        <div
-          key={index}
-          className="absolute inset-0 w-full h-full transition-opacity duration-1000"
-          style={{
-            backgroundImage: `url(${landmark})`,
-            backgroundSize: 'cover',
-            backgroundPosition: 'center',
-            opacity: index === currentImageIndex ? 1 : 0,
-          }}
-        />
-      ))}
-      {/* Overlay for better text readability */}
-      <div className="absolute inset-0 bg-black bg-opacity-40" />
+      <div className="absolute inset-0 w-full h-full bg-black">
+        {qatarLandmarks.map((landmark, index) => (
+          <div
+            key={index}
+            className="absolute inset-0 w-full h-full transition-opacity duration-1000"
+            style={{
+              backgroundImage: `url(${landmark})`,
+              backgroundSize: 'cover',
+              backgroundPosition: 'center',
+              opacity: index === currentImageIndex ? 1 : 0,
+              zIndex: 1
+            }}
+          />
+        ))}
+        {/* Overlay for better text readability */}
+        <div className="absolute inset-0 bg-black bg-opacity-40 z-2" />
+      </div>
       
       <div className="w-full max-w-md z-10">
         {/* Auth Card */}
