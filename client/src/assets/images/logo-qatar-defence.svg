@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 200">
+  <!-- Text Group - Ministry of Defence -->
+  <g fill="#333">
+    <text x="20" y="100" font-family="Arial, sans-serif" font-size="48" font-weight="bold">وزارة الدفاع</text>
+    <text x="20" y="150" font-family="Arial, sans-serif" font-size="40">Ministry of Defence</text>
+    <text x="80" y="190" font-family="Arial, sans-serif" font-size="24">State of Qatar • دولـة قطـر</text>
+  </g>
+  
+  <!-- Qatar Emblem - Simplified representation -->
+  <g fill="#8a1538">
+    <!-- Shield outline -->
+    <path d="M550,35 C650,35 650,125 550,165 L550,35 Z" />
+    
+    <!-- Palm trees -->
+    <path d="M560,60 C570,30 580,50 570,70 M580,50 C590,30 600,40 590,70" stroke-width="2" />
+    
+    <!-- Ship -->
+    <path d="M530,90 C540,90 550,100 560,90" stroke-width="2" />
+    
+    <!-- Water waves -->
+    <path d="M520,110 C530,105 540,110 550,105 C560,100 570,105 580,100" stroke-width="1" />
+    <path d="M520,120 C530,115 540,120 550,115 C560,110 570,115 580,110" stroke-width="1" />
+    
+    <!-- Crossed swords -->
+    <path d="M500,140 L600,180 M600,140 L500,180" stroke-width="2" />
+  </g>
+  
+  <!-- Diamond accent -->
+  <polygon points="350,190 355,183 360,190" fill="#8a1538" />
+</svg>
