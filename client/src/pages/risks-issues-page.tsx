@@ -55,12 +55,12 @@ export default function RisksIssuesPage() {
   const filterItems = (items: RiskIssue[] = []) => {
     return items.filter((item) => {
       // Filter by status
-      if (filterStatus && item.status !== filterStatus) {
+      if (filterStatus && filterStatus !== "all-statuses" && item.status !== filterStatus) {
         return false;
       }
       
       // Filter by priority
-      if (filterPriority && item.priority !== filterPriority) {
+      if (filterPriority && filterPriority !== "all-priorities" && item.priority !== filterPriority) {
         return false;
       }
       
@@ -215,7 +215,7 @@ export default function RisksIssuesPage() {
                 <SelectValue placeholder={t("allPriorities")} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">{t("allPriorities")}</SelectItem>
+                <SelectItem value="all-priorities">{t("allPriorities")}</SelectItem>
                 <SelectItem value="Critical">{t("critical")}</SelectItem>
                 <SelectItem value="High">{t("high")}</SelectItem>
                 <SelectItem value="Medium">{t("medium")}</SelectItem>
