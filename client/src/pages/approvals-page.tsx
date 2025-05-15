@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useI18n } from "@/hooks/use-i18n";
+import { useI18n } from "@/hooks/use-i18n-new";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { ChangeRequest } from "@shared/schema";
 import { useAuth } from "@/hooks/use-auth";
