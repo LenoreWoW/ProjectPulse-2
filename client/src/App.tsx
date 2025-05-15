@@ -21,6 +21,9 @@ import SettingsPage from "@/pages/settings-page";
 import DepartmentsPage from "@/pages/departments-page";
 import ReportsPage from "@/pages/reports-page";
 import BudgetReportPage from "@/pages/reports/budget-page";
+import RepositoryPage from "@/pages/repository-page";
+import DependenciesPage from "@/pages/dependencies-page";
+import AnalyticsDashboardPage from "@/pages/analytics-dashboard";
 import { ThemeProvider } from "@/providers/theme-provider";
 
 function Router() {
@@ -42,6 +45,9 @@ function Router() {
       <ProtectedRoute path="/departments" component={DepartmentsPage} />
       <ProtectedRoute path="/reports" component={ReportsPage} />
       <ProtectedRoute path="/reports/budget" component={BudgetReportPage} />
+      <ProtectedRoute path="/reports/analytics" component={AnalyticsDashboardPage} />
+      <ProtectedRoute path="/repository" component={RepositoryPage} />
+      <ProtectedRoute path="/dependencies" component={DependenciesPage} />
       <Route path="/auth" component={AuthPage} />
       <Route component={NotFound} />
     </Switch>
