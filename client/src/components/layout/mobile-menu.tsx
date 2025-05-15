@@ -49,7 +49,7 @@ export function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
       />
 
       {/* Mobile menu panel */}
-      <div className="fixed inset-y-0 start-0 z-40 w-64 bg-white dark:bg-darker shadow-lg transform transition-transform duration-300 ease-in-out">
+      <div className="fixed inset-y-0 start-0 z-40 w-64 bg-white dark:bg-gray-800 shadow-lg transform transition-transform duration-300 ease-in-out">
         <div className="h-full flex flex-col">
           <div className="p-4 flex items-center justify-between border-b border-gray-200 dark:border-gray-700">
             <Logo />

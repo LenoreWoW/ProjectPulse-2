@@ -74,7 +74,7 @@ export function BudgetOverview() {
   const overspend = getOverspend(data.predictedCost, data.totalBudget);
   
   return (
-    <div className="mb-8 bg-white dark:bg-darker shadow-lg rounded-lg border border-maroon-200 dark:border-maroon-800 hover:border-maroon-300 dark:hover:border-maroon-700 transition-colors overflow-hidden">
+    <div className="mb-8 bg-white dark:bg-gray-800 shadow-lg rounded-lg border border-maroon-200 dark:border-maroon-800 hover:border-maroon-300 dark:hover:border-maroon-700 transition-colors overflow-hidden">
       <div className="p-6 border-b border-maroon-200 dark:border-maroon-800 bg-gradient-to-r from-maroon-100 to-white dark:from-maroon-900/30 dark:to-darker">
         <h2 className="text-xl font-bold text-maroon-800 dark:text-maroon-200">{t("budgetOverview")}</h2>
       </div>
