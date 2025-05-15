@@ -18,6 +18,7 @@ import RisksIssuesPage from "@/pages/risks-issues-page";
 import AssignmentsPage from "@/pages/assignments-page";
 import ApprovalsPage from "@/pages/approvals-page";
 import SettingsPage from "@/pages/settings-page";
+import { ThemeProvider } from "@/providers/theme-provider";
 
 function Router() {
   return (
@@ -67,12 +68,14 @@ function AppLayout({ children }: { children: React.ReactNode }) {
 
 function App() {
   return (
-    <TooltipProvider>
-      <AppLayout>
-        <Router />
-      </AppLayout>
-      <Toaster />
-    </TooltipProvider>
+    <ThemeProvider defaultTheme="dark">
+      <TooltipProvider>
+        <AppLayout>
+          <Router />
+        </AppLayout>
+        <Toaster />
+      </TooltipProvider>
+    </ThemeProvider>
   );
 }
 
