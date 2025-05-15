@@ -301,8 +301,8 @@ export default function CalendarPage() {
               components={{
                 DayContent: (props) => (
                   <div>
-                    <div>{props.day.day}</div>
-                    {getDayIndicator(props.day.date)}
+                    <div>{props.day && props.day.day}</div>
+                    {props.day && getDayIndicator(props.day.date)}
                   </div>
                 ),
               }}
