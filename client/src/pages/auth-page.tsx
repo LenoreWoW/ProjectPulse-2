@@ -180,7 +180,7 @@ export default function AuthPage() {
       
       <div className="w-full max-w-md z-10">
         {/* Auth Card */}
-        <Card className="w-full bg-black/50 backdrop-blur-md shadow-2xl rounded-2xl overflow-hidden border-2 border-maroon-700">
+        <Card className="w-full bg-black/60 backdrop-blur-md shadow-2xl rounded-2xl overflow-hidden border-2 border-qatar-maroon">
           <CardHeader className="space-y-1 flex flex-col items-center pt-8 pb-6 px-6">
             <div className="flex flex-col items-center justify-center mb-4">
               <QatarLogo size="lg" className="mb-2" />
@@ -406,7 +406,7 @@ export default function AuthPage() {
                           )}
                         />
                       </div>
-                      <p className="text-xs text-white/70">
+                      <p className="text-xs text-qatar-white/80 bg-qatar-maroon/20 p-2 rounded-md border border-qatar-maroon/30">
                         {t("documentRequirementNote")}
                       </p>
                     </div>

@@ -74,10 +74,10 @@ export function FileUpload({
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
         className={cn(
-          "border-2 border-dashed rounded-xl p-4 text-center cursor-pointer transition-colors",
+          "border-2 border-dashed rounded-xl p-4 text-center cursor-pointer transition-colors bg-black/40",
           isDragging
-            ? "border-white/50 bg-white/10"
-            : "border-white/30 hover:border-white/50",
+            ? "border-qatar-maroon bg-white/10"
+            : "border-qatar-maroon/50 hover:border-qatar-maroon",
           errorMessage && "border-red-400",
           "focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-offset-1 focus-visible:ring-white/50"
         )}
@@ -95,15 +95,15 @@ export function FileUpload({
         
         {value ? (
           <div className="flex flex-col items-center justify-center">
-            <CheckCircle2 className="h-6 w-6 text-green-600 mb-2" />
-            <p className="text-sm font-medium">{value.name}</p>
-            <p className="text-xs text-gray-500">
+            <CheckCircle2 className="h-6 w-6 text-qatar-white mb-2" />
+            <p className="text-sm font-medium text-qatar-white">{value.name}</p>
+            <p className="text-xs text-qatar-white/70">
               {(value.size / 1024 / 1024).toFixed(2)} MB
             </p>
             <Button 
               variant="ghost" 
               size="sm" 
-              className="mt-2 text-maroon-700"
+              className="mt-2 text-qatar-maroon hover:bg-qatar-maroon/10 hover:text-qatar-white"
               onClick={(e) => {
                 e.stopPropagation();
                 onChange(null);
