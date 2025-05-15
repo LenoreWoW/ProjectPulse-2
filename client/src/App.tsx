@@ -41,18 +41,18 @@ function Router() {
       <ProtectedRoute 
         path="/risks-issues" 
         component={RisksIssuesPage} 
-        requiredRoles={["Administrator", "MainPMO", "SubPMO", "DepartmentDirector", "ProjectManager"]}
+        requiredPermissions={["canCreateProject", "canEditProject"]}
       />
       <ProtectedRoute path="/assignments" component={AssignmentsPage} />
       <ProtectedRoute 
         path="/approvals" 
         component={ApprovalsPage}
-        requiredRoles={["Administrator", "MainPMO", "SubPMO", "DepartmentDirector"]}
+        requiredPermissions={["canApproveProject", "canApproveChangeRequest"]}
       />
       <ProtectedRoute 
         path="/settings" 
         component={SettingsPage} 
-        requiredRoles={["Administrator", "MainPMO"]}
+        requiredPermissions={["canAccessAdminSettings"]}
       />
       <ProtectedRoute 
         path="/departments" 
