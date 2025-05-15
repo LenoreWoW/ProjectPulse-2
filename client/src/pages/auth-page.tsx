@@ -230,7 +230,7 @@ export default function AuthPage() {
                               type="password" 
                               placeholder={t("password")} 
                               {...field} 
-                              className="h-11 bg-white/10 border border-white/20 focus:border-white/30 text-white placeholder:text-white/50 rounded-full px-5 py-2"
+                              className="auth-input"
                             />
                           </FormControl>
                           <FormMessage className="text-red-300 text-sm ml-2" />
@@ -239,7 +239,7 @@ export default function AuthPage() {
                     />
                     <Button 
                       type="submit" 
-                      className="w-full bg-maroon-700 hover:bg-maroon-800 text-white font-medium py-3 rounded-full transition-all duration-200 shadow-md"
+                      className="w-full bg-maroon-700 hover:bg-maroon-800 text-white font-medium py-3 rounded-full transition-all duration-200 shadow-md border border-maroon-500"
                       disabled={loginMutation.isPending}
                     >
                       {loginMutation.isPending && (
