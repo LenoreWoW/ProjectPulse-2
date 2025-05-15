@@ -132,7 +132,8 @@ export default function ApprovalsPage() {
   };
   
   // Format date for display
-  const formatDate = (dateString: string | Date) => {
+  const formatDate = (dateString: string | Date | null) => {
+    if (!dateString) return "";
     return new Intl.DateTimeFormat('en-US', { 
       year: 'numeric', 
       month: 'short', 
@@ -143,7 +144,7 @@ export default function ApprovalsPage() {
   };
   
   // Check if user is allowed to see this page
-  const hasAccessRights = user && ["Administrator", "MainPMO", "SubPMO", "DepartmentDirector"].includes(user.role);
+  const hasAccessRights = user && user.role && ["Administrator", "MainPMO", "SubPMO", "DepartmentDirector"].includes(user.role);
   
   if (!hasAccessRights) {
     return (
