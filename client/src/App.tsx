@@ -57,28 +57,32 @@ function Router() {
       <ProtectedRoute 
         path="/departments" 
         component={DepartmentsPage} 
-        requiredRoles={["Administrator", "MainPMO", "DepartmentDirector", "Executive"]}
+        requiredPermissions={["canManageDepartments", "canViewAllDepartments"]}
       />
       <ProtectedRoute 
         path="/reports" 
         component={ReportsPage} 
-        requiredRoles={["Administrator", "MainPMO", "SubPMO", "DepartmentDirector", "Executive"]}
+        requiredPermissions={["canViewReports"]}
       />
       <ProtectedRoute 
         path="/reports/budget" 
         component={BudgetReportPage} 
-        requiredRoles={["Administrator", "MainPMO", "SubPMO", "DepartmentDirector", "Executive"]}
+        requiredPermissions={["canViewReports"]}
       />
       <ProtectedRoute 
         path="/reports/analytics" 
         component={AnalyticsDashboardPage} 
-        requiredRoles={["Administrator", "MainPMO", "SubPMO", "DepartmentDirector", "Executive"]}
+        requiredPermissions={["canViewAnalytics"]}
       />
-      <ProtectedRoute path="/repository" component={RepositoryPage} />
+      <ProtectedRoute 
+        path="/repository" 
+        component={RepositoryPage}
+        requiredPermissions={["canViewReports"]} 
+      />
       <ProtectedRoute 
         path="/dependencies" 
         component={DependenciesPage} 
-        requiredRoles={["Administrator", "MainPMO", "SubPMO", "DepartmentDirector", "ProjectManager", "Executive"]}
+        requiredPermissions={["canViewReports"]}
       />
       <Route path="/auth" component={AuthPage} />
       <Route component={NotFound} />
