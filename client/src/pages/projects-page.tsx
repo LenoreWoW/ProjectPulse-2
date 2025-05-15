@@ -159,7 +159,7 @@ export default function ProjectsPage() {
                 <SelectValue placeholder={t("allStatuses")} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">{t("allStatuses")}</SelectItem>
+                <SelectItem value="all-statuses">{t("allStatuses")}</SelectItem>
                 <SelectItem value="Pending">{t("pending")}</SelectItem>
                 <SelectItem value="Planning">{t("planning")}</SelectItem>
                 <SelectItem value="InProgress">{t("inProgress")}</SelectItem>
@@ -179,7 +179,7 @@ export default function ProjectsPage() {
                 <SelectValue placeholder={t("allDepartments")} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">{t("allDepartments")}</SelectItem>
+                <SelectItem value="all-departments">{t("allDepartments")}</SelectItem>
                 {departments?.map((dept) => (
                   <SelectItem key={dept.id} value={dept.id.toString()}>
                     {dept.name}

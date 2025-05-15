@@ -196,7 +196,7 @@ export default function RisksIssuesPage() {
                 <SelectValue placeholder={t("allStatuses")} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">{t("allStatuses")}</SelectItem>
+                <SelectItem value="all-statuses">{t("allStatuses")}</SelectItem>
                 <SelectItem value="Open">{t("open")}</SelectItem>
                 <SelectItem value="InProgress">{t("inProgress")}</SelectItem>
                 <SelectItem value="Resolved">{t("resolved")}</SelectItem>

@@ -55,12 +55,12 @@ export default function AssignmentsPage() {
   const filterAssignments = (assignments: Assignment[] = []) => {
     return assignments.filter((assignment) => {
       // Filter by status
-      if (filterStatus && assignment.status !== filterStatus) {
+      if (filterStatus && filterStatus !== "all-statuses" && assignment.status !== filterStatus) {
         return false;
       }
       
       // Filter by priority
-      if (filterPriority && assignment.priority !== filterPriority) {
+      if (filterPriority && filterPriority !== "all-priorities" && assignment.priority !== filterPriority) {
         return false;
       }
       
@@ -242,7 +242,7 @@ export default function AssignmentsPage() {
                 <SelectValue placeholder={t("allStatuses")} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">{t("allStatuses")}</SelectItem>
+                <SelectItem value="all-statuses">{t("allStatuses")}</SelectItem>
                 <SelectItem value="Todo">{t("todo")}</SelectItem>
                 <SelectItem value="InProgress">{t("inProgress")}</SelectItem>
                 <SelectItem value="Review">{t("review")}</SelectItem>
@@ -261,7 +261,7 @@ export default function AssignmentsPage() {
                 <SelectValue placeholder={t("allPriorities")} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">{t("allPriorities")}</SelectItem>
+                <SelectItem value="all-priorities">{t("allPriorities")}</SelectItem>
                 <SelectItem value="Critical">{t("critical")}</SelectItem>
                 <SelectItem value="High">{t("high")}</SelectItem>
                 <SelectItem value="Medium">{t("medium")}</SelectItem>
