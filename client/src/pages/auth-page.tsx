@@ -92,12 +92,17 @@ export default function AuthPage() {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex flex-col items-center justify-center p-4">
+      {/* Top border with Qatar flag colors */}
+      <div className="fixed top-0 left-0 w-full h-2 bg-gradient-to-r from-maroon-700 via-maroon-700 to-maroon-700"></div>
+      
       <div className="w-full max-w-6xl grid grid-cols-1 lg:grid-cols-2 gap-8">
         {/* Left side: Auth forms */}
-        <Card className="w-full">
+        <Card className="w-full border-maroon-200 dark:border-maroon-800 shadow-lg">
           <CardHeader className="space-y-1 flex flex-col items-center">
-            <Logo size="lg" className="mb-4" />
-            <CardTitle className="text-2xl text-center">
+            <div className="w-16 h-16 bg-maroon-700 rounded-full flex items-center justify-center mb-2">
+              <Logo size="lg" className="text-white" />
+            </div>
+            <CardTitle className="text-2xl text-center text-maroon-800 dark:text-maroon-200">
               {activeTab === "login" ? t("login") : t("register")}
             </CardTitle>
             <CardDescription className="text-center">
@@ -112,9 +117,9 @@ export default function AuthPage() {
               onValueChange={setActiveTab} 
               className="w-full"
             >
-              <TabsList className="grid w-full grid-cols-2 mb-8">
-                <TabsTrigger value="login">{t("login")}</TabsTrigger>
-                <TabsTrigger value="register">{t("register")}</TabsTrigger>
+              <TabsList className="grid w-full grid-cols-2 mb-8 bg-gray-100 dark:bg-gray-800">
+                <TabsTrigger value="login" className="data-[state=active]:bg-maroon-700 data-[state=active]:text-white">{t("login")}</TabsTrigger>
+                <TabsTrigger value="register" className="data-[state=active]:bg-maroon-700 data-[state=active]:text-white">{t("register")}</TabsTrigger>
               </TabsList>
               
               {/* Login Form */}
@@ -199,7 +204,7 @@ export default function AuthPage() {
                           <FormItem>
                             <FormLabel>{t("phone")}</FormLabel>
                             <FormControl>
-                              <Input placeholder={t("phone")} {...field} />
+                              <Input placeholder={t("phone")} {...field} value={field.value || ''} />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
@@ -264,23 +269,35 @@ export default function AuthPage() {
           </CardContent>
         </Card>
 
-        {/* Right side: App description and features */}
+        {/* Right side: Qatar-themed hero section with description and features */}
         <div className="hidden lg:flex flex-col justify-center">
-          <div className="p-8 bg-maroon-700 text-white rounded-lg shadow-xl">
+          <div className="relative overflow-hidden p-8 bg-maroon-700 text-white rounded-lg shadow-xl">
+            {/* Qatar flag-inspired decorative elements */}
+            <div className="absolute top-0 right-0 w-32 h-32 -mt-8 -mr-8 bg-white opacity-10 transform rotate-45"></div>
+            <div className="absolute bottom-0 left-0 w-24 h-24 -mb-6 -ml-6 bg-white opacity-10 transform rotate-45"></div>
+            
+            {/* Qatar national symbol - stylized */}
+            <div className="absolute top-4 right-4 opacity-20">
+              <svg width="60" height="60" viewBox="0 0 100 100" fill="currentColor">
+                <path d="M50,10 C65,10 80,25 80,50 C80,75 65,90 50,90 C35,90 20,75 20,50 C20,25 35,10 50,10 Z M50,30 C60,30 65,40 65,50 C65,60 60,70 50,70 C40,70 35,60 35,50 C35,40 40,30 50,30 Z" />
+              </svg>
+            </div>
+            
             <h1 className={`text-3xl font-bold mb-4 ${isRtl ? 'text-right' : 'text-left'}`}>
               {t("projectManagementSystem")}
             </h1>
-            <p className="mb-6">
+            <p className="mb-6 text-white/90">
               {t("pmSystemDescription")}
             </p>
-            <div className="space-y-4">
+            
+            <div className="space-y-4 relative z-10">
               <div className="flex items-start">
                 <div className="flex-shrink-0 p-1 rounded-full bg-white text-maroon-700 mr-3">
                   <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                   </svg>
                 </div>
-                <p>{t("featureProjectTracking")}</p>
+                <p className="text-white/95">{t("featureProjectTracking")}</p>
               </div>
               <div className="flex items-start">
                 <div className="flex-shrink-0 p-1 rounded-full bg-white text-maroon-700 mr-3">
@@ -288,7 +305,7 @@ export default function AuthPage() {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                   </svg>
                 </div>
-                <p>{t("featureBudgetManagement")}</p>
+                <p className="text-white/95">{t("featureBudgetManagement")}</p>
               </div>
               <div className="flex items-start">
                 <div className="flex-shrink-0 p-1 rounded-full bg-white text-maroon-700 mr-3">
@@ -296,7 +313,7 @@ export default function AuthPage() {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                   </svg>
                 </div>
-                <p>{t("featureTaskAssignment")}</p>
+                <p className="text-white/95">{t("featureTaskAssignment")}</p>
               </div>
               <div className="flex items-start">
                 <div className="flex-shrink-0 p-1 rounded-full bg-white text-maroon-700 mr-3">
@@ -304,8 +321,13 @@ export default function AuthPage() {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                   </svg>
                 </div>
-                <p>{t("featureApprovalWorkflows")}</p>
+                <p className="text-white/95">{t("featureApprovalWorkflows")}</p>
               </div>
+            </div>
+            
+            {/* Qatar-inspired decorative pattern at bottom */}
+            <div className="mt-8 pt-6 border-t border-white/20 text-center text-white/60">
+              <p className="text-sm">قطر • Qatar</p>
             </div>
           </div>
         </div>
