@@ -32,8 +32,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const loginMutation = useMutation({
     mutationFn: async (credentials: LoginData) => {
-      const res = await apiRequest("POST", "/api/login", credentials);
-      return await res.json();
+      try {
+        const res = await fetch("/api/login", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(credentials),
+          credentials: "include",
+        });
+        
+        if (!res.ok) {
+          const errorData = await res.json();
+          throw new Error(errorData.message || "Authentication failed");
+        }
+        
+        return await res.json();
+      } catch (error) {
+        // Properly handle and transform errors
+        if (error instanceof Error) {
+          throw error;
+        } else {
+          throw new Error("An unexpected error occurred");
+        }
+      }
     },
     onSuccess: (user: User) => {
       // Update user data in the cache
@@ -52,10 +72,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     onError: (error: Error) => {
       toast({
         title: "Login failed",
-        description: error.message,
+        description: error.message || "Invalid username or password",
         variant: "destructive",
       });
     },
+    retry: false, // Disable retries for login to prevent infinite loops
   });
 
   const registerMutation = useMutation({
