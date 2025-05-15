@@ -9,12 +9,8 @@ import { insertUserSchema } from "@shared/schema";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
-// Import Qatar landmark SVGs
-import kataraCulturalVillage from "../assets/landmarks/katara-cultural-village.svg";
-import museumOfIslamicArt from "../assets/landmarks/museum-of-islamic-art.svg";
-import pearlQatar from "../assets/landmarks/pearl-qatar.svg";
-import aspireTower from "../assets/landmarks/aspire-tower.svg";
-import nationalMuseum from "../assets/landmarks/national-museum.svg";
+// Import Qatar landmark images
+import { qatarLandmarks } from "@/assets/landmarks/qatarLandmarks";
 import {
   Form,
   FormControl,
@@ -47,23 +43,16 @@ export default function AuthPage() {
     return <Redirect to="/" />;
   }
   
-  // Qatar landmarks for the background image slider
-  const qatarLandmarks = [
-    kataraCulturalVillage,
-    museumOfIslamicArt,
-    pearlQatar,
-    aspireTower,
-    nationalMuseum
-  ];
+  // Using Qatar landmarks imported from qatarLandmarks.ts
   
   // Image slider state
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   
-  // Set up image rotation timer (every 60 seconds)
+  // Set up image rotation timer (every 30 seconds)
   useEffect(() => {
     const interval = setInterval(() => {
       setCurrentImageIndex((prevIndex) => (prevIndex + 1) % qatarLandmarks.length);
-    }, 60000); // 1 minute interval
+    }, 30000); // 30 seconds interval
     
     return () => clearInterval(interval);
   }, []);
@@ -179,8 +168,11 @@ export default function AuthPage() {
         {/* Auth Card */}
         <Card className="w-full bg-white/10 backdrop-blur-md shadow-2xl rounded-2xl overflow-hidden border border-white/20">
           <CardHeader className="space-y-1 flex flex-col items-center pt-8 pb-6 px-6">
-            <div className="flex items-center justify-center mb-4">
-              <QatarLogo size="lg" />
+            <div className="flex flex-col items-center justify-center mb-4">
+              <QatarLogo size="lg" className="mb-2" />
+              <h2 className="text-lg font-semibold text-white">
+                {t("Qatar Ministry of Defence")}
+              </h2>
             </div>
           </CardHeader>
           <CardContent className="px-8 pb-8 pt-0">
