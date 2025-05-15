@@ -155,21 +155,26 @@ export default function AuthPage() {
   }
 
   return (
-    <div className="auth-fullscreen">
+    <div className="h-screen flex items-center justify-center p-0 overflow-hidden relative">
       {/* Dynamic background with Qatar landmarks */}
-      <div className="auth-background">
+      <div className="absolute inset-0 w-full h-full bg-black">
         {qatarLandmarks.map((landmark, index) => (
           <div
             key={index}
-            className="auth-background-image"
+            className="absolute inset-0 w-full h-full transition-opacity duration-1000"
             style={{
               backgroundImage: `url(${landmark})`,
+              backgroundSize: 'cover',
+              backgroundPosition: 'center',
+              backgroundRepeat: 'no-repeat',
               opacity: index === currentImageIndex ? 1 : 0,
+              zIndex: 1,
+              transform: 'scale(1.1)', // Increased zoom for better edge coverage
             }}
           />
         ))}
         {/* Overlay for better text readability - 70% opacity for improved contrast */}
-        <div className="auth-overlay" />
+        <div className="absolute inset-0 bg-black bg-opacity-70 z-2" />
       </div>
       
       <div className="w-full max-w-md" style={{ position: 'relative', zIndex: 9999 }}>
