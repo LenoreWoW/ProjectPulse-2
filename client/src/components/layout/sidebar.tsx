@@ -100,14 +100,14 @@ export function Sidebar() {
             {renderNavItem({ icon: Building, label: t("departments"), path: "/departments" })}
           </PermissionGate>
 
-          <li className="pt-4 mt-4 border-t border-maroon-700 dark:border-maroon-800">
+          <div className="pt-4 mt-4 border-t border-maroon-700 dark:border-maroon-800">
             <PermissionGate permission="canManageUsers">
               {renderNavItem({ icon: ShieldCheck, label: t("userPermissions"), path: "/user-permissions" })}
             </PermissionGate>
             <PermissionGate permission="canAccessAdminSettings">
               {renderNavItem({ icon: Settings, label: t("settings"), path: "/settings" })}
             </PermissionGate>
-          </li>
+          </div>
         </ul>
       </nav>
 

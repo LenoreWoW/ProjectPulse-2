@@ -367,7 +367,7 @@ export default function DepartmentsPage() {
                                 </SelectTrigger>
                               </FormControl>
                               <SelectContent>
-                                <SelectItem value="">{t("notAssigned")}</SelectItem>
+                                <SelectItem value="none">{t("notAssigned")}</SelectItem>
                                 {users
                                   .filter((u) => u.role === "DepartmentDirector" || u.role === "Executive")
                                   .map((user) => (
@@ -539,7 +539,7 @@ export default function DepartmentsPage() {
                               </SelectTrigger>
                             </FormControl>
                             <SelectContent>
-                              <SelectItem value="">{t("notAssigned")}</SelectItem>
+                              <SelectItem value="none">{t("notAssigned")}</SelectItem>
                               {users
                                 .filter((u) => u.role === "DepartmentDirector" || u.role === "Executive")
                                 .map((user) => (

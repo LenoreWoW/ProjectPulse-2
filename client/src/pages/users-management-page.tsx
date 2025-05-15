@@ -438,7 +438,7 @@ export default function UsersManagementPage() {
                                 </SelectTrigger>
                               </FormControl>
                               <SelectContent>
-                                <SelectItem value="">{t("notAssigned")}</SelectItem>
+                                <SelectItem value="none">{t("notAssigned")}</SelectItem>
                                 {departments.map((dept) => (
                                   <SelectItem key={dept.id} value={dept.id.toString()}>
                                     {dept.name}
@@ -668,7 +668,7 @@ export default function UsersManagementPage() {
                               </SelectTrigger>
                             </FormControl>
                             <SelectContent>
-                              <SelectItem value="">{t("notAssigned")}</SelectItem>
+                              <SelectItem value="none">{t("notAssigned")}</SelectItem>
                               {departments.map((dept) => (
                                 <SelectItem key={dept.id} value={dept.id.toString()}>
                                   {dept.name}
