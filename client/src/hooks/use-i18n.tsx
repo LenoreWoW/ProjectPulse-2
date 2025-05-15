@@ -60,6 +60,9 @@ const en: Record<string, string> = {
   acrossAllActiveProjects: "Across all active projects",
   ofTotalBudget: "of total budget",
   potentialOverspend: "Potential overspend of",
+  weeklyUpdateReminder: "Weekly Update Reminder",
+  submissionDue: "Submission Due",
+  submitUpdate: "Submit Update",
   
   // Projects
   newProject: "New Project",
@@ -92,7 +95,7 @@ const en: Record<string, string> = {
   editCost: "Edit Cost",
   details: "Details",
   overview: "Overview",
-  weeklyUpdates: "Weekly Updates",
+  projectUpdates: "Weekly Updates",
   changeRequests: "Change Requests",
   logs: "Logs",
   comments: "Comments",

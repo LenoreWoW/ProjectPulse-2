@@ -5,6 +5,7 @@ import { StatCard } from "@/components/dashboard/stat-card";
 import { BudgetOverview } from "@/components/dashboard/budget-overview";
 import { RecentProjects } from "@/components/dashboard/recent-projects";
 import { PendingApprovals } from "@/components/dashboard/pending-approvals";
+import { WeeklyUpdateReminder } from "@/components/dashboard/weekly-update-reminder";
 import { Button } from "@/components/ui/button";
 import { Project } from "@shared/schema";
 import { 
@@ -19,7 +20,8 @@ import {
   BarChart3,
   CalendarClock,
   Users2,
-  Briefcase
+  Briefcase,
+  FileText
 } from "lucide-react";
 import { Link } from "wouter";
 
@@ -265,6 +267,29 @@ export default function Dashboard() {
           <div className="bg-white dark:bg-gray-800 shadow-lg rounded-xl overflow-hidden border border-gray-200 dark:border-gray-700">
             <PendingApprovals />
           </div>
+        </div>
+      </div>
+      
+      {/* Weekly Update Reminders */}
+      <div className="mt-10">
+        <div className="flex justify-between items-center mb-5">
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center">
+            <div className="p-2 bg-maroon-50 dark:bg-maroon-900/20 rounded-lg mr-3">
+              <FileText className="h-6 w-6 text-maroon-700 dark:text-maroon-300" />
+            </div>
+            {t("weeklyUpdates")}
+          </h2>
+          <Link href="/projects" 
+            className="text-sm text-maroon-700 dark:text-maroon-400 hover:text-maroon-900 dark:hover:text-maroon-300 
+            flex items-center gap-1 px-3 py-1.5 rounded-full bg-maroon-50 dark:bg-maroon-900/20 
+            hover:bg-maroon-100 dark:hover:bg-maroon-900/30 transition-colors"
+          >
+            {t("viewAll")}
+            <ChevronRight className="h-4 w-4" />
+          </Link>
+        </div>
+        <div className="bg-white dark:bg-gray-800 shadow-lg rounded-xl overflow-hidden border border-gray-200 dark:border-gray-700">
+          <WeeklyUpdateReminder />
         </div>
       </div>
     </div>
