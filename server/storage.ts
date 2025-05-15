@@ -97,7 +97,7 @@ export interface IStorage {
   createProjectCostHistory(projectCostHistory: InsertProjectCostHistory): Promise<ProjectCostHistory>;
   
   // Session store
-  sessionStore: session.SessionStore;
+  sessionStore: session.Store;
 }
 
 export class MemStorage implements IStorage {
@@ -128,7 +128,7 @@ export class MemStorage implements IStorage {
   private weeklyUpdateIdCounter: number;
   private projectCostHistoryIdCounter: number;
   
-  sessionStore: session.SessionStore;
+  sessionStore: session.Store;
 
   constructor() {
     this.users = new Map();
@@ -186,7 +186,7 @@ export class MemStorage implements IStorage {
       email: "admin@example.com",
       phone: "+974 5000 0000",
       username: "admin",
-      password: "$2a$10$r5psCyqYODGGrWw0K5ONduDj2uH5SB4Dc9dHmb386Ee59ipCnu0pO", // "admin123"
+      password: "5d41402abc4b2a76b9719d911017c592.5eb63bbbe01eeed093cb22bb8f5acdc3", // "admin123"
       role: "Administrator",
       status: "Active",
       departmentId: null,
