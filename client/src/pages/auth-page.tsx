@@ -26,6 +26,7 @@ import {
 } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Logo } from "@/components/ui/logo";
+import { QatarLogo } from "@/components/ui/qatar-logo";
 import { Loader2 } from "lucide-react";
 
 export default function AuthPage() {
@@ -99,8 +100,8 @@ export default function AuthPage() {
         {/* Left side: Auth forms */}
         <Card className="w-full border-maroon-200 dark:border-maroon-800 shadow-lg">
           <CardHeader className="space-y-1 flex flex-col items-center">
-            <div className="w-16 h-16 bg-maroon-700 rounded-full flex items-center justify-center mb-2">
-              <Logo size="lg" className="text-white" />
+            <div className="flex items-center justify-center mb-4">
+              <QatarLogo size="lg" />
             </div>
             <CardTitle className="text-2xl text-center text-maroon-800 dark:text-maroon-200">
               {activeTab === "login" ? t("login") : t("register")}
