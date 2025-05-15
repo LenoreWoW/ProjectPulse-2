@@ -132,7 +132,7 @@ export default function AuthPage() {
   return (
     <div className="min-h-screen flex items-center justify-center p-0 overflow-hidden relative"
          style={{
-           backgroundImage: "url('/src/assets/bg-pattern.svg')",
+           backgroundImage: "url('/src/assets/qatar-flag-bg.svg')",
            backgroundSize: "cover",
            backgroundPosition: "center"
          }}>
@@ -144,6 +144,7 @@ export default function AuthPage() {
             <div className="flex items-center justify-center mb-4">
               <QatarLogo size="md" />
             </div>
+            <h1 className="text-xl font-bold text-white mt-2 tracking-wide">Project Management System</h1>
           </CardHeader>
           <CardContent className="px-8 pb-8 pt-0">
             <Tabs 
@@ -249,12 +250,16 @@ export default function AuthPage() {
                         control={registerForm.control}
                         name="phone"
                         render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>{t("phone")}</FormLabel>
+                          <FormItem className="mb-3">
                             <FormControl>
-                              <Input placeholder={t("phone")} {...field} value={field.value || ''} />
+                              <Input 
+                                placeholder={t("phone")} 
+                                {...field} 
+                                value={field.value || ''} 
+                                className="h-11 bg-white/10 border border-white/20 focus:border-white/30 text-white placeholder:text-white/50 rounded-full px-5 py-2"
+                              />
                             </FormControl>
-                            <FormMessage />
+                            <FormMessage className="text-red-300 text-sm ml-2" />
                           </FormItem>
                         )}
                       />
@@ -263,12 +268,15 @@ export default function AuthPage() {
                       control={registerForm.control}
                       name="username"
                       render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>{t("username")}</FormLabel>
+                        <FormItem className="mb-3">
                           <FormControl>
-                            <Input placeholder={t("username")} {...field} />
+                            <Input 
+                              placeholder={t("username")} 
+                              {...field}
+                              className="h-11 bg-white/10 border border-white/20 focus:border-white/30 text-white placeholder:text-white/50 rounded-full px-5 py-2"
+                            />
                           </FormControl>
-                          <FormMessage />
+                          <FormMessage className="text-red-300 text-sm ml-2" />
                         </FormItem>
                       )}
                     />
@@ -277,12 +285,16 @@ export default function AuthPage() {
                         control={registerForm.control}
                         name="password"
                         render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>{t("password")}</FormLabel>
+                          <FormItem className="mb-3">
                             <FormControl>
-                              <Input type="password" placeholder={t("password")} {...field} />
+                              <Input 
+                                type="password"
+                                placeholder={t("password")} 
+                                {...field}
+                                className="h-11 bg-white/10 border border-white/20 focus:border-white/30 text-white placeholder:text-white/50 rounded-full px-5 py-2"
+                              />
                             </FormControl>
-                            <FormMessage />
+                            <FormMessage className="text-red-300 text-sm ml-2" />
                           </FormItem>
                         )}
                       />
@@ -290,12 +302,16 @@ export default function AuthPage() {
                         control={registerForm.control}
                         name="confirmPassword"
                         render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>{t("confirmPassword")}</FormLabel>
+                          <FormItem className="mb-3">
                             <FormControl>
-                              <Input type="password" placeholder={t("confirmPassword")} {...field} />
+                              <Input 
+                                type="password"
+                                placeholder={t("confirmPassword")} 
+                                {...field}
+                                className="h-11 bg-white/10 border border-white/20 focus:border-white/30 text-white placeholder:text-white/50 rounded-full px-5 py-2"
+                              />
                             </FormControl>
-                            <FormMessage />
+                            <FormMessage className="text-red-300 text-sm ml-2" />
                           </FormItem>
                         )}
                       />

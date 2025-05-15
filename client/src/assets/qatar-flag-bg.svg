@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="1440" height="800" viewBox="0 0 1440 800" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- White section of Qatar flag -->
+  <rect width="1440" height="800" fill="#ffffff"/>
+  
+  <!-- Maroon section with jagged edge (right part of Qatar flag) -->
+  <path d="M480 0H1440V800H480C480 800 600 700 600 400C600 100 480 0 480 0Z" fill="#8a1538"/>
+</svg>
