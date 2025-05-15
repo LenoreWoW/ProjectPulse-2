@@ -3,6 +3,7 @@ import { useI18n } from "@/hooks/use-i18n";
 import { useQuery } from "@tanstack/react-query";
 import { Project } from "@shared/schema";
 import { useAuth } from "@/hooks/use-auth";
+import { usePermissions, PermissionGate } from "@/hooks/use-permissions";
 import { Button } from "@/components/ui/button";
 import { 
   Card, 
@@ -39,9 +40,9 @@ export default function ProjectsPage() {
   const { data: departments } = useQuery<any[]>({
     queryKey: ["/api/departments"],
   });
-
-  // Can user create projects?
-  const canCreateProject = user && ["Administrator", "MainPMO", "SubPMO", "ProjectManager", "DepartmentDirector"].includes(user.role);
+  
+  // Use permissions hook for role-based permissions
+  const permissions = usePermissions();
 
   // Apply filters
   const filteredProjects = projects?.filter((project) => {
@@ -121,14 +122,14 @@ export default function ProjectsPage() {
       {/* Page Title */}
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{t("projects")}</h1>
-        {canCreateProject && (
+        <PermissionGate permission="canCreateProject">
           <Link href="/projects/new">
             <Button className="bg-qatar-maroon hover:bg-maroon-800 text-white">
               <Plus className="mr-2 h-4 w-4" />
               <span>{t("newProject")}</span>
             </Button>
           </Link>
-        )}
+        </PermissionGate>
       </div>
 
       {/* Filters */}
