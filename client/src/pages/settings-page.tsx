@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useI18n } from "@/hooks/use-i18n";
 import { useAuth } from "@/hooks/use-auth";
+import { useTheme } from "@/providers/theme-provider";
 import { 
   Card, 
   CardContent, 
@@ -45,9 +46,10 @@ import {
 } from "lucide-react";
 
 export default function SettingsPage() {
-  const { t, locale, setLocale } = useI18n();
+  const { t, locale } = useI18n();
   const { user } = useAuth();
   const { toast } = useToast();
+  const { theme, setTheme } = useTheme();
   const [activeTab, setActiveTab] = useState("profile");
 
   // Form schema for profile settings
@@ -109,7 +111,7 @@ export default function SettingsPage() {
 
   // Handle language change
   const handleLanguageChange = (newLocale: string) => {
-    setLocale(newLocale);
+    // This would be implemented when language switching is implemented
     toast({
       title: t("languageChanged"),
       description: t("languageChangeSuccess"),
@@ -239,15 +241,16 @@ export default function SettingsPage() {
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
                     <Label htmlFor="dark-mode" className="font-medium">{t("darkMode")}</Label>
-                    <Switch id="dark-mode" />
+                    <Switch 
+                      id="dark-mode" 
+                      checked={theme === "dark"}
+                      onCheckedChange={(checked) => setTheme(checked ? "dark" : "light")}
+                    />
                   </div>
                   <p className="text-sm text-gray-500 dark:text-gray-400">
                     {t("darkModeDescription")}
                   </p>
                 </div>
-                <Button className="bg-qatar-maroon hover:bg-maroon-800 text-white">
-                  {t("saveChanges")}
-                </Button>
               </CardContent>
             </TabsContent>
 

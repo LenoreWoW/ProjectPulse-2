@@ -51,6 +51,28 @@
     --input: 217.2 32.6% 17.5%;
     --ring: 138 21% 56%; /* Qatar maroon */
   }
+  
+  /* Additional dark mode styles */
+  .dark body {
+    background-color: #111827;
+    color: #f9fafb;
+  }
+  
+  .dark .bg-white {
+    background-color: #1f2937 !important;
+  }
+  
+  .dark .bg-gray-100 {
+    background-color: #111827 !important;
+  }
+  
+  .dark .text-gray-900 {
+    color: #f9fafb !important;
+  }
+  
+  .dark .border-gray-200 {
+    border-color: #374151 !important;
+  }
 }
 
 /* Fix for the full height issue - extremely aggressive approach */
