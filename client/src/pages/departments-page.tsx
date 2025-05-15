@@ -144,10 +144,10 @@ export default function DepartmentsPage() {
       description: department.description || "",
       headUserId: department.headUserId,
       budget: department.budget,
-      code: department.code,
-      location: department.location,
-      phone: department.phone,
-      email: department.email,
+      code: department.code || "",
+      location: department.location || "",
+      phone: department.phone || "",
+      email: department.email || "",
     });
   };
   
@@ -254,7 +254,7 @@ export default function DepartmentsPage() {
   const filteredDepartments = departments.filter(
     (department) =>
       department.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      department.code.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      department.code?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       department.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       false
   );
@@ -392,6 +392,7 @@ export default function DepartmentsPage() {
                               <Input 
                                 type="number"
                                 {...field}
+                                value={field.value ?? undefined}
                                 onChange={(e) => field.onChange(e.target.value ? parseFloat(e.target.value) : null)}
                                 placeholder={t("enterBudget")} 
                               />
@@ -410,7 +411,7 @@ export default function DepartmentsPage() {
                           <FormItem>
                             <FormLabel>{t("location")}</FormLabel>
                             <FormControl>
-                              <Input {...field} placeholder={t("enterLocation")} />
+                              <Input {...field} value={field.value ?? ""} placeholder={t("enterLocation")} />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
