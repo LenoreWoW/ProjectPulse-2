@@ -130,40 +130,30 @@ export default function AuthPage() {
   }
 
   return (
-    <div className="min-h-screen bg-maroon-700 flex flex-col items-center justify-center p-0 overflow-hidden relative">
-      {/* Fixed white stripe at top */}
-      <div className="fixed top-0 left-0 w-full h-8 bg-white"></div>
+    <div className="min-h-screen flex items-center justify-center p-0 overflow-hidden relative"
+         style={{
+           backgroundImage: "url('/src/assets/bg-pattern.svg')",
+           backgroundSize: "cover",
+           backgroundPosition: "center"
+         }}>
       
-      {/* Decorative elements inspired by Qatar flag */}
-      <div className="absolute top-8 left-0 w-full h-1 bg-white opacity-30"></div>
-      <div className="absolute top-0 right-0 h-full w-32 bg-white opacity-5 transform rotate-12 translate-x-16"></div>
-      <div className="absolute bottom-0 left-0 h-full w-32 bg-white opacity-5 transform -rotate-12 -translate-x-16"></div>
-      
-      <div className="w-full max-w-6xl grid grid-cols-1 lg:grid-cols-2 gap-8 p-4 z-10">
-        {/* Left side: Auth forms */}
-        <Card className="w-full bg-white border-4 border-maroon-700 shadow-2xl rounded-lg overflow-hidden">
-          <CardHeader className="space-y-1 flex flex-col items-center bg-maroon-700 py-8 px-4">
-            <div className="flex items-center justify-center mb-6">
-              <QatarLogo size="lg" />
+      <div className="w-full max-w-md z-10">
+        {/* Auth Card */}
+        <Card className="w-full bg-white/10 backdrop-blur-md shadow-2xl rounded-2xl overflow-hidden border border-white/20">
+          <CardHeader className="space-y-1 flex flex-col items-center pt-6 pb-3 px-6">
+            <div className="flex items-center justify-center mb-4">
+              <QatarLogo size="md" />
             </div>
-            <CardTitle className="text-3xl text-center text-white font-bold">
-              {activeTab === "login" ? t("login") : t("register")}
-            </CardTitle>
-            <CardDescription className="text-center text-white/80 font-medium mt-2">
-              {activeTab === "login" 
-                ? t("enterCredentials") 
-                : t("createAccount")}
-            </CardDescription>
           </CardHeader>
-          <CardContent className="pt-8 px-10">
+          <CardContent className="px-8 pb-8 pt-0">
             <Tabs 
               value={activeTab} 
               onValueChange={setActiveTab} 
               className="w-full"
             >
-              <TabsList className="grid w-full grid-cols-2 mb-8 bg-gray-100 border-2 border-maroon-700 p-1 rounded-md overflow-hidden">
-                <TabsTrigger value="login" className="data-[state=active]:bg-maroon-700 data-[state=active]:text-white text-maroon-700 font-bold py-4 rounded">{t("login")}</TabsTrigger>
-                <TabsTrigger value="register" className="data-[state=active]:bg-maroon-700 data-[state=active]:text-white text-maroon-700 font-bold py-4 rounded">{t("register")}</TabsTrigger>
+              <TabsList className="grid w-full grid-cols-2 mb-6 bg-white/10 p-1 rounded-full overflow-hidden">
+                <TabsTrigger value="login" className="data-[state=active]:bg-maroon-700 data-[state=active]:text-white text-white font-medium py-2 rounded-full">{t("login")}</TabsTrigger>
+                <TabsTrigger value="register" className="data-[state=active]:bg-maroon-700 data-[state=active]:text-white text-white font-medium py-2 rounded-full">{t("register")}</TabsTrigger>
               </TabsList>
               
               {/* Login Form */}
@@ -175,15 +165,14 @@ export default function AuthPage() {
                       name="username"
                       render={({ field }) => (
                         <FormItem className="mb-4">
-                          <FormLabel className="text-maroon-700 font-semibold mb-1.5">{t("username")}</FormLabel>
                           <FormControl>
                             <Input 
                               placeholder={t("username")} 
                               {...field} 
-                              className="h-12 border-2 border-maroon-700 bg-white focus:ring-maroon-700 focus:border-maroon-700 rounded-md px-4 py-2 text-base shadow-sm"
+                              className="h-11 bg-white/10 border border-white/20 focus:border-white/30 text-white placeholder:text-white/50 rounded-full px-5 py-2"
                             />
                           </FormControl>
-                          <FormMessage />
+                          <FormMessage className="text-red-300 text-sm ml-2" />
                         </FormItem>
                       )}
                     />
@@ -192,26 +181,25 @@ export default function AuthPage() {
                       name="password"
                       render={({ field }) => (
                         <FormItem className="mb-6">
-                          <FormLabel className="text-maroon-700 font-semibold mb-1.5">{t("password")}</FormLabel>
                           <FormControl>
                             <Input 
                               type="password" 
                               placeholder={t("password")} 
                               {...field} 
-                              className="h-12 border-2 border-maroon-700 bg-white focus:ring-maroon-700 focus:border-maroon-700 rounded-md px-4 py-2 text-base shadow-sm"
+                              className="h-11 bg-white/10 border border-white/20 focus:border-white/30 text-white placeholder:text-white/50 rounded-full px-5 py-2"
                             />
                           </FormControl>
-                          <FormMessage />
+                          <FormMessage className="text-red-300 text-sm ml-2" />
                         </FormItem>
                       )}
                     />
                     <Button 
                       type="submit" 
-                      className="w-full bg-maroon-700 hover:bg-maroon-800 text-white text-lg font-bold py-6 border-2 border-white shadow-lg rounded-md transition-all duration-200"
+                      className="w-full bg-maroon-700 hover:bg-maroon-800 text-white font-medium py-3 rounded-full transition-all duration-200 shadow-md"
                       disabled={loginMutation.isPending}
                     >
                       {loginMutation.isPending && (
-                        <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                       )}
                       {t("login")}
                     </Button>
@@ -227,12 +215,15 @@ export default function AuthPage() {
                       control={registerForm.control}
                       name="name"
                       render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>{t("name")}</FormLabel>
+                        <FormItem className="mb-3">
                           <FormControl>
-                            <Input placeholder={t("name")} {...field} />
+                            <Input 
+                              placeholder={t("name")} 
+                              {...field} 
+                              className="h-11 bg-white/10 border border-white/20 focus:border-white/30 text-white placeholder:text-white/50 rounded-full px-5 py-2"
+                            />
                           </FormControl>
-                          <FormMessage />
+                          <FormMessage className="text-red-300 text-sm ml-2" />
                         </FormItem>
                       )}
                     />
@@ -241,12 +232,16 @@ export default function AuthPage() {
                         control={registerForm.control}
                         name="email"
                         render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>{t("email")}</FormLabel>
+                          <FormItem className="mb-3">
                             <FormControl>
-                              <Input type="email" placeholder={t("email")} {...field} />
+                              <Input 
+                                type="email" 
+                                placeholder={t("email")} 
+                                {...field} 
+                                className="h-11 bg-white/10 border border-white/20 focus:border-white/30 text-white placeholder:text-white/50 rounded-full px-5 py-2"
+                              />
                             </FormControl>
-                            <FormMessage />
+                            <FormMessage className="text-red-300 text-sm ml-2" />
                           </FormItem>
                         )}
                       />
