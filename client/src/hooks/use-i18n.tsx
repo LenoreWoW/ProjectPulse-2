@@ -30,6 +30,17 @@ const en: Record<string, string> = {
   name: "Full Name",
   logout: "Logout",
   
+  // Document Upload
+  requiredDocuments: "Required Documents",
+  passportUpload: "Passport",
+  idCardUpload: "National ID",
+  passportRequired: "Passport is required",
+  idCardRequired: "National ID is required",
+  documentRequirementNote: "Please upload clear scans or photos of your original documents. Files must be less than 5MB.",
+  dropFileHere: "Drop file here",
+  orClickToBrowse: "or click to browse",
+  removeFile: "Remove",
+  
   // Dashboard
   activeProjects: "Active Projects",
   projectsCompleted: "Completed",
@@ -137,6 +148,17 @@ const ar: Record<string, string> = {
   phone: "الهاتف",
   name: "الاسم الكامل",
   logout: "تسجيل الخروج",
+  
+  // Document Upload
+  requiredDocuments: "المستندات المطلوبة",
+  passportUpload: "جواز السفر",
+  idCardUpload: "بطاقة الهوية",
+  passportRequired: "جواز السفر مطلوب",
+  idCardRequired: "بطاقة الهوية مطلوبة",
+  documentRequirementNote: "يرجى تحميل صور واضحة من مستنداتك الأصلية. يجب أن تكون الملفات أقل من 5 ميجابايت.",
+  dropFileHere: "ضع الملف هنا",
+  orClickToBrowse: "أو انقر للتصفح",
+  removeFile: "إزالة",
   
   // Dashboard
   activeProjects: "المشاريع النشطة",

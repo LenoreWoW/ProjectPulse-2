@@ -46,9 +46,11 @@ export default function AuthPage() {
     password: z.string().min(1, { message: t("passwordRequired") }),
   });
 
-  // Registration form schema
+  // Registration form schema with file upload fields
   const registerSchema = insertUserSchema.extend({
     confirmPassword: z.string().min(1, { message: t("confirmPasswordRequired") }),
+    passportImageFile: z.instanceof(File, { message: t("passportRequired") }).optional(),
+    idCardImageFile: z.instanceof(File, { message: t("idCardRequired") }).optional(),
   }).refine(data => data.password === data.confirmPassword, {
     message: t("passwordsDontMatch"),
     path: ["confirmPassword"],
@@ -77,6 +79,8 @@ export default function AuthPage() {
       status: "Pending",
       departmentId: 1, // Default department
       preferredLanguage: "en",
+      passportImageFile: undefined,
+      idCardImageFile: undefined,
     },
   });
 
@@ -87,9 +91,42 @@ export default function AuthPage() {
 
   // Handle registration form submission
   function onRegisterSubmit(values: z.infer<typeof registerSchema>) {
-    // Remove confirmPassword as it's not part of the user model
-    const { confirmPassword, ...userData } = values;
-    registerMutation.mutate(userData);
+    // Remove confirmPassword and file fields as they need special handling
+    const { confirmPassword, passportImageFile, idCardImageFile, ...userData } = values;
+    
+    // Convert file data to base64 strings for storage
+    const processFiles = async () => {
+      try {
+        // Function to convert file to base64
+        const fileToBase64 = (file: File): Promise<string> => {
+          return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.readAsDataURL(file);
+            reader.onload = () => resolve(reader.result as string);
+            reader.onerror = error => reject(error);
+          });
+        };
+        
+        // Process passport file if provided
+        if (passportImageFile) {
+          const passportBase64 = await fileToBase64(passportImageFile);
+          userData.passportImage = passportBase64;
+        }
+        
+        // Process ID card file if provided
+        if (idCardImageFile) {
+          const idCardBase64 = await fileToBase64(idCardImageFile);
+          userData.idCardImage = idCardBase64;
+        }
+        
+        // Now submit the user data with file data encoded as base64
+        registerMutation.mutate(userData);
+      } catch (error) {
+        console.error("Error processing file uploads:", error);
+      }
+    };
+    
+    processFiles();
   }
 
   return (
@@ -254,9 +291,61 @@ export default function AuthPage() {
                         )}
                       />
                     </div>
+                    
+                    <div className="mt-6 p-4 border border-maroon-200 dark:border-maroon-800 rounded-md bg-maroon-50 dark:bg-maroon-900/20">
+                      <h3 className="text-lg font-semibold text-maroon-700 dark:text-maroon-300 mb-4">
+                        {t("requiredDocuments")}
+                      </h3>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-2">
+                        <FormField
+                          control={registerForm.control}
+                          name="passportImageFile"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormControl>
+                                <FileUpload
+                                  id="passportUpload"
+                                  label={t("passportUpload")}
+                                  accept="image/*,.pdf"
+                                  required={true}
+                                  onChange={field.onChange}
+                                  value={field.value}
+                                  errorMessage={registerForm.formState.errors.passportImageFile?.message}
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={registerForm.control}
+                          name="idCardImageFile"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormControl>
+                                <FileUpload
+                                  id="idCardUpload"
+                                  label={t("idCardUpload")}
+                                  accept="image/*,.pdf"
+                                  required={true}
+                                  onChange={field.onChange}
+                                  value={field.value}
+                                  errorMessage={registerForm.formState.errors.idCardImageFile?.message}
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">
+                        {t("documentRequirementNote")}
+                      </p>
+                    </div>
+                    
                     <Button 
                       type="submit" 
-                      className="w-full bg-maroon-700 hover:bg-maroon-800"
+                      className="w-full bg-maroon-700 hover:bg-maroon-800 mt-6"
                       disabled={registerMutation.isPending}
                     >
                       {registerMutation.isPending && (
