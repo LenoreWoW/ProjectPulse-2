@@ -597,7 +597,7 @@ export default function DepartmentsPage() {
                         <FormItem>
                           <FormLabel>{t("phone")}</FormLabel>
                           <FormControl>
-                            <Input {...field} placeholder={t("enterPhone")} />
+                            <Input {...field} value={field.value ?? ""} placeholder={t("enterPhone")} />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -612,7 +612,7 @@ export default function DepartmentsPage() {
                       <FormItem>
                         <FormLabel>{t("email")}</FormLabel>
                         <FormControl>
-                          <Input {...field} type="email" placeholder={t("enterEmail")} />
+                          <Input {...field} type="email" value={field.value ?? ""} placeholder={t("enterEmail")} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
