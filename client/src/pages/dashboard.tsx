@@ -85,12 +85,6 @@ export default function Dashboard() {
             <Button variant="ghost" className="bg-white/10 hover:bg-white/20 text-white rounded-full p-2 h-10 w-10">
               <Bell className="h-5 w-5" />
             </Button>
-            <Link href="/projects/new">
-              <Button className="bg-white hover:bg-white/90 text-qatar-maroon rounded-lg font-medium">
-                <Plus className="mr-2 h-4 w-4" />
-                <span>{t("newProject")}</span>
-              </Button>
-            </Link>
           </div>
         </div>
         
