@@ -237,19 +237,21 @@ export default function CalendarPage() {
       </div>
       
       {/* Calendar Controls */}
-      <div className="bg-white dark:bg-darker shadow rounded-lg p-4 mb-6 border border-gray-200 dark:border-gray-700">
+      <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-4 mb-6 border border-gray-200 dark:border-gray-700">
         <div className="flex flex-col sm:flex-row justify-between items-center mb-4">
           <div className="flex items-center space-x-2 mb-4 sm:mb-0">
             <Button 
               variant="outline" 
               size="icon" 
               onClick={goToPrevious}
+              className="dark:border-gray-700 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-white"
             >
               <ChevronLeft className="h-4 w-4" />
             </Button>
             <Button 
               variant="outline" 
               onClick={goToToday}
+              className="dark:border-gray-700 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-white"
             >
               {t("today")}
             </Button>
@@ -257,10 +259,11 @@ export default function CalendarPage() {
               variant="outline" 
               size="icon" 
               onClick={goToNext}
+              className="dark:border-gray-700 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-white"
             >
               <ChevronRight className="h-4 w-4" />
             </Button>
-            <h2 className="text-xl font-semibold">{formatDateRange()}</h2>
+            <h2 className="text-xl font-semibold text-gray-900 dark:text-white">{formatDateRange()}</h2>
           </div>
           
           <div className="flex space-x-2">
