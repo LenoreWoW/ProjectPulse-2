@@ -123,7 +123,7 @@ export default function ProjectsPage() {
         <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{t("projects")}</h1>
         {canCreateProject && (
           <Link href="/projects/new">
-            <Button className="bg-maroon-700 hover:bg-maroon-800 text-white">
+            <Button className="bg-qatar-maroon hover:bg-maroon-800 text-white">
               <Plus className="mr-2 h-4 w-4" />
               <span>{t("newProject")}</span>
             </Button>
