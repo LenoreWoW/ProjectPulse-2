@@ -461,7 +461,8 @@ export default function SettingsPage() {
                   </Button>
                 </div>
               </CardContent>
-            </TabsContent>
+              </>
+            )}
           </Card>
         </div>
       </div>
