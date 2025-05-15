@@ -130,21 +130,21 @@ export default function AuthPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex flex-col items-center justify-center p-4">
-      {/* Top border with Qatar flag colors */}
-      <div className="fixed top-0 left-0 w-full h-2 bg-gradient-to-r from-maroon-700 via-maroon-700 to-maroon-700"></div>
+    <div className="min-h-screen bg-maroon-700 flex flex-col items-center justify-center p-4">
+      {/* Top border with maroon color */}
+      <div className="fixed top-0 left-0 w-full h-2 bg-white"></div>
       
       <div className="w-full max-w-6xl grid grid-cols-1 lg:grid-cols-2 gap-8">
         {/* Left side: Auth forms */}
-        <Card className="w-full border-maroon-200 dark:border-maroon-800 shadow-lg">
-          <CardHeader className="space-y-1 flex flex-col items-center">
+        <Card className="w-full bg-white border-0 shadow-lg">
+          <CardHeader className="space-y-1 flex flex-col items-center bg-white rounded-t-lg">
             <div className="flex items-center justify-center mb-4">
               <QatarLogo size="lg" />
             </div>
-            <CardTitle className="text-2xl text-center text-maroon-800 dark:text-maroon-200">
+            <CardTitle className="text-2xl text-center text-maroon-700">
               {activeTab === "login" ? t("login") : t("register")}
             </CardTitle>
-            <CardDescription className="text-center">
+            <CardDescription className="text-center text-maroon-500">
               {activeTab === "login" 
                 ? t("enterCredentials") 
                 : t("createAccount")}
@@ -156,9 +156,9 @@ export default function AuthPage() {
               onValueChange={setActiveTab} 
               className="w-full"
             >
-              <TabsList className="grid w-full grid-cols-2 mb-8 bg-gray-100 dark:bg-gray-800">
-                <TabsTrigger value="login" className="data-[state=active]:bg-maroon-700 data-[state=active]:text-white">{t("login")}</TabsTrigger>
-                <TabsTrigger value="register" className="data-[state=active]:bg-maroon-700 data-[state=active]:text-white">{t("register")}</TabsTrigger>
+              <TabsList className="grid w-full grid-cols-2 mb-8 bg-white border border-maroon-200">
+                <TabsTrigger value="login" className="data-[state=active]:bg-maroon-700 data-[state=active]:text-white text-maroon-700">{t("login")}</TabsTrigger>
+                <TabsTrigger value="register" className="data-[state=active]:bg-maroon-700 data-[state=active]:text-white text-maroon-700">{t("register")}</TabsTrigger>
               </TabsList>
               
               {/* Login Form */}
@@ -362,63 +362,56 @@ export default function AuthPage() {
 
         {/* Right side: Qatar-themed hero section with description and features */}
         <div className="hidden lg:flex flex-col justify-center">
-          <div className="relative overflow-hidden p-8 bg-maroon-700 text-white rounded-lg shadow-xl">
-            {/* Qatar flag-inspired decorative elements */}
-            <div className="absolute top-0 right-0 w-32 h-32 -mt-8 -mr-8 bg-white opacity-10 transform rotate-45"></div>
-            <div className="absolute bottom-0 left-0 w-24 h-24 -mb-6 -ml-6 bg-white opacity-10 transform rotate-45"></div>
+          <div className="relative overflow-hidden p-8 bg-white text-maroon-700 rounded-lg shadow-xl border border-maroon-700">
+            {/* Maroon and white decorative elements */}
+            <div className="absolute top-0 right-0 w-32 h-32 -mt-8 -mr-8 bg-maroon-700 opacity-10 transform rotate-45"></div>
+            <div className="absolute bottom-0 left-0 w-24 h-24 -mb-6 -ml-6 bg-maroon-700 opacity-10 transform rotate-45"></div>
             
-            {/* Qatar national symbol - stylized */}
-            <div className="absolute top-4 right-4 opacity-20">
-              <svg width="60" height="60" viewBox="0 0 100 100" fill="currentColor">
-                <path d="M50,10 C65,10 80,25 80,50 C80,75 65,90 50,90 C35,90 20,75 20,50 C20,25 35,10 50,10 Z M50,30 C60,30 65,40 65,50 C65,60 60,70 50,70 C40,70 35,60 35,50 C35,40 40,30 50,30 Z" />
-              </svg>
-            </div>
-            
-            <h1 className={`text-3xl font-bold mb-4 ${isRtl ? 'text-right' : 'text-left'}`}>
+            <h1 className={`text-3xl font-bold mb-4 ${isRtl ? 'text-right' : 'text-left'} text-maroon-700`}>
               {t("projectManagementSystem")}
             </h1>
-            <p className="mb-6 text-white/90">
+            <p className="mb-6 text-maroon-700/90 font-medium">
               {t("pmSystemDescription")}
             </p>
             
             <div className="space-y-4 relative z-10">
               <div className="flex items-start">
-                <div className="flex-shrink-0 p-1 rounded-full bg-white text-maroon-700 mr-3">
+                <div className="flex-shrink-0 p-1 rounded-full bg-maroon-700 text-white mr-3">
                   <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                   </svg>
                 </div>
-                <p className="text-white/95">{t("featureProjectTracking")}</p>
+                <p className="text-maroon-700 font-medium">{t("featureProjectTracking")}</p>
               </div>
               <div className="flex items-start">
-                <div className="flex-shrink-0 p-1 rounded-full bg-white text-maroon-700 mr-3">
+                <div className="flex-shrink-0 p-1 rounded-full bg-maroon-700 text-white mr-3">
                   <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                   </svg>
                 </div>
-                <p className="text-white/95">{t("featureBudgetManagement")}</p>
+                <p className="text-maroon-700 font-medium">{t("featureBudgetManagement")}</p>
               </div>
               <div className="flex items-start">
-                <div className="flex-shrink-0 p-1 rounded-full bg-white text-maroon-700 mr-3">
+                <div className="flex-shrink-0 p-1 rounded-full bg-maroon-700 text-white mr-3">
                   <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                   </svg>
                 </div>
-                <p className="text-white/95">{t("featureTaskAssignment")}</p>
+                <p className="text-maroon-700 font-medium">{t("featureTaskAssignment")}</p>
               </div>
               <div className="flex items-start">
-                <div className="flex-shrink-0 p-1 rounded-full bg-white text-maroon-700 mr-3">
+                <div className="flex-shrink-0 p-1 rounded-full bg-maroon-700 text-white mr-3">
                   <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                   </svg>
                 </div>
-                <p className="text-white/95">{t("featureApprovalWorkflows")}</p>
+                <p className="text-maroon-700 font-medium">{t("featureApprovalWorkflows")}</p>
               </div>
             </div>
             
-            {/* Qatar-inspired decorative pattern at bottom */}
-            <div className="mt-8 pt-6 border-t border-white/20 text-center text-white/60">
-              <p className="text-sm">قطر • Qatar</p>
+            {/* Decorative pattern at bottom */}
+            <div className="mt-8 pt-6 border-t border-maroon-700/20 flex justify-center">
+              <div className="h-1 w-12 bg-maroon-700 rounded-full"></div>
             </div>
           </div>
         </div>

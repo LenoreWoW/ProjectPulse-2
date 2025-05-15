@@ -196,7 +196,25 @@ export class MemStorage implements IStorage {
     };
     
     this.users.set(adminUser.id, adminUser);
-    this.userIdCounter = 2;
+    
+    // Add super admin user with specified credentials
+    const superAdmin: User = {
+      id: 2,
+      name: "Super Admin",
+      email: "superadmin@example.com",
+      phone: "+974 5000 1111",
+      username: "Hdmin",
+      password: "3c58ae9f39453437cab08e77c7235bd3.39f4f327b0d4df36279680a1898fcd21", // "Hdmin1738!@"
+      role: "Administrator",
+      status: "Active",
+      departmentId: null,
+      passportImage: null,
+      idCardImage: null,
+      preferredLanguage: "en"
+    };
+    
+    this.users.set(superAdmin.id, superAdmin);
+    this.userIdCounter = 3;
   }
 
   // User Methods

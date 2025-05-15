@@ -29,11 +29,8 @@ export function QatarLogo({ className = "", size = "md", hideText = false }: Qat
       </div>
       {!hideText && (
         <div className={`font-semibold ${sizeClasses[size].text} ${isRtl ? 'mr-3 ml-0' : 'ml-3 mr-0'} flex flex-col`}>
-          <span className="text-maroon-700 font-bold">
+          <span className="text-white font-bold">
             {t("projectManagementSystem")}
-          </span>
-          <span className="text-gray-600 text-sm">
-            {isRtl ? 'دولـة قطـر' : 'State of Qatar'}
           </span>
         </div>
       )}
