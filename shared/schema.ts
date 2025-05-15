@@ -32,7 +32,8 @@ export const users = pgTable('users', {
   role: roleEnum('role').default('User'),
   status: userStatusEnum('status').default('Pending'),
   departmentId: integer('department_id'),
-  idPassportImage: text('id_passport_image'),
+  passportImage: text('passport_image'),
+  idCardImage: text('id_card_image'),
   preferredLanguage: text('preferred_language').default('en'),
 });
 

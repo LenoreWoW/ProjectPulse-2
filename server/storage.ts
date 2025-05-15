@@ -180,7 +180,7 @@ export class MemStorage implements IStorage {
     });
     
     // Add admin user
-    const adminUser = {
+    const adminUser: User = {
       id: 1,
       name: "Admin User",
       email: "admin@example.com",
@@ -190,9 +190,10 @@ export class MemStorage implements IStorage {
       role: "Administrator",
       status: "Active",
       departmentId: null,
-      idPassportImage: null,
+      passportImage: null,
+      idCardImage: null,
       preferredLanguage: "en"
-    } as User;
+    };
     
     this.users.set(adminUser.id, adminUser);
     this.userIdCounter = 2;

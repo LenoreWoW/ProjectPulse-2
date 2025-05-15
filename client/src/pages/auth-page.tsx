@@ -27,6 +27,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Logo } from "@/components/ui/logo";
 import { QatarLogo } from "@/components/ui/qatar-logo";
+import { FileUpload } from "@/components/ui/file-upload";
 import { Loader2 } from "lucide-react";
 
 export default function AuthPage() {
