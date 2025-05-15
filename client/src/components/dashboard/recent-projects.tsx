@@ -184,27 +184,28 @@ export function RecentProjects({ className = "" }: RecentProjectsProps) {
     .slice(0, 3);
   
   return (
-    <div className={`lg:col-span-2 bg-white dark:bg-darker shadow rounded-lg border ${className || 'border-gray-200 dark:border-gray-700'}`}>
-      <div className="p-6 border-b border-maroon-200 dark:border-maroon-800 bg-gradient-to-r from-maroon-50 to-white dark:from-maroon-900/20 dark:to-darker flex justify-between items-center">
-        <h2 className="text-lg font-semibold text-maroon-700 dark:text-maroon-300">{t("recentProjects")}</h2>
-        <Link href="/projects">
-          <a className="text-sm text-maroon-700 dark:text-maroon-400 hover:underline">{t("viewAll")}</a>
+    <div className={`lg:col-span-2 bg-white dark:bg-darker shadow-lg rounded-lg border ${className || 'border-maroon-200 dark:border-maroon-800'}`}>
+      <div className="p-6 border-b border-maroon-200 dark:border-maroon-800 bg-gradient-to-r from-maroon-100 to-white dark:from-maroon-900/30 dark:to-darker flex justify-between items-center">
+        <h2 className="text-xl font-bold text-maroon-800 dark:text-maroon-200">{t("recentProjects")}</h2>
+        <Link href="/projects" 
+          className="text-sm text-maroon-700 dark:text-maroon-400 hover:text-maroon-900 dark:hover:text-maroon-300 hover:underline flex items-center gap-1">
+          {t("viewAll")} <ArrowRight className="h-4 w-4" />
         </Link>
       </div>
       <div className="overflow-x-auto">
         <table className="min-w-full divide-y divide-maroon-100 dark:divide-maroon-800">
-          <thead className="bg-maroon-50 dark:bg-maroon-900/10">
+          <thead className="bg-maroon-50 dark:bg-maroon-900/20">
             <tr>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-maroon-500 dark:text-maroon-400 uppercase tracking-wider">
+              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-maroon-600 dark:text-maroon-300 uppercase tracking-wider">
                 {t("project")}
               </th>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-maroon-500 dark:text-maroon-400 uppercase tracking-wider">
+              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-maroon-600 dark:text-maroon-300 uppercase tracking-wider">
                 {t("department")}
               </th>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-maroon-500 dark:text-maroon-400 uppercase tracking-wider">
+              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-maroon-600 dark:text-maroon-300 uppercase tracking-wider">
                 {t("status")}
               </th>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-maroon-500 dark:text-maroon-400 uppercase tracking-wider">
+              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-maroon-600 dark:text-maroon-300 uppercase tracking-wider">
                 {t("progress")}
               </th>
             </tr>
@@ -212,15 +213,20 @@ export function RecentProjects({ className = "" }: RecentProjectsProps) {
           <tbody className="bg-white dark:bg-darker divide-y divide-maroon-100 dark:divide-maroon-800">
             {recentProjects.length === 0 ? (
               <tr>
-                <td colSpan={4} className="px-6 py-4 text-center text-gray-500 dark:text-gray-400">
-                  {t("noProjects")}
+                <td colSpan={4} className="px-6 py-6 text-center">
+                  <div className="flex flex-col items-center justify-center space-y-3">
+                    <div className="h-12 w-12 text-maroon-300 dark:text-maroon-500 opacity-50">
+                      <Folder className="h-full w-full" />
+                    </div>
+                    <p className="text-gray-500 dark:text-gray-400">{t("noProjects")}</p>
+                  </div>
                 </td>
               </tr>
             ) : (
               recentProjects.map((project) => {
                 const progress = getProgress(project);
                 return (
-                  <tr key={project.id}>
+                  <tr key={project.id} className="hover:bg-maroon-50 dark:hover:bg-maroon-900/10 transition-colors">
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center">
                         {getProjectIcon(project)}
@@ -228,37 +234,46 @@ export function RecentProjects({ className = "" }: RecentProjectsProps) {
                           <div className="text-sm font-medium text-gray-900 dark:text-white">
                             {project.title}
                           </div>
-                          <div className="text-xs text-gray-500 dark:text-gray-400">
+                          <div className="text-xs font-medium text-maroon-600 dark:text-maroon-400 mt-1">
                             {project.deadline ? getDaysUntilDeadline(project.deadline) : ''}
                           </div>
                         </div>
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900 dark:text-white">
-                        {/* Department name would come from a join with the departments table */}
-                        {project.departmentId === 1 ? 'Security' : 
-                         project.departmentId === 2 ? 'Operations' : 
-                         project.departmentId === 3 ? 'Technology' : 'Other'}
+                      <div className="flex items-center">
+                        <div className="h-6 w-6 text-maroon-600 dark:text-maroon-400 mr-2">
+                          <Building className="h-full w-full" />
+                        </div>
+                        <span className="text-sm text-gray-900 dark:text-white">
+                          {project.departmentId === 1 ? 'Security' : 
+                          project.departmentId === 2 ? 'Operations' : 
+                          project.departmentId === 3 ? 'Technology' : 'Other'}
+                        </span>
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusClasses(project.status || '')}`}>
+                      <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusClasses(project.status || '')}`}>
                         {formatStatus(project.status || '')}
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                      <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5">
+                      <div className="w-full bg-gray-100 dark:bg-gray-800 rounded-full h-3">
                         <div 
                           className={`${
                             project.status === 'OnHold' ? 'bg-orange-600' :
                             project.status === 'Pending' ? 'bg-red-600' :
                             'bg-maroon-600'
-                          } h-2.5 rounded-full`} 
+                          } h-3 rounded-full transition-all duration-500`} 
                           style={{ width: `${progress}%` }}
                         ></div>
                       </div>
-                      <span className="text-xs mt-1 block">{progress}%</span>
+                      <div className="flex justify-between items-center mt-1">
+                        <span className="text-xs font-medium">{progress}%</span>
+                        <Link href={`/projects/${project.id}`} className="text-xs text-maroon-600 dark:text-maroon-400 hover:underline">
+                          {t("details")}
+                        </Link>
+                      </div>
                     </td>
                   </tr>
                 );

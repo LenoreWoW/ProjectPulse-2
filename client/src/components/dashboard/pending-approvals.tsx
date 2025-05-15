@@ -6,6 +6,15 @@ import { ChangeRequest } from "@shared/schema";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
+import { 
+  Clock, 
+  BarChart3, 
+  CalendarClock, 
+  CheckSquare, 
+  AlertTriangle, 
+  Briefcase,
+  ArrowRight
+} from "lucide-react";
 
 interface PendingApprovalsProps {
   className?: string;
@@ -127,39 +136,59 @@ export function PendingApprovals({ className = "" }: PendingApprovalsProps) {
   const recentApprovals = pendingRequests.slice(0, 3);
   
   return (
-    <div className={`bg-white dark:bg-darker shadow rounded-lg border ${className || 'border-gray-200 dark:border-gray-700'}`}>
-      <div className="p-6 border-b border-maroon-200 dark:border-maroon-800 bg-gradient-to-r from-maroon-50 to-white dark:from-maroon-900/20 dark:to-darker flex justify-between items-center">
-        <h2 className="text-lg font-semibold text-maroon-700 dark:text-maroon-300">{t("pendingApprovals")}</h2>
+    <div className={`bg-white dark:bg-darker shadow-lg rounded-lg border ${className || 'border-maroon-200 dark:border-maroon-800'}`}>
+      <div className="p-6 border-b border-maroon-200 dark:border-maroon-800 bg-gradient-to-r from-maroon-100 to-white dark:from-maroon-900/30 dark:to-darker flex justify-between items-center">
+        <h2 className="text-xl font-bold text-maroon-800 dark:text-maroon-200">{t("pendingApprovals")}</h2>
         {pendingRequests.length > 0 && (
-          <span className="px-2 py-1 rounded-full text-xs font-medium bg-maroon-100 text-maroon-800 dark:bg-maroon-900/30 dark:text-maroon-300">
+          <span className="px-3 py-1 rounded-full text-xs font-bold bg-maroon-100 text-maroon-800 dark:bg-maroon-900/30 dark:text-maroon-300 shadow-sm">
             {pendingRequests.length} {t("new")}
           </span>
         )}
       </div>
       <div className="p-6 space-y-4">
         {recentApprovals.length === 0 ? (
-          <p className="text-center text-gray-500 dark:text-gray-400">
-            {t("noApprovals")}
-          </p>
+          <div className="flex flex-col items-center justify-center py-8 space-y-3">
+            <div className="h-16 w-16 text-maroon-300 dark:text-maroon-500 opacity-50">
+              <Clock className="h-full w-full" />
+            </div>
+            <p className="text-gray-500 dark:text-gray-400 font-medium">
+              {t("noApprovals")}
+            </p>
+          </div>
         ) : (
           recentApprovals.map((request) => (
-            <div key={request.id} className="border border-maroon-100 dark:border-maroon-800 hover:border-maroon-200 dark:hover:border-maroon-700 transition-colors rounded-lg p-4">
-              <div className="flex justify-between items-start">
-                <div>
-                  <h3 className="font-medium text-gray-900 dark:text-white">{formatType(request.type || '')}</h3>
-                  <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                    Project ID: {request.projectId}
-                  </p>
+            <div key={request.id} 
+              className="border border-maroon-200 dark:border-maroon-800 hover:border-maroon-300 dark:hover:border-maroon-700 
+                bg-white dark:bg-gray-900 hover:bg-maroon-50/50 dark:hover:bg-maroon-900/10 
+                transition-all shadow-sm hover:shadow rounded-lg p-5">
+              <div className="flex justify-between items-start mb-3">
+                <div className="flex items-start">
+                  <div className={`${getTypeClasses(request.type || '')} p-2 rounded-lg mr-3 shadow-sm`}>
+                    {request.type === 'Budget' && <BarChart3 className="h-5 w-5" />}
+                    {request.type === 'Schedule' && <CalendarClock className="h-5 w-5" />}
+                    {request.type === 'Closure' && <CheckSquare className="h-5 w-5" />}
+                    {request.type === 'Status' && <AlertTriangle className="h-5 w-5" />}
+                    {!['Budget', 'Schedule', 'Closure', 'Status'].includes(request.type || '') && <Clock className="h-5 w-5" />}
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-gray-900 dark:text-white">{formatType(request.type || '')}</h3>
+                    <div className="flex items-center text-sm text-maroon-600 dark:text-maroon-400 mt-1">
+                      <Briefcase className="h-3.5 w-3.5 mr-1.5" />
+                      <span>Project #{request.projectId}</span>
+                    </div>
+                  </div>
                 </div>
-                <span className={`${getTypeClasses(request.type || '')} text-xs px-2 py-1 rounded-full`}>
+                <span className={`${getTypeClasses(request.type || '')} text-xs px-3 py-1 rounded-full font-bold shadow-sm`}>
                   {request.type}
                 </span>
               </div>
-              <p className="text-sm text-gray-600 dark:text-gray-300 mt-2">{request.details}</p>
-              <div className="flex mt-4 space-x-2">
+              <p className="text-sm text-gray-700 dark:text-gray-300 bg-gray-50 dark:bg-gray-800 p-3 rounded-lg border border-gray-100 dark:border-gray-700 mb-4">
+                {request.details}
+              </p>
+              <div className="flex mt-4 space-x-3">
                 <Button
                   size="sm"
-                  className="bg-maroon-700 hover:bg-maroon-800"
+                  className="bg-maroon-700 hover:bg-maroon-800 shadow-sm"
                   onClick={() => approveMutation.mutate({ id: request.id, status: 'Approved' })}
                   disabled={approveMutation.isPending}
                 >
@@ -168,7 +197,9 @@ export function PendingApprovals({ className = "" }: PendingApprovalsProps) {
                 <Button
                   size="sm"
                   variant="outline"
-                  className="border-maroon-200 text-maroon-700 hover:border-maroon-300 hover:bg-maroon-50 dark:border-maroon-800 dark:text-maroon-300 dark:hover:border-maroon-700 dark:hover:bg-maroon-900/10"
+                  className="border-maroon-200 text-maroon-700 hover:border-maroon-300 hover:bg-maroon-50 
+                    dark:border-maroon-800 dark:text-maroon-300 dark:hover:border-maroon-700 dark:hover:bg-maroon-900/10
+                    shadow-sm"
                   onClick={() => approveMutation.mutate({ id: request.id, status: 'Rejected' })}
                   disabled={approveMutation.isPending}
                 >
@@ -180,9 +211,13 @@ export function PendingApprovals({ className = "" }: PendingApprovalsProps) {
         )}
         
         {pendingRequests.length > 3 && (
-          <div className="text-center mt-4">
-            <Button variant="link" className="text-maroon-700 dark:text-maroon-400 hover:underline">
-              {t("viewAllApprovals")}
+          <div className="text-center pt-3 border-t border-maroon-100 dark:border-maroon-800 mt-6">
+            <Button 
+              variant="link" 
+              className="text-maroon-700 dark:text-maroon-400 hover:text-maroon-900 dark:hover:text-maroon-300 hover:underline font-medium flex mx-auto items-center gap-1.5"
+            >
+              {t("viewAllApprovals")} 
+              <ArrowRight className="h-3.5 w-3.5" />
             </Button>
           </div>
         )}
