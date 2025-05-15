@@ -237,6 +237,10 @@ const en: Record<string, string> = {
   selected: "Selected",
   selectForUpdate: "Select for update",
   enterWeeklyUpdate: "Enter weekly update details...",
+  
+  // 404 page
+  page_not_found: "404 Page Not Found",
+  page_not_found_message: "Did you forget to add the page to the router?",
 };
 
 // Arabic translations
@@ -469,6 +473,10 @@ const ar: Record<string, string> = {
   selected: "محدد",
   selectForUpdate: "حدد للتحديث",
   enterWeeklyUpdate: "أدخل تفاصيل التحديث الأسبوعي...",
+  
+  // 404 page
+  page_not_found: "404 الصفحة غير موجودة",
+  page_not_found_message: "هل نسيت إضافة الصفحة إلى جهاز التوجيه؟",
 };
 
 const translations: Translations = {
