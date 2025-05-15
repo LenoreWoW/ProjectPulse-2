@@ -95,7 +95,7 @@ export function PendingApprovals({ className = "" }: PendingApprovalsProps) {
   if (isLoading) {
     return (
       <div className={`bg-white dark:bg-gray-800 shadow rounded-lg border ${className || 'border-gray-200 dark:border-gray-700'}`}>
-        <div className="p-6 border-b border-maroon-200 dark:border-maroon-800 bg-gradient-to-r from-maroon-50 to-white dark:from-maroon-900/20 dark:to-darker flex justify-between items-center">
+        <div className="p-6 border-b border-maroon-200 dark:border-maroon-800 bg-gradient-to-r from-maroon-50 to-white dark:from-maroon-900/20 dark:to-gray-800 flex justify-between items-center">
           <Skeleton className="h-7 w-40" />
           <Skeleton className="h-6 w-16 rounded-full" />
         </div>

@@ -142,7 +142,7 @@ export function RecentProjects({ className = "" }: RecentProjectsProps) {
   if (isLoading) {
     return (
       <div className={`bg-white dark:bg-gray-800 shadow rounded-lg border ${className || 'border-gray-200 dark:border-gray-700'}`}>
-        <div className="p-6 border-b border-maroon-200 dark:border-maroon-800 bg-gradient-to-r from-maroon-50 to-white dark:from-maroon-900/20 dark:to-darker flex justify-between items-center">
+        <div className="p-6 border-b border-maroon-200 dark:border-maroon-800 bg-gradient-to-r from-maroon-50 to-white dark:from-maroon-900/20 dark:to-gray-800 flex justify-between items-center">
           <Skeleton className="h-7 w-36" />
           <Skeleton className="h-5 w-20" />
         </div>
