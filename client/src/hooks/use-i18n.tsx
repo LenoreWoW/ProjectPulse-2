@@ -32,7 +32,7 @@ const en: Record<string, string> = {
   
   // Dashboard
   activeProjects: "Active Projects",
-  completed: "Completed",
+  projectsCompleted: "Completed",
   atRisk: "At Risk",
   pendingApproval: "Pending Approval",
   budgetOverview: "Budget Overview",
@@ -69,7 +69,7 @@ const en: Record<string, string> = {
   planning: "Planning",
   inProgress: "In Progress",
   onHold: "On Hold",
-  completed: "Completed",
+  statusCompleted: "Completed",
   
   // Project details
   editCost: "Edit Cost",
@@ -140,7 +140,7 @@ const ar: Record<string, string> = {
   
   // Dashboard
   activeProjects: "المشاريع النشطة",
-  completed: "المكتملة",
+  projectsCompleted: "المكتملة",
   atRisk: "في خطر",
   pendingApproval: "في انتظار الموافقة",
   budgetOverview: "نظرة عامة على الميزانية",
@@ -177,7 +177,7 @@ const ar: Record<string, string> = {
   planning: "التخطيط",
   inProgress: "قيد التنفيذ",
   onHold: "متوقف",
-  completed: "مكتمل",
+  statusCompleted: "مكتمل",
   
   // Project details
   editCost: "تعديل التكلفة",
