@@ -359,11 +359,11 @@ export default function AuthPage() {
                       />
                     </div>
                     
-                    <div className="mt-6 p-4 border border-white/20 rounded-xl bg-white/5 backdrop-blur-sm">
-                      <h3 className="text-lg font-semibold text-white mb-4">
+                    <div className="mt-4 p-2 border border-white/20 rounded-xl bg-white/5 backdrop-blur-sm">
+                      <h3 className="text-sm font-medium text-white mb-2">
                         {t("requiredDocuments")}
                       </h3>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-2">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-2">
                         <FormField
                           control={registerForm.control}
                           name="passportImageFile"
@@ -427,61 +427,7 @@ export default function AuthPage() {
           </CardContent>
         </Card>
 
-        {/* Right side: Qatar-themed hero section with description and features */}
-        <div className="hidden lg:flex flex-col justify-center">
-          <div className="relative overflow-hidden p-8 bg-white text-maroon-700 rounded-lg shadow-xl border border-maroon-700">
-            {/* Maroon and white decorative elements */}
-            <div className="absolute top-0 right-0 w-32 h-32 -mt-8 -mr-8 bg-maroon-700 opacity-10 transform rotate-45"></div>
-            <div className="absolute bottom-0 left-0 w-24 h-24 -mb-6 -ml-6 bg-maroon-700 opacity-10 transform rotate-45"></div>
-            
-            <h1 className={`text-3xl font-bold mb-4 ${isRtl ? 'text-right' : 'text-left'} text-maroon-700`}>
-              {t("projectManagementSystem")}
-            </h1>
-            <p className="mb-6 text-maroon-700/90 font-medium">
-              {t("pmSystemDescription")}
-            </p>
-            
-            <div className="space-y-4 relative z-10">
-              <div className="flex items-start">
-                <div className="flex-shrink-0 p-1 rounded-full bg-maroon-700 text-white mr-3">
-                  <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                  </svg>
-                </div>
-                <p className="text-maroon-700 font-medium">{t("featureProjectTracking")}</p>
-              </div>
-              <div className="flex items-start">
-                <div className="flex-shrink-0 p-1 rounded-full bg-maroon-700 text-white mr-3">
-                  <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                  </svg>
-                </div>
-                <p className="text-maroon-700 font-medium">{t("featureBudgetManagement")}</p>
-              </div>
-              <div className="flex items-start">
-                <div className="flex-shrink-0 p-1 rounded-full bg-maroon-700 text-white mr-3">
-                  <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                  </svg>
-                </div>
-                <p className="text-maroon-700 font-medium">{t("featureTaskAssignment")}</p>
-              </div>
-              <div className="flex items-start">
-                <div className="flex-shrink-0 p-1 rounded-full bg-maroon-700 text-white mr-3">
-                  <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                  </svg>
-                </div>
-                <p className="text-maroon-700 font-medium">{t("featureApprovalWorkflows")}</p>
-              </div>
-            </div>
-            
-            {/* Decorative pattern at bottom */}
-            <div className="mt-8 pt-6 border-t border-maroon-700/20 flex justify-center">
-              <div className="h-1 w-12 bg-maroon-700 rounded-full"></div>
-            </div>
-          </div>
-        </div>
+        {/* Right side: Removed from mobile view */}
       </div>
     </div>
   );

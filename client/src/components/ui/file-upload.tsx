@@ -75,6 +75,7 @@ export function FileUpload({
         onDrop={handleDrop}
         className={cn(
           "border-2 border-dashed rounded-xl p-4 text-center cursor-pointer transition-colors bg-black/40",
+          "max-h-[100px] overflow-hidden", // Height limits to prevent expanding too much
           isDragging
             ? "border-qatar-maroon bg-white/10"
             : "border-qatar-maroon/50 hover:border-qatar-maroon",
@@ -95,15 +96,12 @@ export function FileUpload({
         
         {value ? (
           <div className="flex flex-col items-center justify-center">
-            <CheckCircle2 className="h-6 w-6 text-qatar-white mb-2" />
-            <p className="text-sm font-medium text-qatar-white">{value.name}</p>
-            <p className="text-xs text-qatar-white/70">
-              {(value.size / 1024 / 1024).toFixed(2)} MB
-            </p>
+            <CheckCircle2 className="h-5 w-5 text-qatar-white" />
+            <p className="text-xs font-medium text-qatar-white truncate max-w-[120px]">{value.name}</p>
             <Button 
               variant="ghost" 
               size="sm" 
-              className="mt-2 text-qatar-maroon hover:bg-qatar-maroon/10 hover:text-qatar-white"
+              className="p-0 h-auto text-xs text-qatar-maroon hover:text-qatar-white"
               onClick={(e) => {
                 e.stopPropagation();
                 onChange(null);
@@ -114,11 +112,8 @@ export function FileUpload({
           </div>
         ) : (
           <div className="flex flex-col items-center justify-center">
-            <Upload className="h-6 w-6 text-white/70 mb-2" />
-            <p className="text-sm font-medium text-white">{t("dropFileHere")}</p>
-            <p className="text-xs text-white/60 mt-1">
-              {t("orClickToBrowse")}
-            </p>
+            <Upload className="h-5 w-5 text-white/70" />
+            <p className="text-xs font-medium text-white">{t("dropFileHere")}</p>
           </div>
         )}
       </div>
