@@ -62,10 +62,10 @@ export function FileUpload({
       <div className="flex items-center justify-between">
         <label
           htmlFor={id}
-          className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+          className="text-sm font-medium leading-none text-white peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
         >
           {label}
-          {required && <span className="text-maroon-700 ml-1">*</span>}
+          {required && <span className="text-red-400 ml-1">*</span>}
         </label>
       </div>
       
@@ -74,12 +74,12 @@ export function FileUpload({
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
         className={cn(
-          "border-2 border-dashed rounded-md p-4 text-center cursor-pointer transition-colors",
+          "border-2 border-dashed rounded-xl p-4 text-center cursor-pointer transition-colors",
           isDragging
-            ? "border-maroon-700 bg-maroon-50 dark:bg-maroon-900/20"
-            : "border-gray-300 dark:border-gray-600 hover:border-maroon-700 dark:hover:border-maroon-600",
-          errorMessage && "border-red-500 dark:border-red-600",
-          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-maroon-700"
+            ? "border-white/50 bg-white/10"
+            : "border-white/30 hover:border-white/50",
+          errorMessage && "border-red-400",
+          "focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-offset-1 focus-visible:ring-white/50"
         )}
         onClick={handleButtonClick}
       >
@@ -114,9 +114,9 @@ export function FileUpload({
           </div>
         ) : (
           <div className="flex flex-col items-center justify-center">
-            <Upload className="h-6 w-6 text-gray-400 mb-2" />
-            <p className="text-sm font-medium">{t("dropFileHere")}</p>
-            <p className="text-xs text-gray-500 mt-1">
+            <Upload className="h-6 w-6 text-white/70 mb-2" />
+            <p className="text-sm font-medium text-white">{t("dropFileHere")}</p>
+            <p className="text-xs text-white/60 mt-1">
               {t("orClickToBrowse")}
             </p>
           </div>

@@ -317,8 +317,8 @@ export default function AuthPage() {
                       />
                     </div>
                     
-                    <div className="mt-6 p-4 border border-maroon-200 dark:border-maroon-800 rounded-md bg-maroon-50 dark:bg-maroon-900/20">
-                      <h3 className="text-lg font-semibold text-maroon-700 dark:text-maroon-300 mb-4">
+                    <div className="mt-6 p-4 border border-white/20 rounded-xl bg-white/5 backdrop-blur-sm">
+                      <h3 className="text-lg font-semibold text-white mb-4">
                         {t("requiredDocuments")}
                       </h3>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-2">
@@ -363,14 +363,14 @@ export default function AuthPage() {
                           )}
                         />
                       </div>
-                      <p className="text-xs text-gray-500 dark:text-gray-400">
+                      <p className="text-xs text-white/70">
                         {t("documentRequirementNote")}
                       </p>
                     </div>
                     
                     <Button 
                       type="submit" 
-                      className="w-full bg-maroon-700 hover:bg-maroon-800 mt-6"
+                      className="w-full bg-maroon-700 hover:bg-maroon-800 text-white font-medium py-3 rounded-full transition-all duration-200 shadow-md mt-6"
                       disabled={registerMutation.isPending}
                     >
                       {registerMutation.isPending && (
