@@ -26,6 +26,7 @@ import DependenciesPage from "@/pages/dependencies-page";
 import AnalyticsDashboardPage from "@/pages/analytics-dashboard";
 import UserPermissionsPage from "@/pages/user-permissions-page";
 import { ThemeProvider } from "@/providers/theme-provider";
+import { I18nProvider } from "@/hooks/use-i18n";
 
 function Router() {
   return (
@@ -123,12 +124,14 @@ function AppLayout({ children }: { children: React.ReactNode }) {
 function App() {
   return (
     <ThemeProvider defaultTheme="dark" forcedTheme="dark">
-      <TooltipProvider>
-        <AppLayout>
-          <Router />
-        </AppLayout>
-        <Toaster />
-      </TooltipProvider>
+      <I18nProvider>
+        <TooltipProvider>
+          <AppLayout>
+            <Router />
+          </AppLayout>
+          <Toaster />
+        </TooltipProvider>
+      </I18nProvider>
     </ThemeProvider>
   );
 }

@@ -127,6 +127,35 @@ const en: Record<string, string> = {
   somethingWentWrong: "Something went wrong",
   tryAgain: "Please try again",
   
+  // User Permissions
+  userPermissionsManagement: "User Permissions Management",
+  manageUserRolesAndPermissions: "Manage user roles and custom permissions",
+  editPermissions: "Edit Permissions",
+  searchUsers: "Search users by name, email, or role...",
+  noUsersFound: "No users found",
+  noUsersMatchSearch: "No users match your search criteria",
+  editUserPermissions: "Edit User Permissions",
+  editingPermissionsFor: "Editing permissions for",
+  role: "Role",
+  selectRole: "Select a role",
+  useCustomPermissions: "Use custom permissions",
+  customPermissions: "Custom Permissions",
+  saveChanges: "Save Changes",
+  permissionsUpdated: "Permissions Updated",
+  userPermissionsUpdatedSuccessfully: "User permissions have been updated successfully",
+  errorLoadingUsers: "Error loading users",
+  accessDenied: "Access Denied",
+  noPermissionToManageUsers: "You don't have permission to manage users",
+  
+  // User Roles
+  User: "User",
+  ProjectManager: "Project Manager",
+  SubPMO: "Sub-PMO",
+  MainPMO: "Main PMO",
+  DepartmentDirector: "Department Director",
+  Executive: "Executive",
+  Administrator: "Administrator",
+  
   // Languages and theme
   language: "Language",
   english: "English",
