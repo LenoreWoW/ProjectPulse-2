@@ -17,6 +17,7 @@ import { Link } from "wouter";
 
 export default function Dashboard() {
   const { t } = useI18n();
+  const { user } = useAuth();
   
   const {
     data: projects,
@@ -55,45 +56,55 @@ export default function Dashboard() {
   return (
     <>
       {/* Page Title */}
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{t("dashboard")}</h1>
+      <div className="flex items-center justify-between mb-8">
+        <h1 className="text-3xl font-bold text-maroon-700 dark:text-maroon-300">{t("dashboard")}</h1>
         <Link href="/projects/new">
-          <Button className="bg-maroon-700 hover:bg-maroon-800">
+          <Button className="bg-maroon-700 hover:bg-maroon-800 text-white">
             <Plus className="mr-2 h-4 w-4" />
             <span>{t("newProject")}</span>
           </Button>
         </Link>
       </div>
       
+      {/* Welcome Banner */}
+      <div className="bg-gradient-to-r from-maroon-700 to-maroon-900 text-white p-6 rounded-lg mb-8 shadow-lg">
+        <h2 className="text-xl font-semibold mb-2">{t("welcomeBack")}, {user?.name || ''}</h2>
+        <p className="opacity-80 max-w-2xl">{t("dashboardIntro")}</p>
+      </div>
+      
       {/* Stat Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         <StatCard
           title={t("activeProjects")}
           value={metrics.activeProjects}
           icon={<LayoutList className="h-8 w-8" />}
-          iconBgColor="bg-blue-100 dark:bg-blue-900/30"
-          iconTextColor="text-blue-600 dark:text-blue-300"
+          iconBgColor="bg-maroon-100 dark:bg-maroon-900/50"
+          iconTextColor="text-maroon-600 dark:text-maroon-300"
+          cardBorder="border-maroon-200 dark:border-maroon-800 hover:border-maroon-300 dark:hover:border-maroon-700"
         />
         <StatCard
           title={t("completed")}
           value={metrics.completedProjects}
           icon={<CheckSquare className="h-8 w-8" />}
-          iconBgColor="bg-green-100 dark:bg-green-900/30"
-          iconTextColor="text-green-600 dark:text-green-300"
+          iconBgColor="bg-maroon-100 dark:bg-maroon-900/50"
+          iconTextColor="text-maroon-600 dark:text-maroon-300"
+          cardBorder="border-maroon-200 dark:border-maroon-800 hover:border-maroon-300 dark:hover:border-maroon-700"
         />
         <StatCard
           title={t("atRisk")}
           value={metrics.atRiskProjects}
           icon={<AlertTriangle className="h-8 w-8" />}
-          iconBgColor="bg-red-100 dark:bg-red-900/30"
-          iconTextColor="text-red-600 dark:text-red-300"
+          iconBgColor="bg-maroon-100 dark:bg-maroon-900/50"
+          iconTextColor="text-maroon-600 dark:text-maroon-300"
+          cardBorder="border-maroon-200 dark:border-maroon-800 hover:border-maroon-300 dark:hover:border-maroon-700"
         />
         <StatCard
           title={t("pendingApproval")}
           value={metrics.pendingApproval}
           icon={<Clock className="h-8 w-8" />}
-          iconBgColor="bg-orange-100 dark:bg-orange-900/30"
-          iconTextColor="text-orange-600 dark:text-orange-300"
+          iconBgColor="bg-maroon-100 dark:bg-maroon-900/50"
+          iconTextColor="text-maroon-600 dark:text-maroon-300"
+          cardBorder="border-maroon-200 dark:border-maroon-800 hover:border-maroon-300 dark:hover:border-maroon-700"
         />
       </div>
       

@@ -46,12 +46,12 @@ export default function ProjectsPage() {
   // Apply filters
   const filteredProjects = projects?.filter((project) => {
     // Filter by status
-    if (filterStatus && project.status !== filterStatus) {
+    if (filterStatus && filterStatus !== "all-statuses" && project.status !== filterStatus) {
       return false;
     }
     
     // Filter by department
-    if (filterDepartment && project.departmentId !== parseInt(filterDepartment)) {
+    if (filterDepartment && filterDepartment !== "all-departments" && project.departmentId !== parseInt(filterDepartment)) {
       return false;
     }
     
