@@ -14,6 +14,7 @@ import {
   List
 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
+import { DayProps } from "react-day-picker";
 
 // Event interfaces
 interface CalendarEvent {
@@ -299,10 +300,10 @@ export default function CalendarPage() {
               onSelect={(newDate) => newDate && setDate(newDate)}
               className="rounded-md border"
               components={{
-                DayContent: (props) => (
+                DayContent: (props: DayProps) => (
                   <div>
-                    <div>{props.day && props.day.day}</div>
-                    {props.day && getDayIndicator(props.day.date)}
+                    <div>{props.date?.getDate()}</div>
+                    {props.date && getDayIndicator(props.date)}
                   </div>
                 ),
               }}

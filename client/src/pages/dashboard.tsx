@@ -221,11 +221,9 @@ export default function Dashboard() {
               <Briefcase className="mr-2 h-6 w-6 text-qatar-maroon dark:text-qatar-maroon/90" />
               {t("recentProjects")}
             </h2>
-            <Link href="/projects">
-              <a className="text-sm text-qatar-maroon hover:text-qatar-maroon/80 flex items-center">
-                {t("viewAll")}
-                <ChevronRight className="h-4 w-4 ml-1" />
-              </a>
+            <Link href="/projects" className="text-sm text-qatar-maroon hover:text-qatar-maroon/80 flex items-center">
+              {t("viewAll")}
+              <ChevronRight className="h-4 w-4 ml-1" />
             </Link>
           </div>
           <div className="bg-white dark:bg-gray-800 shadow-md rounded-xl overflow-hidden">
@@ -239,11 +237,9 @@ export default function Dashboard() {
               <Clock className="mr-2 h-6 w-6 text-qatar-maroon dark:text-qatar-maroon/90" />
               {t("pendingApprovals")}
             </h2>
-            <Link href="/approvals">
-              <a className="text-sm text-qatar-maroon hover:text-qatar-maroon/80 flex items-center">
-                {t("viewAll")}
-                <ChevronRight className="h-4 w-4 ml-1" />
-              </a>
+            <Link href="/approvals" className="text-sm text-qatar-maroon hover:text-qatar-maroon/80 flex items-center">
+              {t("viewAll")}
+              <ChevronRight className="h-4 w-4 ml-1" />
             </Link>
           </div>
           <div className="bg-white dark:bg-gray-800 shadow-md rounded-xl overflow-hidden">
