@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="800" height="600" viewBox="0 0 800 600" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background -->
+  <rect width="800" height="600" fill="#2e1f36"/>
+  
+  <!-- Sky gradient - sunset -->
+  <rect width="800" height="400" fill="url(#skyGradient)"/>
+  
+  <!-- Water -->
+  <rect y="400" width="800" height="200" fill="#5a82a5"/>
+  
+  <!-- The Pearl-Qatar island -->
+  <path d="M100 400C100 400 150 380 200 390C250 400 300 380 350 385C400 390 450 370 500 380C550 390 600 370 650 385C700 400 750 380 800 390L800 420C800 420 750 410 700 420C650 430 600 410 550 420C500 430 450 410 400 420C350 430 300 410 250 420C200 430 150 410 100 420L100 400Z" fill="#e0d5c9"/>
+  
+  <!-- Buildings on the island -->
+  <!-- Central towers -->
+  <rect x="380" y="200" width="40" height="190" fill="#d9d2cc"/>
+  <rect x="380" y="200" width="40" height="20" fill="#b1aca6"/>
+  <rect x="390" y="150" width="20" height="50" fill="#d9d2cc"/>
+  
+  <rect x="330" y="250" width="30" height="140" fill="#ccc6c0"/>
+  <rect x="440" y="250" width="30" height="140" fill="#ccc6c0"/>
+  
+  <rect x="280" y="280" width="30" height="110" fill="#c2bcb6"/>
+  <rect x="490" y="280" width="30" height="110" fill="#c2bcb6"/>
+  
+  <!-- Additional buildings spreading out -->
+  <rect x="230" y="300" width="25" height="90" fill="#b8b2ac"/>
+  <rect x="545" y="300" width="25" height="90" fill="#b8b2ac"/>
+  
+  <rect x="185" y="320" width="25" height="70" fill="#aba5a0"/>
+  <rect x="590" y="320" width="25" height="70" fill="#aba5a0"/>
+  
+  <rect x="145" y="340" width="20" height="50" fill="#9c978f"/>
+  <rect x="635" y="340" width="20" height="50" fill="#9c978f"/>
+  
+  <!-- Building windows (lit) -->
+  <rect x="385" y="220" width="5" height="10" fill="#f5e7a5"/>
+  <rect x="410" y="220" width="5" height="10" fill="#f5e7a5"/>
+  <rect x="385" y="240" width="5" height="10" fill="#f5e7a5"/>
+  <rect x="410" y="240" width="5" height="10" fill="#f5e7a5"/>
+  <rect x="385" y="260" width="5" height="10" fill="#f5e7a5"/>
+  <rect x="410" y="260" width="5" height="10" fill="#f5e7a5"/>
+  <rect x="385" y="280" width="5" height="10" fill="#f5e7a5"/>
+  <rect x="410" y="280" width="5" height="10" fill="#f5e7a5"/>
+  <rect x="385" y="300" width="5" height="10" fill="#f5e7a5"/>
+  <rect x="410" y="300" width="5" height="10" fill="#f5e7a5"/>
+  <rect x="385" y="320" width="5" height="10" fill="#f5e7a5"/>
+  <rect x="410" y="320" width="5" height="10" fill="#f5e7a5"/>
+  <rect x="385" y="340" width="5" height="10" fill="#f5e7a5"/>
+  <rect x="410" y="340" width="5" height="10" fill="#f5e7a5"/>
+  <rect x="385" y="360" width="5" height="10" fill="#f5e7a5"/>
+  <rect x="410" y="360" width="5" height="10" fill="#f5e7a5"/>
+  
+  <!-- Water reflections -->
+  <path opacity="0.2" d="M100 420C100 420 150 430 200 420C250 410 300 430 350 420C400 410 450 430 500 420C550 410 600 430 650 420C700 410 750 430 800 420L800 450C800 450 750 440 700 450C650 460 600 440 550 450C500 460 450 440 400 450C350 460 300 440 250 450C200 460 150 440 100 450L100 420Z" fill="#e0d5c9"/>
+  
+  <!-- Sunset reflection on water -->
+  <rect y="400" width="800" height="40" fill="url(#waterGlowGradient)" opacity="0.3"/>
+  
+  <!-- Gradients -->
+  <defs>
+    <linearGradient id="skyGradient" x1="400" y1="0" x2="400" y2="400" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#172747"/>
+      <stop offset="0.7" stop-color="#2a3f62"/>
+      <stop offset="1" stop-color="#48304c"/>
+    </linearGradient>
+    <linearGradient id="waterGlowGradient" x1="400" y1="400" x2="400" y2="440" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#f0cfb4"/>
+      <stop offset="1" stop-color="#5a82a5" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+</svg>

@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="800" height="600" viewBox="0 0 800 600" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background -->
+  <rect width="800" height="600" fill="#2e1f36"/>
+  
+  <!-- Sky gradient -->
+  <rect width="800" height="400" fill="url(#skyGradient)"/>
+  
+  <!-- Water -->
+  <rect y="400" width="800" height="200" fill="#3a6182"/>
+  
+  <!-- Katara Cultural Village Main Buildings -->
+  <!-- Center structure -->
+  <path d="M350 200L450 200L450 400L350 400L350 200Z" fill="#e8d6c3"/>
+  <path d="M350 200L370 180L430 180L450 200" fill="#d6c4b1"/>
+  <path d="M370 400L370 200L350 200L350 400L370 400Z" fill="#c5b3a0"/>
+  
+  <!-- Domes and ornate elements -->
+  <circle cx="400" cy="180" r="30" fill="#d7a45f"/>
+  <path d="M370 180C370 163.431 383.431 150 400 150C416.569 150 430 163.431 430 180L370 180Z" fill="#e8c87f"/>
+  
+  <!-- Windows and architectural details -->
+  <rect x="370" y="220" width="20" height="30" rx="10" fill="#594731"/>
+  <rect x="410" y="220" width="20" height="30" rx="10" fill="#594731"/>
+  <rect x="370" y="270" width="20" height="30" rx="10" fill="#594731"/>
+  <rect x="410" y="270" width="20" height="30" rx="10" fill="#594731"/>
+  <rect x="370" y="320" width="20" height="30" rx="10" fill="#594731"/>
+  <rect x="410" y="320" width="20" height="30" rx="10" fill="#594731"/>
+  
+  <!-- Left structure -->
+  <path d="M250 250L330 250L330 400L250 400L250 250Z" fill="#e8d6c3"/>
+  <path d="M250 250L270 230L310 230L330 250" fill="#d6c4b1"/>
+  <circle cx="290" cy="230" r="20" fill="#d7a45f"/>
+  
+  <!-- Right structure -->
+  <path d="M470 250L550 250L550 400L470 400L470 250Z" fill="#e8d6c3"/>
+  <path d="M470 250L490 230L530 230L550 250" fill="#d6c4b1"/>
+  <circle cx="510" cy="230" r="20" fill="#d7a45f"/>
+  
+  <!-- Water reflections -->
+  <path opacity="0.3" d="M350 400L450 400L450 500L350 500L350 400Z" fill="#e8d6c3"/>
+  <path opacity="0.2" d="M250 400L330 400L330 480L250 480L250 400Z" fill="#e8d6c3"/>
+  <path opacity="0.2" d="M470 400L550 400L550 480L470 480L470 400Z" fill="#e8d6c3"/>
+  
+  <!-- Night sky -->
+  <circle cx="100" cy="100" r="2" fill="white"/>
+  <circle cx="200" cy="150" r="1.5" fill="white"/>
+  <circle cx="300" cy="80" r="2" fill="white"/>
+  <circle cx="400" cy="120" r="1" fill="white"/>
+  <circle cx="500" cy="90" r="1.5" fill="white"/>
+  <circle cx="600" cy="70" r="1" fill="white"/>
+  <circle cx="700" cy="130" r="2" fill="white"/>
+  <circle cx="750" cy="60" r="1" fill="white"/>
+  
+  <!-- Gradients -->
+  <defs>
+    <linearGradient id="skyGradient" x1="400" y1="0" x2="400" y2="400" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#01162e"/>
+      <stop offset="1" stop-color="#2a3d5c"/>
+    </linearGradient>
+  </defs>
+</svg>

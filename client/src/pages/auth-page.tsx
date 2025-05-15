@@ -1,6 +1,6 @@
 import { useAuth } from "@/hooks/use-auth";
 import { useI18n } from "@/hooks/use-i18n";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { Redirect } from "wouter";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -8,6 +8,13 @@ import { useForm } from "react-hook-form";
 import { insertUserSchema } from "@shared/schema";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+
+// Import Qatar landmark SVGs
+import kataraCulturalVillage from "../assets/landmarks/katara-cultural-village.svg";
+import museumOfIslamicArt from "../assets/landmarks/museum-of-islamic-art.svg";
+import pearlQatar from "../assets/landmarks/pearl-qatar.svg";
+import aspireTower from "../assets/landmarks/aspire-tower.svg";
+import nationalMuseum from "../assets/landmarks/national-museum.svg";
 import {
   Form,
   FormControl,
@@ -39,6 +46,27 @@ export default function AuthPage() {
   if (user) {
     return <Redirect to="/" />;
   }
+  
+  // Qatar landmarks for the background image slider
+  const qatarLandmarks = [
+    kataraCulturalVillage,
+    museumOfIslamicArt,
+    pearlQatar,
+    aspireTower,
+    nationalMuseum
+  ];
+  
+  // Image slider state
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  
+  // Set up image rotation timer (every 60 seconds)
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentImageIndex((prevIndex) => (prevIndex + 1) % qatarLandmarks.length);
+    }, 60000); // 1 minute interval
+    
+    return () => clearInterval(interval);
+  }, []);
 
   // Login form schema
   const loginSchema = z.object({
@@ -130,21 +158,30 @@ export default function AuthPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-0 overflow-hidden relative"
-         style={{
-           backgroundImage: "url('/src/assets/qatar-flag-bg.svg')",
-           backgroundSize: "cover",
-           backgroundPosition: "center"
-         }}>
+    <div className="min-h-screen flex items-center justify-center p-0 overflow-hidden relative">
+      {/* Dynamic background with Qatar landmarks */}
+      {qatarLandmarks.map((landmark, index) => (
+        <div
+          key={index}
+          className="absolute inset-0 w-full h-full transition-opacity duration-1000"
+          style={{
+            backgroundImage: `url(${landmark})`,
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+            opacity: index === currentImageIndex ? 1 : 0,
+          }}
+        />
+      ))}
+      {/* Overlay for better text readability */}
+      <div className="absolute inset-0 bg-black bg-opacity-40" />
       
       <div className="w-full max-w-md z-10">
         {/* Auth Card */}
         <Card className="w-full bg-white/10 backdrop-blur-md shadow-2xl rounded-2xl overflow-hidden border border-white/20">
-          <CardHeader className="space-y-1 flex flex-col items-center pt-6 pb-3 px-6">
+          <CardHeader className="space-y-1 flex flex-col items-center pt-8 pb-6 px-6">
             <div className="flex items-center justify-center mb-4">
-              <QatarLogo size="md" />
+              <QatarLogo size="lg" />
             </div>
-            <h1 className="text-xl font-bold text-white mt-2 tracking-wide">Project Management System</h1>
           </CardHeader>
           <CardContent className="px-8 pb-8 pt-0">
             <Tabs 

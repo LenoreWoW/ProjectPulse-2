@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="800" height="600" viewBox="0 0 800 600" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background -->
+  <rect width="800" height="600" fill="#2e1f36"/>
+  
+  <!-- Sky gradient - early morning -->
+  <rect width="800" height="450" fill="url(#skyGradient)"/>
+  
+  <!-- Ground -->
+  <rect y="450" width="800" height="150" fill="#3b352f"/>
+  
+  <!-- National Museum of Qatar - Desert Rose design -->
+  <!-- Main structure with interlocking discs -->
+  <path d="M300 450C300 450 250 400 250 350C250 300 300 250 350 250C400 250 450 200 500 200C550 200 600 250 600 300C600 350 550 400 500 400C450 400 400 450 350 450C325 450 300 450 300 450Z" fill="#e8e0d8"/>
+  
+  <!-- Shadow/depth for the discs -->
+  <path d="M300 450C300 450 250 400 250 350C250 300 300 250 350 250" fill="#d1c9c1" stroke="#d1c9c1" stroke-width="10"/>
+  <path d="M450 200C500 200 600 250 600 300C600 350 550 400 500 400" fill="#d1c9c1" stroke="#d1c9c1" stroke-width="10"/>
+  
+  <!-- Central structure -->
+  <circle cx="400" cy="330" r="80" fill="#e8e0d8" stroke="#d1c9c1" stroke-width="10"/>
+  
+  <!-- Additional discs -->
+  <circle cx="300" cy="350" r="50" fill="#e8e0d8" stroke="#d1c9c1" stroke-width="10"/>
+  <circle cx="500" cy="350" r="50" fill="#e8e0d8" stroke="#d1c9c1" stroke-width="10"/>
+  <circle cx="370" cy="270" r="40" fill="#e8e0d8" stroke="#d1c9c1" stroke-width="10"/>
+  <circle cx="430" cy="270" r="40" fill="#e8e0d8" stroke="#d1c9c1" stroke-width="10"/>
+  <circle cx="370" cy="390" r="40" fill="#e8e0d8" stroke="#d1c9c1" stroke-width="10"/>
+  <circle cx="430" cy="390" r="40" fill="#e8e0d8" stroke="#d1c9c1" stroke-width="10"/>
+  
+  <!-- Reflection on the ground -->
+  <ellipse cx="400" cy="470" rx="180" ry="10" fill="#4d4640" opacity="0.5"/>
+  
+  <!-- Desert landscape -->
+  <path d="M0 450C50 430 100 440 150 430C200 420 250 435 300 430C350 425 700 450 800 440L800 460C750 465 700 455 650 460C600 465 550 455 500 460C450 465 400 455 350 460C300 465 250 455 200 460C150 465 100 455 50 460L0 470V450Z" fill="#5a4f44"/>
+  
+  <!-- Night sky -->
+  <circle cx="100" cy="100" r="2" fill="white" opacity="0.7"/>
+  <circle cx="200" cy="150" r="1.5" fill="white" opacity="0.7"/>
+  <circle cx="300" cy="80" r="2" fill="white" opacity="0.7"/>
+  <circle cx="500" cy="90" r="1.5" fill="white" opacity="0.7"/>
+  <circle cx="600" cy="120" r="1" fill="white" opacity="0.7"/>
+  <circle cx="700" cy="70" r="2" fill="white" opacity="0.7"/>
+  <circle cx="750" cy="170" r="1" fill="white" opacity="0.7"/>
+  
+  <!-- Gradients -->
+  <defs>
+    <linearGradient id="skyGradient" x1="400" y1="0" x2="400" y2="450" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#1d2b3f"/>
+      <stop offset="0.6" stop-color="#2d3d52"/>
+      <stop offset="1" stop-color="#3b4553"/>
+    </linearGradient>
+  </defs>
+</svg>
