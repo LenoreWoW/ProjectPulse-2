@@ -131,35 +131,65 @@ export default function SettingsPage() {
         <div className="md:w-64 space-y-2">
           <Card>
             <CardContent className="p-0">
-              <Tabs 
-                orientation="vertical" 
-                value={activeTab} 
-                onValueChange={setActiveTab}
-                className="w-full"
-              >
-                <TabsList className="flex flex-col h-auto items-stretch">
-                  <TabsTrigger value="profile" className="justify-start">
+              <div className="w-full">
+                <nav className="space-y-1">
+                  <button
+                    className={`flex items-center w-full px-3 py-2 text-left rounded-md ${
+                      activeTab === "profile" 
+                        ? "bg-qatar-maroon text-white" 
+                        : "hover:bg-gray-100 dark:hover:bg-gray-800"
+                    }`}
+                    onClick={() => setActiveTab("profile")}
+                  >
                     <User className="w-4 h-4 mr-2" />
                     {t("profile")}
-                  </TabsTrigger>
-                  <TabsTrigger value="appearance" className="justify-start">
+                  </button>
+                  <button
+                    className={`flex items-center w-full px-3 py-2 text-left rounded-md ${
+                      activeTab === "appearance" 
+                        ? "bg-qatar-maroon text-white" 
+                        : "hover:bg-gray-100 dark:hover:bg-gray-800"
+                    }`}
+                    onClick={() => setActiveTab("appearance")}
+                  >
                     <Moon className="w-4 h-4 mr-2" />
                     {t("appearance")}
-                  </TabsTrigger>
-                  <TabsTrigger value="notifications" className="justify-start">
+                  </button>
+                  <button
+                    className={`flex items-center w-full px-3 py-2 text-left rounded-md ${
+                      activeTab === "notifications" 
+                        ? "bg-qatar-maroon text-white" 
+                        : "hover:bg-gray-100 dark:hover:bg-gray-800"
+                    }`}
+                    onClick={() => setActiveTab("notifications")}
+                  >
                     <Bell className="w-4 h-4 mr-2" />
                     {t("notifications")}
-                  </TabsTrigger>
-                  <TabsTrigger value="language" className="justify-start">
+                  </button>
+                  <button
+                    className={`flex items-center w-full px-3 py-2 text-left rounded-md ${
+                      activeTab === "language" 
+                        ? "bg-qatar-maroon text-white" 
+                        : "hover:bg-gray-100 dark:hover:bg-gray-800"
+                    }`}
+                    onClick={() => setActiveTab("language")}
+                  >
                     <Languages className="w-4 h-4 mr-2" />
                     {t("language")}
-                  </TabsTrigger>
-                  <TabsTrigger value="security" className="justify-start">
+                  </button>
+                  <button
+                    className={`flex items-center w-full px-3 py-2 text-left rounded-md ${
+                      activeTab === "security" 
+                        ? "bg-qatar-maroon text-white" 
+                        : "hover:bg-gray-100 dark:hover:bg-gray-800"
+                    }`}
+                    onClick={() => setActiveTab("security")}
+                  >
                     <Shield className="w-4 h-4 mr-2" />
                     {t("security")}
-                  </TabsTrigger>
-                </TabsList>
-              </Tabs>
+                  </button>
+                </nav>
+              </div>
             </CardContent>
           </Card>
         </div>
@@ -167,7 +197,8 @@ export default function SettingsPage() {
         {/* Right content area */}
         <div className="flex-1">
           <Card>
-            <TabsContent value="profile" className="m-0">
+            {activeTab === "profile" && (
+              <>
               <CardHeader>
                 <CardTitle>{t("profileSettings")}</CardTitle>
                 <CardDescription>
@@ -228,9 +259,11 @@ export default function SettingsPage() {
                   </form>
                 </Form>
               </CardContent>
-            </TabsContent>
+              </>
+            )}
 
-            <TabsContent value="appearance" className="m-0">
+            {activeTab === "appearance" && (
+              <>
               <CardHeader>
                 <CardTitle>{t("appearanceSettings")}</CardTitle>
                 <CardDescription>
@@ -252,7 +285,8 @@ export default function SettingsPage() {
                   </p>
                 </div>
               </CardContent>
-            </TabsContent>
+              </>
+            )}
 
             <TabsContent value="notifications" className="m-0">
               <CardHeader>
