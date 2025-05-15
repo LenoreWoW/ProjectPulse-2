@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { useI18n } from '@/hooks/use-i18n';
+import { useI18n } from '@/hooks/use-i18n-new';
 import { useAuth } from '@/hooks/use-auth';
 import ForceGraph2D from 'react-force-graph-2d';
 import { 

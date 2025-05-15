@@ -1,5 +1,5 @@
 import { ReactNode, useState } from "react";
-import { useI18n } from "@/hooks/use-i18n";
+import { useI18n } from "@/hooks/use-i18n-new";
 import { ProjectStatusModal } from "@/components/dashboard/project-status-modal";
 import { Project } from "@shared/schema";
 import { ChevronRight } from "lucide-react";

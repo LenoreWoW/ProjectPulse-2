@@ -8,7 +8,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { useI18n } from "@/hooks/use-i18n";
+import { useI18n } from "@/hooks/use-i18n-new";
 import { Project } from "@shared/schema";
 import { format } from "date-fns";
 import { Link } from "wouter";
