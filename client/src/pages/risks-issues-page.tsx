@@ -49,7 +49,7 @@ export default function RisksIssuesPage() {
   });
   
   // Can user create risks/issues?
-  const canCreate = user && ["Administrator", "MainPMO", "SubPMO", "DepartmentDirector", "ProjectManager"].includes(user.role);
+  const canCreate = user && user.role && ["Administrator", "MainPMO", "SubPMO", "DepartmentDirector", "ProjectManager"].includes(user.role);
   
   // Apply filters
   const filterItems = (items: RiskIssue[] = []) => {
@@ -77,7 +77,13 @@ export default function RisksIssuesPage() {
   const filteredIssues = data?.issues ? filterItems(data.issues) : [];
   
   // Format priority badge
-  const getPriorityBadge = (priority: string) => {
+  const getPriorityBadge = (priority: string | null) => {
+    if (!priority) return (
+      <div className="flex items-center text-green-600 dark:text-green-400">
+        <Clock className="w-4 h-4 mr-1" />
+        <span className="text-xs">{t("low")}</span>
+      </div>
+    );
     switch (priority) {
       case 'Critical':
         return (
@@ -111,7 +117,12 @@ export default function RisksIssuesPage() {
   };
   
   // Format status badge
-  const getStatusBadge = (status: string) => {
+  const getStatusBadge = (status: string | null) => {
+    if (!status) return (
+      <span className="px-2 py-1 bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300 text-xs rounded-full">
+        {t("unknown")}
+      </span>
+    );
     switch (status) {
       case 'Open':
         return (
@@ -147,7 +158,8 @@ export default function RisksIssuesPage() {
   };
   
   // Format date for display
-  const formatDate = (dateString: string | Date) => {
+  const formatDate = (dateString: string | Date | null) => {
+    if (!dateString) return "";
     return new Intl.DateTimeFormat('en-US', { 
       year: 'numeric', 
       month: 'short', 
