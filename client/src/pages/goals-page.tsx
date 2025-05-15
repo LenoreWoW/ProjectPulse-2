@@ -35,9 +35,12 @@ export default function GoalsPage() {
   // Determine if user can create goals based on role
   const canCreateGoal = user && ["Administrator", "MainPMO", "DepartmentDirector", "Executive"].includes(user.role);
   
-  const { data: goals, isLoading, error } = useQuery<Goal[]>({
+  const { data, isLoading, error } = useQuery<{strategic: Goal[], annual: Goal[]}>({
     queryKey: ["/api/goals"],
   });
+  
+  // Extract goals from the response structure
+  const goals = data ? [...(data.strategic || []), ...(data.annual || [])] : [];
   
   // Format priority badge
   const getPriorityBadge = (priority: string) => {
@@ -92,8 +95,8 @@ export default function GoalsPage() {
   const goalsWithProgress = getGoalsWithProgress();
   
   // Separate strategic and annual goals
-  const strategicGoals = goalsWithProgress.filter(goal => goal.isStrategic);
-  const annualGoals = goalsWithProgress.filter(goal => !goal.isStrategic);
+  const strategicGoals = goalsWithProgress.filter(goal => goal.isStrategic === true);
+  const annualGoals = goalsWithProgress.filter(goal => goal.isStrategic === false);
   
   return (
     <>

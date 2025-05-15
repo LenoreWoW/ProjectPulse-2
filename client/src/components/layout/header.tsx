@@ -78,32 +78,6 @@ export function Header({ onMobileMenuToggle }: HeaderProps) {
         </div>
 
         <div className="flex items-center space-x-4 rtl:space-x-reverse">
-          {/* Language Switcher */}
-          <Button
-            variant="ghost"
-            size="sm"
-            className="p-1.5 rounded-lg text-white hover:bg-maroon-700 dark:text-gray-200 dark:hover:bg-maroon-800"
-            onClick={toggleLanguage}
-          >
-            <span className="text-xs font-medium">
-              {language === "en" ? "EN" : "AR"}
-            </span>
-          </Button>
-
-          {/* Dark Mode Toggle */}
-          <Button
-            variant="ghost"
-            size="sm"
-            className="p-1.5 rounded-lg text-white hover:bg-maroon-700 dark:text-gray-200 dark:hover:bg-maroon-800"
-            onClick={toggleDarkMode}
-          >
-            {darkMode ? (
-              <Sun className="h-5 w-5" />
-            ) : (
-              <Moon className="h-5 w-5" />
-            )}
-          </Button>
-
           {/* Notifications */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -129,7 +103,7 @@ export function Header({ onMobileMenuToggle }: HeaderProps) {
             </DropdownMenuContent>
           </DropdownMenu>
 
-          {/* User Menu */}
+          {/* User Menu (Discord Style) */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button
@@ -137,19 +111,56 @@ export function Header({ onMobileMenuToggle }: HeaderProps) {
                 size="sm"
                 className="p-1.5 rounded-lg text-white hover:bg-maroon-700 dark:text-gray-200 dark:hover:bg-maroon-800 flex items-center gap-2"
               >
-                <div className="w-6 h-6 rounded-full bg-white/20 text-white flex items-center justify-center font-bold text-xs">
+                <div className="w-7 h-7 rounded-full bg-white/20 text-white flex items-center justify-center font-bold text-xs">
                   {user?.name?.charAt(0).toUpperCase() || "U"}
                 </div>
                 <span className="hidden md:inline-block">{user?.name?.split(' ')[0]}</span>
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuLabel>{user?.name}</DropdownMenuLabel>
+            <DropdownMenuContent align="end" className="w-56">
+              <DropdownMenuLabel className="pb-2 border-b">{user?.name}</DropdownMenuLabel>
+              
+              {/* User Settings Section */}
+              <div className="py-1 px-1">
+                <DropdownMenuItem 
+                  className="flex items-center justify-between cursor-pointer rounded-md my-1 px-2 py-2 hover:bg-maroon-50 dark:hover:bg-maroon-900/20"
+                  onClick={toggleDarkMode}
+                >
+                  <div className="flex items-center gap-2">
+                    {darkMode ? (
+                      <Sun className="h-4 w-4 text-maroon-600 dark:text-maroon-300" />
+                    ) : (
+                      <Moon className="h-4 w-4 text-maroon-600 dark:text-maroon-300" />
+                    )}
+                    <span>{darkMode ? t("lightMode") : t("darkMode")}</span>
+                  </div>
+                </DropdownMenuItem>
+                
+                <DropdownMenuItem 
+                  className="flex items-center justify-between cursor-pointer rounded-md my-1 px-2 py-2 hover:bg-maroon-50 dark:hover:bg-maroon-900/20"
+                  onClick={toggleLanguage}
+                >
+                  <div className="flex items-center gap-2">
+                    <span className="w-4 h-4 flex items-center justify-center font-bold text-xs text-maroon-600 dark:text-maroon-300">
+                      {language === "en" ? "AR" : "EN"}
+                    </span>
+                    <span>{language === "en" ? t("arabicLanguage") : t("englishLanguage")}</span>
+                  </div>
+                </DropdownMenuItem>
+              </div>
+              
               <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={handleLogout} className="text-red-600 dark:text-red-400">
-                <LogOut className="mr-2 h-4 w-4" />
-                <span>{t("logout")}</span>
-              </DropdownMenuItem>
+              
+              {/* User Actions */}
+              <div className="py-1 px-1">
+                <DropdownMenuItem 
+                  className="flex items-center cursor-pointer rounded-md my-1 px-2 py-2 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20"
+                  onClick={handleLogout}
+                >
+                  <LogOut className="mr-2 h-4 w-4" />
+                  <span>{t("logout")}</span>
+                </DropdownMenuItem>
+              </div>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
