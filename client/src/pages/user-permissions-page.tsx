@@ -64,14 +64,14 @@ type PermissionEditDialogProps = {
 
 function PermissionEditDialog({ user, onSave, open, onOpenChange }: PermissionEditDialogProps) {
   const { t } = useI18n();
-  const [role, setRole] = useState<string>(user.role);
+  const [role, setRole] = useState<string>(user.role || "User");
   const [customEnabled, setCustomEnabled] = useState<boolean>(false);
   const [customPermissions, setCustomPermissions] = useState<{ [key: string]: boolean }>({});
   const permissions = usePermissions();
   
   // Reset state when user changes
   useEffect(() => {
-    setRole(user.role);
+    setRole(user.role || "User");
     setCustomEnabled(false);
     setCustomPermissions({});
   }, [user]);
@@ -224,7 +224,7 @@ export default function UserPermissionsPage() {
     ? users.filter(user => 
         user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        user.role.toLowerCase().includes(searchTerm.toLowerCase())
+        (user.role ? user.role.toLowerCase().includes(searchTerm.toLowerCase()) : false)
       )
     : users;
     
@@ -310,7 +310,7 @@ export default function UserPermissionsPage() {
                       <TableCell>{user.email}</TableCell>
                       <TableCell>
                         <span className="bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded-full text-xs">
-                          {t(user.role)}
+                          {user.role ? t(user.role) : t("User")}
                         </span>
                       </TableCell>
                       <TableCell className="text-right">

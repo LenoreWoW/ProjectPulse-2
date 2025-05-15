@@ -23,6 +23,7 @@ const en: Record<string, string> = {
   reports: "Reports",
   analytics: "Analytics",
   settings: "Settings",
+  userPermissions: "User Permissions",
   "Project Management System": "Project Management System",
   
   // User
@@ -229,6 +230,7 @@ const ar: Record<string, string> = {
   reports: "التقارير",
   analytics: "التحليلات",
   settings: "الإعدادات",
+  userPermissions: "صلاحيات المستخدمين",
   
   // User
   login: "تسجيل الدخول",

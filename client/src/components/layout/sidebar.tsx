@@ -21,6 +21,7 @@ import {
   BookCopy,
   Network,
   LineChart,
+  ShieldCheck,
 } from "lucide-react";
 
 export function Sidebar() {
@@ -100,6 +101,9 @@ export function Sidebar() {
           </PermissionGate>
 
           <li className="pt-4 mt-4 border-t border-maroon-700 dark:border-maroon-800">
+            <PermissionGate permission="canManageUsers">
+              {renderNavItem({ icon: ShieldCheck, label: t("userPermissions"), path: "/user-permissions" })}
+            </PermissionGate>
             <PermissionGate permission="canAccessAdminSettings">
               {renderNavItem({ icon: Settings, label: t("settings"), path: "/settings" })}
             </PermissionGate>
