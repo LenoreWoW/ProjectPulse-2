@@ -195,9 +195,9 @@ export default function AuthPage() {
               onValueChange={setActiveTab} 
               className="w-full"
             >
-              <TabsList className="grid w-full grid-cols-2 mb-6 bg-black/40 p-1 rounded-full overflow-hidden border border-maroon-600">
-                <TabsTrigger value="login" className="data-[state=active]:bg-maroon-700 data-[state=active]:text-white text-white font-medium py-2 rounded-full">{t("login")}</TabsTrigger>
-                <TabsTrigger value="register" className="data-[state=active]:bg-maroon-700 data-[state=active]:text-white text-white font-medium py-2 rounded-full">{t("register")}</TabsTrigger>
+              <TabsList className="grid w-full grid-cols-2 mb-6 bg-black/40 p-1 rounded-full overflow-hidden border border-qatar-maroon">
+                <TabsTrigger value="login" className="data-[state=active]:bg-qatar-maroon data-[state=active]:text-qatar-white text-qatar-white font-medium py-2 rounded-full">{t("login")}</TabsTrigger>
+                <TabsTrigger value="register" className="data-[state=active]:bg-qatar-maroon data-[state=active]:text-qatar-white text-qatar-white font-medium py-2 rounded-full">{t("register")}</TabsTrigger>
               </TabsList>
               
               {/* Login Form */}
@@ -239,7 +239,7 @@ export default function AuthPage() {
                     />
                     <Button 
                       type="submit" 
-                      className="w-full bg-maroon-700 hover:bg-maroon-800 text-white font-medium py-3 rounded-full transition-all duration-200 shadow-md border border-maroon-500"
+                      className="w-full bg-qatar-maroon hover:bg-black/80 text-qatar-white font-medium py-3 rounded-full transition-all duration-200 shadow-md border border-qatar-white/30"
                       disabled={loginMutation.isPending}
                     >
                       {loginMutation.isPending && (
@@ -413,7 +413,7 @@ export default function AuthPage() {
                     
                     <Button 
                       type="submit" 
-                      className="w-full bg-maroon-700 hover:bg-maroon-800 text-white font-medium py-3 rounded-full transition-all duration-200 shadow-md mt-6"
+                      className="w-full bg-qatar-maroon hover:bg-black/80 text-qatar-white font-medium py-3 rounded-full transition-all duration-200 shadow-md border border-qatar-white/30 mt-6"
                       disabled={registerMutation.isPending}
                     >
                       {registerMutation.isPending && (
