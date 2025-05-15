@@ -2,6 +2,19 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Fix for the full height issue */
+html, body, #root {
+  height: 100% !important;
+  margin: 0;
+  padding: 0;
+  overflow-x: hidden;
+}
+
+body {
+  overflow-y: auto;
+  background-color: black;
+}
+
 @layer base {
   /* Custom classes for auth page */
   .auth-input {
