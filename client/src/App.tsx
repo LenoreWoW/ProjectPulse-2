@@ -74,7 +74,7 @@ function AppLayout({ children }: { children: React.ReactNode }) {
 
 function App() {
   return (
-    <ThemeProvider defaultTheme="dark">
+    <ThemeProvider defaultTheme="dark" forcedTheme="dark">
       <TooltipProvider>
         <AppLayout>
           <Router />

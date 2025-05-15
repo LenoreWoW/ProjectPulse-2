@@ -1,0 +1,111 @@
+Role-Based Access Control (RBAC)
+ 5.1 Roles and Hierarchy
+ • Guest (no role): can see only signup/login.
+ • User: assigned to projects or tasks; no create/edit rights.
+ • Project Manager (PM): can create projects, define tasks, submit change requests.
+ • Sub-PMO: reviews PM submissions for their department; can accept/reject.
+ • Main PMO: final reviewer of submissions; can advance project to next stage.
+ • Department Director: oversees all projects in their department.
+ • Executive: views all departments and projects; no direct editing except approvals.
+ • Administrator: full rights (user management, department management, logs).
+
+
+5.2 Permission Matrix
+ Each module (Projects, Tasks, Change Requests, Approvals, etc.) must check the user’s role before permitting any action. For example:
+ • Only PMs can call “Create Project.”
+ • Sub-PMO and Main PMO see pending items in Approvals.
+ • Users only see tasks assigned to them.
+ • Executives can view dashboards and analytics across all departments.
+Data Model & Entities
+ 6.1 Departments
+ • id, name, directorUserId.
+ • One-to-many with Users and Projects.
+
+
+6.2 Users
+ • id, name, email, phone, role, departmentId, status.
+ • Roles stored as enum or lookup table.
+6.3 Projects
+ • id, title, description, managerUserId, departmentId, client, budget, priority, startDate, deadline, status (Pending, Planning, In Progress, On Hold, Completed), actualCost.
+ • Many-to-many with Users (team members).
+ • Self-referencing many-to-many for dependencies.
+6.4 ProjectCostHistory
+ • id, projectId, amount, updatedByUserId, updatedAt.
+6.5 Tasks
+ • id, projectId, title, description, assignedUserId, deadline, priority, status, createdByUserId.
+ • Comments table for forum-style discussion.
+6.6 ChangeRequests
+ • id, projectId, type (Schedule, Budget, Scope, Delegation, Status, Closure, AdjustTeam), details, requestedByUserId, requestedAt, status.
+6.7 Goals
+ • id, title, description, deadline, priority, createdByUserId.
+ • Relation tables linking Projects and Goals with weight.
+6.8 Risks & Issues
+ • id, projectId, type (Risk/Issue), description, priority, createdAt, status.
+ • Automated risk generation logic for approaching deadlines.
+6.9 Notifications
+ • id, userId, relatedEntity, message, isRead, createdAt.
+6.10 Assignments & ActionItems
+ • Similar structure to Tasks but assignments are user-to-user; action items are personal to the user.
+Feature Modules & Pages
+ 7.1 Navbar
+ Links to: Calendar, Dashboard, Projects, Goals, Risks & Issues, Dependencies, Central Repository, Approvals, Notifications (bell icon), Assignments, Tasks, Action Items, User Profile.
+
+
+7.2 Dashboard
+ • Role-filtered project and task summary cards.
+ • Budget Summary widget:
+ – Total Budget: sum of all project budgets within user’s scope.
+ – Actual Cost: sum of all current cost entries.
+ – Remaining Budget: Total Budget minus Actual Cost.
+ – Predicted Cost: estimate based on current burn rate and days remaining.
+ • Analytics sub-page: user picks any data points (e.g. projects per department, completion rates) to generate charts.
+ • Drill-down: clicking any budget figure filters to list of related projects.
+7.3 Calendar
+ • Month/week/day view showing deadlines for projects, tasks, assignments.
+ • Color-coded by status and priority.
+7.4 Projects
+ • Tab 1: List of active projects (filter by status/department).
+ • Tab 2: Gantt chart view of timelines.
+ • “Add Project” button visible to PM.
+ • Completed projects automatically move to Central Repository.
+7.5 Project Details
+ • Header metadata: title, status badge, budget, actualCost labeled “Actual Spend,” remaining budget, predicted cost, start date, deadline, client, priority, manager.
+ • “Edit Cost” button for PM to update Actual Spend:
+ – Opens inline form to enter new cost.
+ – Saves to ProjectCostHistory table and updates project.actualCost.
+ – Triggers Dashboard recalculation of budget figures.
+ • Tabs:
+ – Overview: full description, attachments upload, dependency links, Change Request button.
+ – Tasks: toggle between Kanban and Gantt; “Add Task” form tied to this project.
+ – Weekly Updates: snapshots every Thursday; PM comments on progress vs previous week.
+ – Change Requests: list and submit Schedule, Budget, Scope, Delegation, Status, Closure, Adjust Team.
+ – Logs: audit trail of project actions.
+7.6 Tasks
+ • Three tabs: My Tasks, Assigned by Me, Completed.
+ • Task detail view with description, comments forum, status updates.
+7.7 Assignments & Action Items
+ • Each has three tabs: My Items, Assigned by Me, Completed.
+ • Detail view with discussion thread.
+7.8 Goals
+ • Tab 1: Strategic Goals; Tab 2: Annual Goals.
+ • “Add Goal” form: link related projects and goals, assign weights; overall completion auto-calculated based on task and project progress.
+7.9 Risks & Issues
+ • Tab 1: Risks; Tab 2: Issues.
+ • “Add Risk/Issue” form captures type, priority, description.
+ • Automated detection: tasks or projects nearing deadlines appear as risks; overdue risks auto-promote to issues.
+7.10 Dependencies
+ • Interactive mind-map showing project-to-project and project-to-goal links.
+7.11 Central Repository
+ • Tab 1: Completed Projects.
+ • Tab 2: Global Templates.
+ • Tab 3: Department-specific Templates.
+7.12 Approvals
+ • Tab 1: Projects Pending; Tab 2: Change Requests; Tab 3: Processed.
+ • Sub-PMO and Main PMO handle approvals here.
+7.13 Notifications
+ • Real-time alerts for task assignments/completions, missing weekly updates, change requests.
+ • Read/unread filtering.
+7.14 System Settings
+ • User Management (Main PMO, Department Director, Admin): add/edit users, assign roles/departments, force password reset.
+ • Department Management: add/delete departments.
+ • Logs: audit trail displayed with filters.

@@ -17,6 +17,8 @@ const en: Record<string, string> = {
   risksAndIssues: "Risks & Issues",
   assignments: "Assignments",
   approvals: "Approvals",
+  departments: "Departments",
+  reports: "Reports",
   settings: "Settings",
   "Project Management System": "Project Management System",
   
@@ -139,6 +141,8 @@ const ar: Record<string, string> = {
   risksAndIssues: "المخاطر والمشكلات",
   assignments: "التكليفات",
   approvals: "الموافقات",
+  departments: "الأقسام",
+  reports: "التقارير",
   settings: "الإعدادات",
   
   // User
