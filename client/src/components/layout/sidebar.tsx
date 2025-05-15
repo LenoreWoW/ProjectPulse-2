@@ -38,17 +38,16 @@ export function Sidebar() {
 
   const renderNavItem = ({ icon: Icon, label, path }: { icon: any; label: string; path: string }) => (
     <li key={path}>
-      <Link href={path}>
-        <a
-          className={`flex items-center p-2 ${
-            isActive(path)
-              ? "text-maroon-700 bg-maroon-50 dark:bg-maroon-900/20 dark:text-maroon-200"
-              : "text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700"
-          } rounded-lg transition-colors duration-200`}
-        >
-          <Icon className={`h-5 w-5 ${isRtl ? 'ml-3' : 'mr-3'} rtl-mirror`} />
-          {!collapsed && <span>{label}</span>}
-        </a>
+      <Link 
+        href={path}
+        className={`flex items-center p-2 ${
+          isActive(path)
+            ? "text-white bg-maroon-700 dark:bg-maroon-800 dark:text-white"
+            : "text-white hover:bg-maroon-600 dark:text-gray-100 dark:hover:bg-maroon-700"
+        } rounded-lg transition-colors duration-200`}
+      >
+        <Icon className={`h-5 w-5 ${isRtl ? 'ml-3' : 'mr-3'} rtl-mirror`} />
+        {!collapsed && <span>{label}</span>}
       </Link>
     </li>
   );
@@ -57,12 +56,12 @@ export function Sidebar() {
     <aside 
       className={`${
         collapsed ? "w-20" : "w-64"
-      } hidden md:flex flex-col bg-white dark:bg-darker shadow-lg transition-all duration-300 ease-in-out z-20 shrink-0 border-r border-gray-200 dark:border-gray-700 h-screen`}
+      } hidden md:flex flex-col bg-maroon-800 dark:bg-maroon-900 shadow-lg transition-all duration-300 ease-in-out z-20 shrink-0 border-r border-maroon-700 dark:border-maroon-800 h-screen`}
     >
-      <div className="p-4 flex items-center justify-between border-b border-gray-200 dark:border-gray-700">
+      <div className="p-4 flex items-center justify-between border-b border-maroon-700 dark:border-maroon-800">
         <Logo hideText={collapsed} />
         <button
-          className="p-1 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700"
+          className="p-1 rounded-full text-white hover:bg-maroon-700 dark:hover:bg-maroon-800"
           onClick={() => setCollapsed(!collapsed)}
         >
           {isRtl ? (
@@ -77,21 +76,21 @@ export function Sidebar() {
         <ul className="space-y-2">
           {navItems.map(renderNavItem)}
 
-          <li className="pt-4 mt-4 border-t border-gray-200 dark:border-gray-700">
+          <li className="pt-4 mt-4 border-t border-maroon-700 dark:border-maroon-800">
             {renderNavItem({ icon: Settings, label: t("settings"), path: "/settings" })}
           </li>
         </ul>
       </nav>
 
       {!collapsed && (
-        <div className="p-4 border-t border-gray-200 dark:border-gray-700">
+        <div className="p-4 border-t border-maroon-700 dark:border-maroon-800">
           <div className="flex items-center">
-            <div className="w-8 h-8 rounded-full bg-maroon-700 text-white flex items-center justify-center font-bold">
+            <div className="w-8 h-8 rounded-full bg-maroon-600 text-white flex items-center justify-center font-bold">
               {user?.name?.charAt(0).toUpperCase() || "U"}
             </div>
             <div className={`${isRtl ? 'mr-3' : 'ml-3'}`}>
-              <p className="text-sm font-medium">{user?.name}</p>
-              <p className="text-xs text-gray-500 dark:text-gray-400">{user?.role}</p>
+              <p className="text-sm font-medium text-white">{user?.name}</p>
+              <p className="text-xs text-gray-300 dark:text-gray-400">{user?.role}</p>
             </div>
           </div>
         </div>
