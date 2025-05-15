@@ -141,7 +141,7 @@ export function RecentProjects({ className = "" }: RecentProjectsProps) {
   
   if (isLoading) {
     return (
-      <div className={`bg-white dark:bg-darker shadow rounded-lg border ${className || 'border-gray-200 dark:border-gray-700'}`}>
+      <div className={`bg-white dark:bg-gray-800 shadow rounded-lg border ${className || 'border-gray-200 dark:border-gray-700'}`}>
         <div className="p-6 border-b border-maroon-200 dark:border-maroon-800 bg-gradient-to-r from-maroon-50 to-white dark:from-maroon-900/20 dark:to-darker flex justify-between items-center">
           <Skeleton className="h-7 w-36" />
           <Skeleton className="h-5 w-20" />
@@ -184,8 +184,8 @@ export function RecentProjects({ className = "" }: RecentProjectsProps) {
     .slice(0, 3);
   
   return (
-    <div className={`lg:col-span-2 bg-white dark:bg-darker shadow-lg rounded-lg border ${className || 'border-maroon-200 dark:border-maroon-800'}`}>
-      <div className="p-6 border-b border-maroon-200 dark:border-maroon-800 bg-gradient-to-r from-maroon-100 to-white dark:from-maroon-900/30 dark:to-darker flex justify-between items-center">
+    <div className={`lg:col-span-2 bg-white dark:bg-gray-800 shadow-lg rounded-lg border ${className || 'border-maroon-200 dark:border-maroon-800'}`}>
+      <div className="p-6 border-b border-maroon-200 dark:border-maroon-800 bg-gradient-to-r from-maroon-100 to-white dark:from-maroon-900/30 dark:to-gray-800 flex justify-between items-center">
         <h2 className="text-xl font-bold text-maroon-800 dark:text-maroon-200">{t("recentProjects")}</h2>
         <Link href="/projects" 
           className="text-sm text-maroon-700 dark:text-maroon-400 hover:text-maroon-900 dark:hover:text-maroon-300 hover:underline flex items-center gap-1">
@@ -210,7 +210,7 @@ export function RecentProjects({ className = "" }: RecentProjectsProps) {
               </th>
             </tr>
           </thead>
-          <tbody className="bg-white dark:bg-darker divide-y divide-maroon-100 dark:divide-maroon-800">
+          <tbody className="bg-white dark:bg-gray-800 divide-y divide-maroon-100 dark:divide-maroon-800">
             {recentProjects.length === 0 ? (
               <tr>
                 <td colSpan={4} className="px-6 py-6 text-center">

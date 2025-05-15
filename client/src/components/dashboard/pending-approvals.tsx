@@ -94,7 +94,7 @@ export function PendingApprovals({ className = "" }: PendingApprovalsProps) {
   
   if (isLoading) {
     return (
-      <div className={`bg-white dark:bg-darker shadow rounded-lg border ${className || 'border-gray-200 dark:border-gray-700'}`}>
+      <div className={`bg-white dark:bg-gray-800 shadow rounded-lg border ${className || 'border-gray-200 dark:border-gray-700'}`}>
         <div className="p-6 border-b border-maroon-200 dark:border-maroon-800 bg-gradient-to-r from-maroon-50 to-white dark:from-maroon-900/20 dark:to-darker flex justify-between items-center">
           <Skeleton className="h-7 w-40" />
           <Skeleton className="h-6 w-16 rounded-full" />
@@ -136,8 +136,8 @@ export function PendingApprovals({ className = "" }: PendingApprovalsProps) {
   const recentApprovals = pendingRequests.slice(0, 3);
   
   return (
-    <div className={`bg-white dark:bg-darker shadow-lg rounded-lg border ${className || 'border-maroon-200 dark:border-maroon-800'}`}>
-      <div className="p-6 border-b border-maroon-200 dark:border-maroon-800 bg-gradient-to-r from-maroon-100 to-white dark:from-maroon-900/30 dark:to-darker flex justify-between items-center">
+    <div className={`bg-white dark:bg-gray-800 shadow-lg rounded-lg border ${className || 'border-maroon-200 dark:border-maroon-800'}`}>
+      <div className="p-6 border-b border-maroon-200 dark:border-maroon-800 bg-gradient-to-r from-maroon-100 to-white dark:from-maroon-900/30 dark:to-gray-800 flex justify-between items-center">
         <h2 className="text-xl font-bold text-maroon-800 dark:text-maroon-200">{t("pendingApprovals")}</h2>
         {pendingRequests.length > 0 && (
           <span className="px-3 py-1 rounded-full text-xs font-bold bg-maroon-100 text-maroon-800 dark:bg-maroon-900/30 dark:text-maroon-300 shadow-sm">

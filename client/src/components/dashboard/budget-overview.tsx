@@ -75,7 +75,7 @@ export function BudgetOverview() {
   
   return (
     <div className="mb-8 bg-white dark:bg-gray-800 shadow-lg rounded-lg border border-maroon-200 dark:border-maroon-800 hover:border-maroon-300 dark:hover:border-maroon-700 transition-colors overflow-hidden">
-      <div className="p-6 border-b border-maroon-200 dark:border-maroon-800 bg-gradient-to-r from-maroon-100 to-white dark:from-maroon-900/30 dark:to-darker">
+      <div className="p-6 border-b border-maroon-200 dark:border-maroon-800 bg-gradient-to-r from-maroon-100 to-white dark:from-maroon-900/30 dark:to-gray-800">
         <h2 className="text-xl font-bold text-maroon-800 dark:text-maroon-200">{t("budgetOverview")}</h2>
       </div>
       <div className="grid grid-cols-1 md:grid-cols-4 divide-y md:divide-y-0 md:divide-x divide-maroon-100 dark:divide-maroon-800">
