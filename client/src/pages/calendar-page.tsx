@@ -188,7 +188,9 @@ export default function CalendarPage() {
   };
   
   // Get color for event type
-  const getEventColor = (type: string, priority: string) => {
+  const getEventColor = (type: string | null | undefined, priority: string | null | undefined) => {
+    if (!type) type = 'task';
+    if (!priority) priority = 'Medium';
     // Base color on type and adjust intensity based on priority
     if (type === 'project') {
       return priority === 'High' ? 'bg-maroon-700 text-white' :
