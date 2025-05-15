@@ -264,7 +264,7 @@ export default function AuthPage() {
                             <Input 
                               placeholder={t("name")} 
                               {...field} 
-                              className="h-11 bg-white/10 border border-white/20 focus:border-white/30 text-white placeholder:text-white/50 rounded-full px-5 py-2"
+                              className="auth-input"
                             />
                           </FormControl>
                           <FormMessage className="text-red-300 text-sm ml-2" />
@@ -282,7 +282,7 @@ export default function AuthPage() {
                                 type="email" 
                                 placeholder={t("email")} 
                                 {...field} 
-                                className="h-11 bg-white/10 border border-white/20 focus:border-white/30 text-white placeholder:text-white/50 rounded-full px-5 py-2"
+                                className="auth-input"
                               />
                             </FormControl>
                             <FormMessage className="text-red-300 text-sm ml-2" />
@@ -299,7 +299,7 @@ export default function AuthPage() {
                                 placeholder={t("phone")} 
                                 {...field} 
                                 value={field.value || ''} 
-                                className="h-11 bg-white/10 border border-white/20 focus:border-white/30 text-white placeholder:text-white/50 rounded-full px-5 py-2"
+                                className="auth-input"
                               />
                             </FormControl>
                             <FormMessage className="text-red-300 text-sm ml-2" />
@@ -316,7 +316,7 @@ export default function AuthPage() {
                             <Input 
                               placeholder={t("username")} 
                               {...field}
-                              className="h-11 bg-white/10 border border-white/20 focus:border-white/30 text-white placeholder:text-white/50 rounded-full px-5 py-2"
+                              className="auth-input"
                             />
                           </FormControl>
                           <FormMessage className="text-red-300 text-sm ml-2" />
@@ -334,7 +334,7 @@ export default function AuthPage() {
                                 type="password"
                                 placeholder={t("password")} 
                                 {...field}
-                                className="h-11 bg-white/10 border border-white/20 focus:border-white/30 text-white placeholder:text-white/50 rounded-full px-5 py-2"
+                                className="auth-input"
                               />
                             </FormControl>
                             <FormMessage className="text-red-300 text-sm ml-2" />
@@ -351,7 +351,7 @@ export default function AuthPage() {
                                 type="password"
                                 placeholder={t("confirmPassword")} 
                                 {...field}
-                                className="h-11 bg-white/10 border border-white/20 focus:border-white/30 text-white placeholder:text-white/50 rounded-full px-5 py-2"
+                                className="auth-input"
                               />
                             </FormControl>
                             <FormMessage className="text-red-300 text-sm ml-2" />
