@@ -174,7 +174,7 @@ export default function AuthPage() {
             }}
           />
         ))}
-        {/* Overlay for better text readability */}
+        {/* Overlay for better text readability - 70% opacity for improved contrast */}
         <div className="absolute inset-0 bg-black bg-opacity-70 z-2" />
       </div>
       
