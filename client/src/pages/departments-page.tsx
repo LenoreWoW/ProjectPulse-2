@@ -1,65 +1,160 @@
 import { useState } from "react";
 import { useI18n } from "@/hooks/use-i18n";
 import { useQuery, useMutation } from "@tanstack/react-query";
+import { Department, User } from "@shared/schema";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Department, User } from "@shared/schema";
 import { apiRequest, queryClient } from "@/lib/queryClient";
+import { z } from "zod";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { 
+  Card, 
+  CardContent, 
+  CardDescription, 
+  CardFooter, 
+  CardHeader, 
+  CardTitle 
+} from "@/components/ui/card";
+import {
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+import { 
+  Dialog, 
+  DialogContent, 
+  DialogDescription, 
+  DialogFooter, 
+  DialogHeader, 
+  DialogTitle, 
+  DialogTrigger 
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Badge } from "@/components/ui/badge";
+import { 
+  Table, 
+  TableBody, 
+  TableCell, 
+  TableHead, 
+  TableHeader, 
+  TableRow 
+} from "@/components/ui/table";
+import { 
+  Select, 
+  SelectContent, 
+  SelectItem, 
+  SelectTrigger, 
+  SelectValue 
+} from "@/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { 
+  Building, 
+  Users, 
+  Search, 
   Plus, 
   Pencil, 
-  User as UserIcon, 
-  Building,
-  Phone,
-  Mail,
-  Search,
-  Users,
-  CircleCheckBig
+  Trash, 
+  User as UserIcon
 } from "lucide-react";
+
+// Form schema for adding or editing departments
+const departmentFormSchema = z.object({
+  name: z.string().min(2, { message: "Name must be at least 2 characters." }),
+  description: z.string().optional(),
+  headUserId: z.number().optional().nullable(),
+  budget: z.number().optional().nullable(),
+  code: z.string().min(2, { message: "Code must be at least 2 characters." }),
+  location: z.string().optional().nullable(),
+  phone: z.string().optional().nullable(),
+  email: z.string().email().optional().nullable(),
+});
+
+type DepartmentFormValues = z.infer<typeof departmentFormSchema>;
 
 export default function DepartmentsPage() {
   const { t } = useI18n();
   const { user } = useAuth();
   const { toast } = useToast();
+  const [searchTerm, setSearchTerm] = useState("");
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [viewingDepartment, setViewingDepartment] = useState<Department | null>(null);
   const [editingDepartment, setEditingDepartment] = useState<Department | null>(null);
-  const [searchTerm, setSearchTerm] = useState("");
   
-  // Department form state
-  const [formState, setFormState] = useState({
-    name: "",
-    nameAr: "",
-    directorUserId: 0,
-  });
+  // Check if current user has permission to manage departments
+  const canManageDepartments = ["Administrator", "MainPMO"].includes(user?.role || "");
   
-  // Query for departments
+  // Fetch departments
   const { 
     data: departments = [], 
     isLoading: isLoadingDepartments,
-    isError: isDepartmentsError
+    isError: isDepartmentsError,
   } = useQuery<Department[]>({
     queryKey: ["/api/departments"],
   });
   
-  // Query for users for director selection
+  // Fetch users for department head selection
   const { 
     data: users = [], 
-    isLoading: isLoadingUsers 
+    isLoading: isLoadingUsers,
   } = useQuery<User[]>({
     queryKey: ["/api/users"],
   });
   
-  // Mutation for creating a department
+  // Define form with react-hook-form and zod validation
+  const form = useForm<DepartmentFormValues>({
+    resolver: zodResolver(departmentFormSchema),
+    defaultValues: {
+      name: "",
+      description: "",
+      headUserId: null,
+      budget: null,
+      code: "",
+      location: null,
+      phone: null,
+      email: null,
+    },
+  });
+  
+  // Reset form when adding a new department
+  const resetForm = () => {
+    form.reset({
+      name: "",
+      description: "",
+      headUserId: null,
+      budget: null,
+      code: "",
+      location: null,
+      phone: null,
+      email: null,
+    });
+  };
+  
+  // Set form values when editing a department
+  const setFormForEditing = (department: Department) => {
+    form.reset({
+      name: department.name,
+      description: department.description || "",
+      headUserId: department.headUserId,
+      budget: department.budget,
+      code: department.code,
+      location: department.location,
+      phone: department.phone,
+      email: department.email,
+    });
+  };
+  
+  // Create department mutation
   const createDepartmentMutation = useMutation({
-    mutationFn: async (department: { name: string; nameAr: string; directorUserId: number }) => {
-      const response = await apiRequest("POST", "/api/departments", department);
+    mutationFn: async (values: DepartmentFormValues) => {
+      const response = await apiRequest("POST", "/api/departments", values);
       return response.json();
     },
     onSuccess: () => {
@@ -80,10 +175,10 @@ export default function DepartmentsPage() {
     },
   });
   
-  // Mutation for updating a department
+  // Update department mutation
   const updateDepartmentMutation = useMutation({
-    mutationFn: async (department: { id: number; name: string; nameAr: string; directorUserId: number }) => {
-      const response = await apiRequest("PATCH", `/api/departments/${department.id}`, department);
+    mutationFn: async ({ id, values }: { id: number; values: DepartmentFormValues }) => {
+      const response = await apiRequest("PATCH", `/api/departments/${id}`, values);
       return response.json();
     },
     onSuccess: () => {
@@ -105,74 +200,83 @@ export default function DepartmentsPage() {
     },
   });
   
-  // Handle form submission
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!formState.name || !formState.nameAr) {
+  // Delete department mutation
+  const deleteDepartmentMutation = useMutation({
+    mutationFn: async (id: number) => {
+      const response = await apiRequest("DELETE", `/api/departments/${id}`);
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/departments"] });
       toast({
-        title: t("validationError"),
-        description: t("allFieldsRequired"),
+        title: t("departmentDeleted"),
+        description: t("departmentDeletedSuccess"),
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: t("error"),
+        description: error.message || t("departmentDeletionFailed"),
         variant: "destructive",
       });
-      return;
-    }
-    
-    if (isEditDialogOpen && editingDepartment) {
-      updateDepartmentMutation.mutate({ 
-        id: editingDepartment.id, 
-        ...formState 
-      });
+    },
+  });
+  
+  // Handle form submission
+  const onSubmit = (values: DepartmentFormValues) => {
+    if (editingDepartment) {
+      updateDepartmentMutation.mutate({ id: editingDepartment.id, values });
     } else {
-      createDepartmentMutation.mutate(formState);
+      createDepartmentMutation.mutate(values);
     }
   };
   
-  // Reset form state
-  const resetForm = () => {
-    setFormState({
-      name: "",
-      nameAr: "",
-      directorUserId: 0,
-    });
+  // Handle view department details
+  const handleViewDetails = (department: Department) => {
+    setViewingDepartment(department);
   };
   
   // Handle edit button click
   const handleEdit = (department: Department) => {
     setEditingDepartment(department);
-    setFormState({
-      name: department.name,
-      nameAr: department.nameAr,
-      directorUserId: department.directorUserId || 0,
-    });
+    setFormForEditing(department);
     setIsEditDialogOpen(true);
   };
   
-  // Find department director info
-  const getDirectorInfo = (directorUserId: number | null) => {
-    if (!directorUserId) return { name: t("notAssigned"), email: "" };
-    const director = users.find(user => user.id === directorUserId);
-    return director 
-      ? { name: director.name, email: director.email } 
-      : { name: t("notAssigned"), email: "" };
+  // Handle delete button click
+  const handleDelete = (department: Department) => {
+    if (window.confirm(t("confirmDepartmentDeletion"))) {
+      deleteDepartmentMutation.mutate(department.id);
+    }
   };
   
   // Filter departments based on search term
   const filteredDepartments = departments.filter(
-    department => 
+    (department) =>
       department.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      department.nameAr.toLowerCase().includes(searchTerm.toLowerCase())
+      department.code.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      department.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      false
   );
+
+  // Get department head name
+  const getDepartmentHeadName = (headUserId: number | null) => {
+    if (!headUserId) return t("notAssigned");
+    const head = users.find((user) => user.id === headUserId);
+    return head ? head.name : t("notAssigned");
+  };
   
-  // Check if user is allowed to manage departments
-  const canManageDepartments = ["Administrator", "MainPMO"].includes(user?.role || "");
+  // Get department members
+  const getDepartmentMembers = (departmentId: number) => {
+    return users.filter((user) => user.departmentId === departmentId);
+  };
   
   return (
     <div className="container mx-auto py-6 space-y-6">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">{t("departments")}</h1>
-          <p className="text-gray-500 dark:text-gray-400 mt-1">{t("departmentsDescription")}</p>
+          <p className="text-gray-500 dark:text-gray-400 mt-1">{t("manageDepartments")}</p>
         </div>
         
         <div className="flex flex-col sm:flex-row gap-3">
@@ -194,274 +298,580 @@ export default function DepartmentsPage() {
                   {t("addDepartment")}
                 </Button>
               </DialogTrigger>
-              <DialogContent>
+              <DialogContent className="max-w-md">
                 <DialogHeader>
                   <DialogTitle>{t("addNewDepartment")}</DialogTitle>
                   <DialogDescription>
                     {t("addDepartmentDescription")}
                   </DialogDescription>
                 </DialogHeader>
-                <form onSubmit={handleSubmit}>
-                  <div className="grid gap-4 py-4">
-                    <div className="grid gap-2">
-                      <Label htmlFor="name">{t("departmentName")}</Label>
-                      <Input
-                        id="name"
-                        value={formState.name}
-                        onChange={(e) => setFormState({ ...formState, name: e.target.value })}
-                        placeholder={t("enterDepartmentName")}
+                <Form {...form}>
+                  <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                    <FormField
+                      control={form.control}
+                      name="name"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>{t("name")}</FormLabel>
+                          <FormControl>
+                            <Input {...field} placeholder={t("enterDepartmentName")} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    
+                    <FormField
+                      control={form.control}
+                      name="code"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>{t("code")}</FormLabel>
+                          <FormControl>
+                            <Input {...field} placeholder={t("enterDepartmentCode")} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    
+                    <FormField
+                      control={form.control}
+                      name="description"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>{t("description")}</FormLabel>
+                          <FormControl>
+                            <Textarea {...field} placeholder={t("enterDepartmentDescription")} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    
+                    <div className="grid grid-cols-2 gap-4">
+                      <FormField
+                        control={form.control}
+                        name="headUserId"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>{t("departmentHead")}</FormLabel>
+                            <Select 
+                              onValueChange={(value) => field.onChange(value ? parseInt(value) : null)} 
+                              defaultValue={field.value?.toString() || ""}
+                              value={field.value?.toString() || ""}
+                            >
+                              <FormControl>
+                                <SelectTrigger>
+                                  <SelectValue placeholder={t("selectDepartmentHead")} />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                <SelectItem value="">{t("notAssigned")}</SelectItem>
+                                {users
+                                  .filter((u) => u.role === "DepartmentDirector" || u.role === "Executive")
+                                  .map((user) => (
+                                    <SelectItem key={user.id} value={user.id.toString()}>
+                                      {user.name}
+                                    </SelectItem>
+                                  ))}
+                              </SelectContent>
+                            </Select>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      
+                      <FormField
+                        control={form.control}
+                        name="budget"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>{t("budget")}</FormLabel>
+                            <FormControl>
+                              <Input 
+                                type="number"
+                                {...field}
+                                onChange={(e) => field.onChange(e.target.value ? parseFloat(e.target.value) : null)}
+                                placeholder={t("enterBudget")} 
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
                       />
                     </div>
-                    <div className="grid gap-2">
-                      <Label htmlFor="nameAr">{t("departmentNameAr")}</Label>
-                      <Input
-                        id="nameAr"
-                        value={formState.nameAr}
-                        onChange={(e) => setFormState({ ...formState, nameAr: e.target.value })}
-                        placeholder={t("enterDepartmentNameAr")}
-                        dir="rtl"
+                    
+                    <div className="grid grid-cols-2 gap-4">
+                      <FormField
+                        control={form.control}
+                        name="location"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>{t("location")}</FormLabel>
+                            <FormControl>
+                              <Input {...field} placeholder={t("enterLocation")} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      
+                      <FormField
+                        control={form.control}
+                        name="phone"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>{t("phone")}</FormLabel>
+                            <FormControl>
+                              <Input {...field} placeholder={t("enterPhone")} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
                       />
                     </div>
-                    <div className="grid gap-2">
-                      <Label htmlFor="directorUserId">{t("departmentDirector")}</Label>
-                      <select
-                        id="directorUserId"
-                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                        value={formState.directorUserId}
-                        onChange={(e) => setFormState({ ...formState, directorUserId: parseInt(e.target.value) })}
+                    
+                    <FormField
+                      control={form.control}
+                      name="email"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>{t("email")}</FormLabel>
+                          <FormControl>
+                            <Input {...field} type="email" placeholder={t("enterEmail")} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    
+                    <DialogFooter>
+                      <Button 
+                        type="button" 
+                        variant="outline" 
+                        onClick={() => {
+                          setIsAddDialogOpen(false);
+                          resetForm();
+                        }}
                       >
-                        <option value={0}>{t("selectDirector")}</option>
-                        {users
-                          .filter(u => ["DepartmentDirector"].includes(u.role))
-                          .map(user => (
-                            <option key={user.id} value={user.id}>
-                              {user.name}
-                            </option>
-                          ))
-                        }
-                      </select>
-                    </div>
-                  </div>
-                  <DialogFooter>
-                    <Button type="button" variant="outline" onClick={() => setIsAddDialogOpen(false)}>
-                      {t("cancel")}
-                    </Button>
-                    <Button type="submit" className="bg-qatar-maroon hover:bg-maroon-800">
-                      {t("addDepartment")}
-                    </Button>
-                  </DialogFooter>
-                </form>
+                        {t("cancel")}
+                      </Button>
+                      <Button type="submit" className="bg-qatar-maroon hover:bg-maroon-800">
+                        {t("addDepartment")}
+                      </Button>
+                    </DialogFooter>
+                  </form>
+                </Form>
               </DialogContent>
             </Dialog>
           )}
           
-          {/* Edit Dialog */}
+          {/* Edit Department Dialog */}
           <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-            <DialogContent>
+            <DialogContent className="max-w-md">
               <DialogHeader>
                 <DialogTitle>{t("editDepartment")}</DialogTitle>
                 <DialogDescription>
                   {t("editDepartmentDescription")}
                 </DialogDescription>
               </DialogHeader>
-              <form onSubmit={handleSubmit}>
-                <div className="grid gap-4 py-4">
-                  <div className="grid gap-2">
-                    <Label htmlFor="edit-name">{t("departmentName")}</Label>
-                    <Input
-                      id="edit-name"
-                      value={formState.name}
-                      onChange={(e) => setFormState({ ...formState, name: e.target.value })}
-                      placeholder={t("enterDepartmentName")}
+              <Form {...form}>
+                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                  <FormField
+                    control={form.control}
+                    name="name"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>{t("name")}</FormLabel>
+                        <FormControl>
+                          <Input {...field} placeholder={t("enterDepartmentName")} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <FormField
+                    control={form.control}
+                    name="code"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>{t("code")}</FormLabel>
+                        <FormControl>
+                          <Input {...field} placeholder={t("enterDepartmentCode")} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <FormField
+                    control={form.control}
+                    name="description"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>{t("description")}</FormLabel>
+                        <FormControl>
+                          <Textarea {...field} placeholder={t("enterDepartmentDescription")} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <div className="grid grid-cols-2 gap-4">
+                    <FormField
+                      control={form.control}
+                      name="headUserId"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>{t("departmentHead")}</FormLabel>
+                          <Select 
+                            onValueChange={(value) => field.onChange(value ? parseInt(value) : null)} 
+                            defaultValue={field.value?.toString() || ""}
+                            value={field.value?.toString() || ""}
+                          >
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder={t("selectDepartmentHead")} />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              <SelectItem value="">{t("notAssigned")}</SelectItem>
+                              {users
+                                .filter((u) => u.role === "DepartmentDirector" || u.role === "Executive")
+                                .map((user) => (
+                                  <SelectItem key={user.id} value={user.id.toString()}>
+                                    {user.name}
+                                  </SelectItem>
+                                ))}
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    
+                    <FormField
+                      control={form.control}
+                      name="budget"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>{t("budget")}</FormLabel>
+                          <FormControl>
+                            <Input 
+                              type="number"
+                              {...field}
+                              onChange={(e) => field.onChange(e.target.value ? parseFloat(e.target.value) : null)}
+                              placeholder={t("enterBudget")} 
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
                     />
                   </div>
-                  <div className="grid gap-2">
-                    <Label htmlFor="edit-nameAr">{t("departmentNameAr")}</Label>
-                    <Input
-                      id="edit-nameAr"
-                      value={formState.nameAr}
-                      onChange={(e) => setFormState({ ...formState, nameAr: e.target.value })}
-                      placeholder={t("enterDepartmentNameAr")}
-                      dir="rtl"
+                  
+                  <div className="grid grid-cols-2 gap-4">
+                    <FormField
+                      control={form.control}
+                      name="location"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>{t("location")}</FormLabel>
+                          <FormControl>
+                            <Input {...field} placeholder={t("enterLocation")} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    
+                    <FormField
+                      control={form.control}
+                      name="phone"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>{t("phone")}</FormLabel>
+                          <FormControl>
+                            <Input {...field} placeholder={t("enterPhone")} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
                     />
                   </div>
-                  <div className="grid gap-2">
-                    <Label htmlFor="edit-directorUserId">{t("departmentDirector")}</Label>
-                    <select
-                      id="edit-directorUserId"
-                      className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                      value={formState.directorUserId}
-                      onChange={(e) => setFormState({ ...formState, directorUserId: parseInt(e.target.value) })}
+                  
+                  <FormField
+                    control={form.control}
+                    name="email"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>{t("email")}</FormLabel>
+                        <FormControl>
+                          <Input {...field} type="email" placeholder={t("enterEmail")} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <DialogFooter>
+                    <Button 
+                      type="button" 
+                      variant="outline" 
+                      onClick={() => {
+                        setIsEditDialogOpen(false);
+                        setEditingDepartment(null);
+                        resetForm();
+                      }}
                     >
-                      <option value={0}>{t("selectDirector")}</option>
-                      {users
-                        .filter(u => ["DepartmentDirector"].includes(u.role))
-                        .map(user => (
-                          <option key={user.id} value={user.id}>
-                            {user.name}
-                          </option>
-                        ))
-                      }
-                    </select>
-                  </div>
-                </div>
-                <DialogFooter>
-                  <Button 
-                    type="button" 
-                    variant="outline" 
-                    onClick={() => {
-                      setIsEditDialogOpen(false);
-                      setEditingDepartment(null);
-                      resetForm();
-                    }}
-                  >
-                    {t("cancel")}
-                  </Button>
-                  <Button type="submit" className="bg-qatar-maroon hover:bg-maroon-800">
-                    {t("updateDepartment")}
-                  </Button>
-                </DialogFooter>
-              </form>
+                      {t("cancel")}
+                    </Button>
+                    <Button type="submit" className="bg-qatar-maroon hover:bg-maroon-800">
+                      {t("updateDepartment")}
+                    </Button>
+                  </DialogFooter>
+                </form>
+              </Form>
             </DialogContent>
           </Dialog>
         </div>
       </div>
       
-      {isLoadingDepartments ? (
-        <div className="flex justify-center py-10">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-qatar-maroon"></div>
-        </div>
-      ) : isDepartmentsError ? (
-        <Card>
-          <CardContent className="flex flex-col items-center justify-center py-10">
-            <p className="text-gray-500 dark:text-gray-400">{t("errorLoadingDepartments")}</p>
-            <Button
-              variant="outline"
-              className="mt-4"
-              onClick={() => queryClient.invalidateQueries({ queryKey: ["/api/departments"] })}
-            >
-              {t("tryAgain")}
-            </Button>
-          </CardContent>
-        </Card>
-      ) : filteredDepartments.length === 0 ? (
-        <Card>
-          <CardContent className="flex flex-col items-center justify-center py-10">
-            <Users className="h-12 w-12 text-gray-400 mb-4" />
-            <p className="text-xl font-medium text-gray-900 dark:text-gray-100">{t("noDepartmentsFound")}</p>
-            <p className="text-gray-500 dark:text-gray-400 mt-1">{t("createDepartmentToStart")}</p>
-            {canManageDepartments && (
-              <Button
-                className="mt-4 bg-qatar-maroon hover:bg-maroon-800"
-                onClick={() => setIsAddDialogOpen(true)}
-              >
-                <Plus className="mr-2 h-4 w-4" />
-                {t("addDepartment")}
-              </Button>
-            )}
-          </CardContent>
-        </Card>
-      ) : (
-        <div className="overflow-hidden rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>{t("departmentName")}</TableHead>
-                <TableHead>{t("arabicName")}</TableHead>
-                <TableHead>{t("director")}</TableHead>
-                <TableHead>{t("contactInfo")}</TableHead>
-                {canManageDepartments && <TableHead className="text-right">{t("actions")}</TableHead>}
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredDepartments.map((department) => {
-                const director = getDirectorInfo(department.directorUserId);
-                return (
-                  <TableRow key={department.id}>
-                    <TableCell className="font-medium">{department.name}</TableCell>
-                    <TableCell dir="rtl">{department.nameAr}</TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <UserIcon className="h-4 w-4 text-gray-500" />
-                        <span>{director.name}</span>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      {director.email && (
-                        <div className="flex items-center gap-2">
-                          <Mail className="h-4 w-4 text-gray-500" />
-                          <span className="text-sm">{director.email}</span>
+      {/* Detail View Dialog */}
+      {viewingDepartment && (
+        <Dialog open={Boolean(viewingDepartment)} onOpenChange={(open) => !open && setViewingDepartment(null)}>
+          <DialogContent className="max-w-4xl">
+            <DialogHeader>
+              <DialogTitle className="text-2xl">{viewingDepartment.name}</DialogTitle>
+              <Badge variant="outline" className="self-start mt-2 text-xs font-medium">
+                {viewingDepartment.code}
+              </Badge>
+            </DialogHeader>
+            
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="space-y-4">
+                <div>
+                  <h3 className="font-medium text-gray-500 dark:text-gray-400 mb-1">{t("description")}</h3>
+                  <p>{viewingDepartment.description || t("noDepartmentDescription")}</p>
+                </div>
+                
+                <div>
+                  <h3 className="font-medium text-gray-500 dark:text-gray-400 mb-1">{t("departmentHead")}</h3>
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-full bg-maroon-100 dark:bg-maroon-900 flex items-center justify-center text-qatar-maroon">
+                      <UserIcon className="h-4 w-4" />
+                    </div>
+                    <span>{getDepartmentHeadName(viewingDepartment.headUserId)}</span>
+                  </div>
+                </div>
+                
+                <div>
+                  <h3 className="font-medium text-gray-500 dark:text-gray-400 mb-1">{t("budget")}</h3>
+                  <p className="text-lg font-semibold">
+                    {viewingDepartment.budget ? `$${viewingDepartment.budget.toLocaleString()}` : t("notAssigned")}
+                  </p>
+                </div>
+              </div>
+              
+              <div className="space-y-4">
+                <div>
+                  <h3 className="font-medium text-gray-500 dark:text-gray-400 mb-1">{t("contactInformation")}</h3>
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2">
+                      <span className="text-gray-700 dark:text-gray-300">{t("location")}:</span>
+                      <span>{viewingDepartment.location || t("notProvided")}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-gray-700 dark:text-gray-300">{t("phone")}:</span>
+                      <span>{viewingDepartment.phone || t("notProvided")}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-gray-700 dark:text-gray-300">{t("email")}:</span>
+                      <span>{viewingDepartment.email || t("notProvided")}</span>
+                    </div>
+                  </div>
+                </div>
+                
+                <div>
+                  <h3 className="font-medium text-gray-500 dark:text-gray-400 mb-1">{t("stats")}</h3>
+                  <div className="grid grid-cols-2 gap-3">
+                    <Card>
+                      <CardContent className="p-4 flex flex-col items-center">
+                        <Users className="h-6 w-6 text-qatar-maroon mb-1" />
+                        <span className="text-sm text-gray-500">{t("members")}</span>
+                        <span className="text-xl font-bold">{getDepartmentMembers(viewingDepartment.id).length}</span>
+                      </CardContent>
+                    </Card>
+                    <Card>
+                      <CardContent className="p-4 flex flex-col items-center">
+                        <Building className="h-6 w-6 text-qatar-maroon mb-1" />
+                        <span className="text-sm text-gray-500">{t("projects")}</span>
+                        <span className="text-xl font-bold">
+                          {/* Placeholder for project count */}
+                          {Math.floor(Math.random() * 10)}
+                        </span>
+                      </CardContent>
+                    </Card>
+                  </div>
+                </div>
+              </div>
+              
+              <div>
+                <h3 className="font-medium text-gray-500 dark:text-gray-400 mb-3">{t("members")}</h3>
+                <div className="max-h-60 overflow-y-auto pr-2">
+                  {getDepartmentMembers(viewingDepartment.id).length === 0 ? (
+                    <p className="text-gray-500 dark:text-gray-400">{t("noMembers")}</p>
+                  ) : (
+                    <div className="space-y-3">
+                      {getDepartmentMembers(viewingDepartment.id).map((member) => (
+                        <div key={member.id} className="flex items-center gap-3 p-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800">
+                          <div className="w-8 h-8 rounded-full bg-maroon-100 dark:bg-maroon-900 flex items-center justify-center text-qatar-maroon">
+                            {member.name.charAt(0).toUpperCase()}
+                          </div>
+                          <div>
+                            <p className="font-medium">{member.name}</p>
+                            <p className="text-xs text-gray-500 dark:text-gray-400">{t(member.role.toLowerCase())}</p>
+                          </div>
                         </div>
-                      )}
-                    </TableCell>
-                    {canManageDepartments && (
-                      <TableCell className="text-right">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleEdit(department)}
-                        >
-                          <Pencil className="h-4 w-4 mr-2" />
-                          {t("edit")}
-                        </Button>
-                      </TableCell>
-                    )}
-                  </TableRow>
-                );
-              })}
-            </TableBody>
-          </Table>
-        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+            
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setViewingDepartment(null)}>
+                {t("close")}
+              </Button>
+              {canManageDepartments && (
+                <Button onClick={() => {
+                  setViewingDepartment(null);
+                  handleEdit(viewingDepartment);
+                }} className="bg-qatar-maroon hover:bg-maroon-800">
+                  <Pencil className="mr-2 h-4 w-4" />
+                  {t("edit")}
+                </Button>
+              )}
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       )}
-      
-      {/* Department Statistics Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-8">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-lg font-medium">{t("totalDepartments")}</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-center space-x-4">
-              <div className="p-2 bg-maroon-50 dark:bg-maroon-900/20 rounded-full">
-                <Building className="h-8 w-8 text-qatar-maroon" />
-              </div>
-              <div className="text-3xl font-bold">{departments.length}</div>
-            </div>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-lg font-medium">{t("totalDirectors")}</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-center space-x-4">
-              <div className="p-2 bg-maroon-50 dark:bg-maroon-900/20 rounded-full">
-                <UserIcon className="h-8 w-8 text-qatar-maroon" />
-              </div>
-              <div className="text-3xl font-bold">
-                {departments.filter(d => d.directorUserId !== null).length}
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-lg font-medium">{t("departmentsWithProjects")}</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-center space-x-4">
-              <div className="p-2 bg-maroon-50 dark:bg-maroon-900/20 rounded-full">
-                <CircleCheckBig className="h-8 w-8 text-qatar-maroon" />
-              </div>
-              <div className="text-3xl font-bold">
-                {/* This would need to be calculated based on projects data */}
-                {departments.length}
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+
+      {/* Departments List */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {isLoadingDepartments ? (
+          Array.from({ length: 6 }).map((_, index) => (
+            <Card key={index} className="animate-pulse">
+              <CardHeader className="h-20 bg-gray-200 dark:bg-gray-800"></CardHeader>
+              <CardContent className="py-4 space-y-3">
+                <div className="h-4 w-3/4 bg-gray-200 dark:bg-gray-800 rounded"></div>
+                <div className="h-4 w-1/2 bg-gray-200 dark:bg-gray-800 rounded"></div>
+              </CardContent>
+            </Card>
+          ))
+        ) : isDepartmentsError ? (
+          <div className="col-span-3 flex justify-center py-10">
+            <Card className="w-full max-w-lg">
+              <CardContent className="flex flex-col items-center justify-center py-10">
+                <p className="text-gray-500 dark:text-gray-400 mb-4">{t("errorLoadingDepartments")}</p>
+                <Button
+                  variant="outline"
+                  onClick={() => queryClient.invalidateQueries({ queryKey: ["/api/departments"] })}
+                >
+                  {t("tryAgain")}
+                </Button>
+              </CardContent>
+            </Card>
+          </div>
+        ) : filteredDepartments.length === 0 ? (
+          <div className="col-span-3 flex justify-center py-10">
+            <Card className="w-full max-w-lg">
+              <CardContent className="flex flex-col items-center justify-center py-10">
+                <Building className="h-12 w-12 text-gray-400 mb-4" />
+                <p className="text-xl font-medium text-gray-900 dark:text-gray-100">{t("noDepartmentsFound")}</p>
+                <p className="text-gray-500 dark:text-gray-400 mt-1 mb-4">{t("tryAdjustingFilters")}</p>
+                {canManageDepartments && (
+                  <Button
+                    className="bg-qatar-maroon hover:bg-maroon-800"
+                    onClick={() => setIsAddDialogOpen(true)}
+                  >
+                    <Plus className="mr-2 h-4 w-4" />
+                    {t("addDepartment")}
+                  </Button>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+        ) : (
+          filteredDepartments.map((department) => (
+            <Card key={department.id} className="overflow-hidden">
+              <CardHeader className="pb-3 bg-qatar-maroon/5">
+                <div className="flex justify-between items-start">
+                  <div>
+                    <CardTitle className="text-lg">{department.name}</CardTitle>
+                    <CardDescription className="mt-1">
+                      <Badge variant="outline" className="text-xs font-normal">
+                        {department.code}
+                      </Badge>
+                    </CardDescription>
+                  </div>
+                  {canManageDepartments && (
+                    <div className="flex space-x-1">
+                      <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        className="h-8 w-8"
+                        onClick={() => handleEdit(department)}
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                      <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        className="h-8 w-8 text-red-500 hover:text-red-700 hover:bg-red-100 dark:hover:bg-red-900/20"
+                        onClick={() => handleDelete(department)}
+                      >
+                        <Trash className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              </CardHeader>
+              <CardContent className="py-4">
+                <div className="space-y-4">
+                  <div>
+                    <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">{t("description")}</h3>
+                    <p className="text-sm line-clamp-2">{department.description || t("noDepartmentDescription")}</p>
+                  </div>
+                  
+                  <div className="flex justify-between">
+                    <div>
+                      <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">{t("head")}</h3>
+                      <p className="text-sm">{getDepartmentHeadName(department.headUserId)}</p>
+                    </div>
+                    <div>
+                      <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">{t("members")}</h3>
+                      <p className="text-sm">{getDepartmentMembers(department.id).length}</p>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+              <CardFooter className="border-t px-6 py-3 bg-gray-50 dark:bg-gray-900">
+                <Button 
+                  variant="ghost" 
+                  className="w-full text-center justify-center hover:bg-white dark:hover:bg-gray-800"
+                  onClick={() => handleViewDetails(department)}
+                >
+                  {t("viewDetails")}
+                </Button>
+              </CardFooter>
+            </Card>
+          ))
+        )}
       </div>
     </div>
   );

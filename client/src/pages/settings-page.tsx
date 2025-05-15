@@ -42,8 +42,10 @@ import {
   Bell, 
   Shield, 
   Lock,
-  Mail
+  Mail,
+  Users
 } from "lucide-react";
+import UsersManagementPage from "./users-management-page";
 
 export default function SettingsPage() {
   const { t, locale } = useI18n();
@@ -188,6 +190,20 @@ export default function SettingsPage() {
                     <Shield className="w-4 h-4 mr-2" />
                     {t("security")}
                   </button>
+                  
+                  {["Administrator", "MainPMO"].includes(user?.role || "") && (
+                    <button
+                      className={`flex items-center w-full px-3 py-2 text-left rounded-md ${
+                        activeTab === "faculty" 
+                          ? "bg-qatar-maroon text-white" 
+                          : "hover:bg-gray-100 dark:hover:bg-gray-800"
+                      }`}
+                      onClick={() => setActiveTab("faculty")}
+                    >
+                      <Users className="w-4 h-4 mr-2" />
+                      {t("faculty")}
+                    </button>
+                  )}
                 </nav>
               </div>
             </CardContent>
@@ -462,6 +478,10 @@ export default function SettingsPage() {
                 </div>
               </CardContent>
               </>
+            )}
+            
+            {activeTab === "faculty" && (
+              <UsersManagementPage />
             )}
           </Card>
         </div>

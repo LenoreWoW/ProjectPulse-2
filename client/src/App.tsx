@@ -18,6 +18,9 @@ import RisksIssuesPage from "@/pages/risks-issues-page";
 import AssignmentsPage from "@/pages/assignments-page";
 import ApprovalsPage from "@/pages/approvals-page";
 import SettingsPage from "@/pages/settings-page";
+import DepartmentsPage from "@/pages/departments-page";
+import ReportsPage from "@/pages/reports-page";
+import BudgetReportPage from "@/pages/reports/budget-page";
 import { ThemeProvider } from "@/providers/theme-provider";
 
 function Router() {
