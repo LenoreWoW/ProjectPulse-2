@@ -7,6 +7,7 @@ import { promisify } from "util";
 import { storage } from "./storage";
 import { User as SelectUser, insertUserSchema } from "@shared/schema";
 import { z } from "zod";
+import { sendRegistrationAcceptedEmail, sendRegistrationRejectedEmail } from "./email";
 
 declare global {
   namespace Express {
@@ -56,7 +57,15 @@ async function comparePasswords(supplied: string, stored: string) {
 
 // Enhanced registration schema with extra validation
 const registerSchema = insertUserSchema.extend({
-  email: z.string().email("Invalid email address"),
+  email: z.string()
+    .email("Invalid email address")
+    .refine(email => {
+      // Verify that the email domain is from Qatar Armed Forces or Ministry of Defense
+      const domain = email.split('@')[1].toLowerCase();
+      return domain === 'qaf.mil.qa' || domain === 'mod.gov.qa';
+    }, {
+      message: "Only email addresses from @qaf.mil.qa or @mod.gov.qa domains are allowed",
+    }),
   password: z.string().min(6, "Password must be at least 6 characters"),
   confirmPassword: z.string(),
   name: z.string().min(2, "Name must be at least 2 characters"),
@@ -119,24 +128,42 @@ export function setupAuth(app: Express) {
       // Check if username or email already exists
       const existingUserByUsername = await storage.getUserByUsername(validatedData.username);
       if (existingUserByUsername) {
+        // Send rejection email
+        await sendRegistrationRejectedEmail(validatedData.email);
         return res.status(400).json({ message: "Username already exists" });
       }
       
       const existingUserByEmail = await storage.getUserByEmail(validatedData.email);
       if (existingUserByEmail) {
+        // Send rejection email
+        await sendRegistrationRejectedEmail(validatedData.email);
         return res.status(400).json({ message: "Email already exists" });
+      }
+      
+      // Verify email domain
+      const emailDomain = validatedData.email.split('@')[1].toLowerCase();
+      if (emailDomain !== 'qaf.mil.qa' && emailDomain !== 'mod.gov.qa') {
+        // Send rejection email for unauthorized domain
+        await sendRegistrationRejectedEmail(validatedData.email);
+        return res.status(400).json({ 
+          message: "Only email addresses from @qaf.mil.qa or @mod.gov.qa domains are allowed" 
+        });
       }
       
       // Create the user with hashed password
       const userData = {
         ...validatedData,
         password: await hashPassword(validatedData.password),
+        status: "Active" as const, // Set user as active (could be set to Pending for admin approval)
       };
       
       // Remove the confirmPassword field before saving
       delete (userData as any).confirmPassword;
       
       const user = await storage.createUser(userData);
+      
+      // Send acceptance email
+      await sendRegistrationAcceptedEmail(user.email);
       
       // Auto-login after registration
       req.login(user, (err) => {
@@ -145,6 +172,12 @@ export function setupAuth(app: Express) {
       });
     } catch (error) {
       if (error instanceof z.ZodError) {
+        // Handle validation errors, including email domain check
+        // Send rejection email if validation failed
+        if (req.body.email) {
+          await sendRegistrationRejectedEmail(req.body.email);
+        }
+        
         return res.status(400).json({ 
           message: "Validation failed", 
           errors: error.errors 
