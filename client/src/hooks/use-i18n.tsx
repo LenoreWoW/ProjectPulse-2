@@ -53,9 +53,6 @@ const en: Record<string, string> = {
   projectsCompleted: "Completed",
   completed: "Completed",
   atRisk: "At Risk",
-  pending: "Pending",
-  planning: "Planning",
-  onHold: "On Hold",
   pendingApproval: "Pending Approval",
   viewAll: "View All",
   budgetOverview: "Budget Overview",
@@ -95,20 +92,23 @@ const en: Record<string, string> = {
   projectClosure: "Project Closure",
   
   // Statuses
-  pending: "Pending",
-  planning: "Planning",
+  statusPending: "Pending",
+  statusPlanning: "Planning",
   inProgress: "In Progress",
-  onHold: "On Hold",
+  statusOnHold: "On Hold",
   statusCompleted: "Completed",
   
   // Project details
   editCost: "Edit Cost",
   details: "Details",
+  viewDetails: "View Details",
   overview: "Overview",
   projectUpdates: "Weekly Updates",
   changeRequests: "Change Requests",
   logs: "Logs",
   comments: "Comments",
+  projectManager: "Project Manager",
+  noProjectsFound: "No projects found",
   
   // Form fields
   submit: "Submit",
@@ -254,9 +254,12 @@ const ar: Record<string, string> = {
   
   // Dashboard
   activeProjects: "المشاريع النشطة",
+  allProjects: "جميع المشاريع",
   projectsCompleted: "المكتملة",
+  completed: "مكتمل",
   atRisk: "في خطر",
   pendingApproval: "في انتظار الموافقة",
+  viewAll: "عرض الكل",
   budgetOverview: "نظرة عامة على الميزانية",
   totalBudget: "إجمالي الميزانية",
   actualSpend: "الإنفاق الفعلي",
@@ -268,6 +271,10 @@ const ar: Record<string, string> = {
   weeklyUpdateReminder: "تذكير التحديث الأسبوعي",
   submissionDue: "موعد التسليم",
   submitUpdate: "إرسال التحديث",
+  welcomeBack: "أهلاً بعودتك",
+  dashboardIntro: "تتبع محفظة مشاريعك، راقب التقدم، وحافظ على متابعة الموافقات.",
+  allProjectsDescription: "عرض جميع المشاريع في النظام",
+  projectsInStatus: "المشاريع بحالة: {{status}}",
   
   // Projects
   newProject: "مشروع جديد",
@@ -290,20 +297,23 @@ const ar: Record<string, string> = {
   projectClosure: "إغلاق المشروع",
   
   // Statuses
-  pending: "معلق",
-  planning: "التخطيط",
+  statusPending: "معلق",
+  statusPlanning: "التخطيط",
   inProgress: "قيد التنفيذ",
-  onHold: "متوقف",
+  statusOnHold: "متوقف",
   statusCompleted: "مكتمل",
   
   // Project details
   editCost: "تعديل التكلفة",
   details: "التفاصيل",
+  viewDetails: "عرض التفاصيل",
   overview: "نظرة عامة",
   weeklyUpdates: "التحديثات الأسبوعية",
   changeRequests: "طلبات التغيير",
   logs: "السجلات",
   comments: "التعليقات",
+  projectManager: "مدير المشروع",
+  noProjectsFound: "لم يتم العثور على مشاريع",
   
   // Form fields
   submit: "إرسال",
@@ -412,7 +422,7 @@ const translations: Translations = {
 interface I18nContextType {
   language: string;
   setLanguage: (lang: string) => void;
-  t: (key: string) => string;
+  t: (key: string, params?: Record<string, string>) => string;
   isRtl: boolean;
 }
 
@@ -436,20 +446,31 @@ export function I18nProvider({ children }: { children: ReactNode }) {
     localStorage.setItem('language', language);
   }, [language, isRtl]);
 
-  const t = (key: string): string => {
+  const t = (key: string, params?: Record<string, string>): string => {
     if (!translations[language]) {
       return key; // Fallback to key if language not found
     }
     
+    let text = '';
     if (!translations[language][key]) {
       // If key not found in current language, check English
       if (language !== 'en' && translations['en'] && translations['en'][key]) {
-        return translations['en'][key];
+        text = translations['en'][key];
+      } else {
+        return key; // Fallback to key if translation not found
       }
-      return key; // Fallback to key if translation not found
+    } else {
+      text = translations[language][key];
     }
     
-    return translations[language][key];
+    // Handle parameter substitution
+    if (params) {
+      Object.keys(params).forEach(param => {
+        text = text.replace(`{{${param}}}`, params[param]);
+      });
+    }
+    
+    return text;
   };
 
   return (
