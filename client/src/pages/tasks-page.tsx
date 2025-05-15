@@ -30,6 +30,7 @@ interface TasksData {
 
 export default function TasksPage() {
   const { t } = useI18n();
+  const { user } = useAuth();
   const [activeTab, setActiveTab] = useState<string>("assigned-to-me");
   
   const { data, isLoading, error } = useQuery<TasksData>({
@@ -392,7 +393,7 @@ export default function TasksPage() {
                         <span className="text-xs">
                           {task.assignedUserId === task.createdByUserId 
                             ? t("selfAssigned")
-                            : task.createdByUserId === user?.id 
+                            : user && task.createdByUserId === user.id 
                             ? t("assignedByYou")
                             : t("assignedToYou")
                           }

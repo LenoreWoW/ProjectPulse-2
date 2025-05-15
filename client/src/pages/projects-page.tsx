@@ -65,7 +65,9 @@ export default function ProjectsPage() {
   });
 
   // Get color for status badge
-  const getStatusClasses = (status: string) => {
+  const getStatusClasses = (status: string | null) => {
+    if (!status) return 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-300';
+    
     switch (status) {
       case 'InProgress':
         return 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300';
@@ -83,7 +85,9 @@ export default function ProjectsPage() {
   };
 
   // Format status for display
-  const formatStatus = (status: string) => {
+  const formatStatus = (status: string | null) => {
+    if (!status) return "";
+    
     switch (status) {
       case 'InProgress':
         return t('inProgress');
