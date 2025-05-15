@@ -33,21 +33,53 @@ function Router() {
       <ProtectedRoute path="/projects" component={ProjectsPage} />
       <ProtectedRoute path="/calendar" component={CalendarPage} />
       <ProtectedRoute path="/tasks" component={TasksPage} />
-      <ProtectedRoute path="/goals" component={GoalsPage} />
-      <ProtectedRoute path="/risks-issues" component={RisksIssuesPage} />
+      <ProtectedRoute 
+        path="/goals" 
+        component={GoalsPage} 
+        requiredRoles={["Administrator", "MainPMO", "SubPMO", "DepartmentDirector", "Executive", "ProjectManager"]} 
+      />
+      <ProtectedRoute 
+        path="/risks-issues" 
+        component={RisksIssuesPage} 
+        requiredRoles={["Administrator", "MainPMO", "SubPMO", "DepartmentDirector", "ProjectManager"]}
+      />
       <ProtectedRoute path="/assignments" component={AssignmentsPage} />
       <ProtectedRoute 
         path="/approvals" 
         component={ApprovalsPage}
         requiredRoles={["Administrator", "MainPMO", "SubPMO", "DepartmentDirector"]}
       />
-      <ProtectedRoute path="/settings" component={SettingsPage} />
-      <ProtectedRoute path="/departments" component={DepartmentsPage} />
-      <ProtectedRoute path="/reports" component={ReportsPage} />
-      <ProtectedRoute path="/reports/budget" component={BudgetReportPage} />
-      <ProtectedRoute path="/reports/analytics" component={AnalyticsDashboardPage} />
+      <ProtectedRoute 
+        path="/settings" 
+        component={SettingsPage} 
+        requiredRoles={["Administrator", "MainPMO"]}
+      />
+      <ProtectedRoute 
+        path="/departments" 
+        component={DepartmentsPage} 
+        requiredRoles={["Administrator", "MainPMO", "DepartmentDirector", "Executive"]}
+      />
+      <ProtectedRoute 
+        path="/reports" 
+        component={ReportsPage} 
+        requiredRoles={["Administrator", "MainPMO", "SubPMO", "DepartmentDirector", "Executive"]}
+      />
+      <ProtectedRoute 
+        path="/reports/budget" 
+        component={BudgetReportPage} 
+        requiredRoles={["Administrator", "MainPMO", "SubPMO", "DepartmentDirector", "Executive"]}
+      />
+      <ProtectedRoute 
+        path="/reports/analytics" 
+        component={AnalyticsDashboardPage} 
+        requiredRoles={["Administrator", "MainPMO", "SubPMO", "DepartmentDirector", "Executive"]}
+      />
       <ProtectedRoute path="/repository" component={RepositoryPage} />
-      <ProtectedRoute path="/dependencies" component={DependenciesPage} />
+      <ProtectedRoute 
+        path="/dependencies" 
+        component={DependenciesPage} 
+        requiredRoles={["Administrator", "MainPMO", "SubPMO", "DepartmentDirector", "ProjectManager", "Executive"]}
+      />
       <Route path="/auth" component={AuthPage} />
       <Route component={NotFound} />
     </Switch>
