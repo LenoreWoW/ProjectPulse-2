@@ -273,3 +273,14 @@ export type ProjectCostHistory = typeof projectCostHistory.$inferSelect;
 
 // Login Type
 export type LoginData = z.infer<typeof loginSchema>;
+
+// Add partial() methods to schemas that need it for updates
+// This allows for partial validation when updating resources
+export const updateProjectSchema = z.object(insertProjectSchema.shape).partial();
+export const updateTaskSchema = z.object(insertTaskSchema.shape).partial();
+export const updateChangeRequestSchema = z.object(insertChangeRequestSchema.shape).partial();
+export const updateGoalSchema = z.object(insertGoalSchema.shape).partial();
+export const updateRiskIssueSchema = z.object(insertRiskIssueSchema.shape).partial();
+export const updateNotificationSchema = z.object(insertNotificationSchema.shape).partial();
+export const updateAssignmentSchema = z.object(insertAssignmentSchema.shape).partial();
+export const updateActionItemSchema = z.object(insertActionItemSchema.shape).partial();

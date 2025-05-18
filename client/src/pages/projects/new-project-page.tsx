@@ -22,7 +22,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { useToast } from "@/hooks/use-toast";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { insertProjectSchema, type Project } from "@shared/schema";
+import { type Department, type User } from "@shared/schema";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useI18n } from "@/hooks/use-i18n-new";
 import { cn } from "@/lib/utils";
@@ -31,32 +31,37 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 export default function NewProjectPage() {
   const [location, navigate] = useLocation();
   const { toast } = useToast();
-  const { t, locale } = useI18n();
+  const { t } = useI18n();
   
   // Fetch departments for the select dropdown
-  const { data: departments = [], isLoading: isLoadingDepartments } = useQuery({
+  const { data: departments = [], isLoading: isLoadingDepartments } = useQuery<Department[]>({
     queryKey: ["/api/departments"],
     staleTime: 60000, // 1 minute
   });
 
   // Fetch users for the manager select dropdown
-  const { data: users = [], isLoading: isLoadingUsers } = useQuery({
+  const { data: users = [], isLoading: isLoadingUsers } = useQuery<User[]>({
     queryKey: ["/api/users"],
     staleTime: 60000, // 1 minute
   });
 
   // Create a form schema based on the insertProjectSchema
-  const formSchema = insertProjectSchema
-    .extend({
-      startDate: z.date(),
-      endDate: z.date(),
-      departmentId: z.string().min(1, t("required")),
-      managerUserId: z.string().min(1, t("required")),
-    })
-    .refine((data) => data.endDate >= data.startDate, {
-      message: t("endDateMustBeAfterStartDate"),
-      path: ["endDate"],
-    });
+  const formSchema = z.object({
+    title: z.string().min(1, t("required")),
+    description: z.string().optional(),
+    status: z.string(),
+    priority: z.string(),
+    budget: z.number().default(0),
+    actualCost: z.number().default(0),
+    startDate: z.date(),
+    endDate: z.date(), // This will be converted to deadline on the server
+    departmentId: z.string().min(1, t("required")),
+    managerUserId: z.string().min(1, t("required")),
+    client: z.string().optional(),
+  }).refine((data) => data.endDate >= data.startDate, {
+    message: t("endDateMustBeAfterStartDate"),
+    path: ["endDate"],
+  });
 
   type FormValues = z.infer<typeof formSchema>;
 
@@ -64,7 +69,7 @@ export default function NewProjectPage() {
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      name: "",
+      title: "",
       description: "",
       status: "Planning",
       priority: "Medium",
@@ -72,6 +77,9 @@ export default function NewProjectPage() {
       actualCost: 0,
       departmentId: "",
       managerUserId: "",
+      client: "",
+      startDate: new Date(),
+      endDate: new Date(new Date().setMonth(new Date().getMonth() + 1)), // Default to one month from today
     },
   });
 
@@ -123,7 +131,7 @@ export default function NewProjectPage() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <FormField
                   control={form.control}
-                  name="name"
+                  name="title"
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>{t("projectName")}</FormLabel>
@@ -211,7 +219,7 @@ export default function NewProjectPage() {
                                 key={department.id}
                                 value={department.id.toString()}
                               >
-                                {locale === 'ar' && department.nameAr ? department.nameAr : department.name}
+                                {department.name}
                               </SelectItem>
                             ))}
                           </SelectContent>
