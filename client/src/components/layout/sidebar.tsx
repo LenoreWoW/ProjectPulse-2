@@ -22,6 +22,7 @@ import {
   Network,
   LineChart,
   ShieldCheck,
+  Plus,
 } from "lucide-react";
 
 export function Sidebar() {

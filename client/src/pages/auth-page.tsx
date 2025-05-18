@@ -212,7 +212,8 @@ export default function AuthPage() {
                             <Input 
                               placeholder={t("username")} 
                               {...field} 
-                              className="auth-input"
+                              className="auth-input text-white"
+                              style={{ color: 'white' }}
                             />
                           </FormControl>
                           <FormMessage className="text-red-300 text-sm ml-2" />
@@ -229,7 +230,8 @@ export default function AuthPage() {
                               type="password" 
                               placeholder={t("password")} 
                               {...field} 
-                              className="auth-input"
+                              className="auth-input text-white"
+                              style={{ color: 'white' }}
                             />
                           </FormControl>
                           <FormMessage className="text-red-300 text-sm ml-2" />
@@ -263,7 +265,8 @@ export default function AuthPage() {
                             <Input 
                               placeholder={t("name")} 
                               {...field} 
-                              className="auth-input"
+                              className="auth-input text-white"
+                              style={{ color: 'white' }}
                             />
                           </FormControl>
                           <FormMessage className="text-red-300 text-sm ml-2" />
@@ -281,7 +284,8 @@ export default function AuthPage() {
                                 type="email" 
                                 placeholder={t("email")} 
                                 {...field} 
-                                className="auth-input"
+                                className="auth-input text-white"
+                                style={{ color: 'white' }}
                               />
                             </FormControl>
                             <FormMessage className="text-red-300 text-sm ml-2" />
@@ -298,7 +302,8 @@ export default function AuthPage() {
                                 placeholder={t("phone")} 
                                 {...field} 
                                 value={field.value || ''} 
-                                className="auth-input"
+                                className="auth-input text-white"
+                                style={{ color: 'white' }}
                               />
                             </FormControl>
                             <FormMessage className="text-red-300 text-sm ml-2" />
@@ -315,7 +320,8 @@ export default function AuthPage() {
                             <Input 
                               placeholder={t("username")} 
                               {...field}
-                              className="auth-input"
+                              className="auth-input text-white"
+                              style={{ color: 'white' }}
                             />
                           </FormControl>
                           <FormMessage className="text-red-300 text-sm ml-2" />
@@ -333,7 +339,8 @@ export default function AuthPage() {
                                 type="password"
                                 placeholder={t("password")} 
                                 {...field}
-                                className="auth-input"
+                                className="auth-input text-white"
+                                style={{ color: 'white' }}
                               />
                             </FormControl>
                             <FormMessage className="text-red-300 text-sm ml-2" />
@@ -350,7 +357,8 @@ export default function AuthPage() {
                                 type="password"
                                 placeholder={t("confirmPassword")} 
                                 {...field}
-                                className="auth-input"
+                                className="auth-input text-white"
+                                style={{ color: 'white' }}
                               />
                             </FormControl>
                             <FormMessage className="text-red-300 text-sm ml-2" />

@@ -1,0 +1,10 @@
+{
+  "kanbanView": "Kanban View",
+  "listView": "List View",
+  "backlog": "Backlog",
+  "upNext": "Up Next",
+  "inProgress": "In Progress",
+  "onHold": "On Hold",
+  "review": "Review",
+  "done": "Done"
+} 

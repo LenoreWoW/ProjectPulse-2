@@ -151,6 +151,7 @@ body {
   /* Custom classes for auth page */
   .auth-input {
     @apply h-11 bg-black/60 border border-qatar-maroon focus:border-qatar-white text-white placeholder:text-white/70 rounded-full px-5 py-2 shadow-md;
+    color: black !important;
   }
   
   :root {

@@ -4,7 +4,8 @@ import {
   RiskIssue, InsertRiskIssue, Notification, InsertNotification,
   Assignment, InsertAssignment, ActionItem, InsertActionItem,
   WeeklyUpdate, InsertWeeklyUpdate, ProjectCostHistory, InsertProjectCostHistory,
-  projectStatusEnum, roleEnum, userStatusEnum
+  projectStatusEnum, roleEnum, userStatusEnum,
+  TaskComment, InsertTaskComment, AssignmentComment, InsertAssignmentComment
 } from "@shared/schema";
 import createMemoryStore from "memorystore";
 import session from "express-session";
@@ -36,6 +37,11 @@ export interface IStorage {
   createProject(project: InsertProject): Promise<Project>;
   updateProject(id: number, project: Partial<Project>): Promise<Project | undefined>;
   
+  // Project Team Members
+  getProjectMembers(projectId: number): Promise<User[]>;
+  addProjectMember(projectId: number, userId: number): Promise<void>;
+  removeProjectMember(projectId: number, userId: number): Promise<void>;
+  
   // Tasks
   getTask(id: number): Promise<Task | undefined>;
   getTasksByProject(projectId: number): Promise<Task[]>;
@@ -58,6 +64,15 @@ export interface IStorage {
   getAnnualGoals(): Promise<Goal[]>;
   createGoal(goal: InsertGoal): Promise<Goal>;
   updateGoal(id: number, goal: Partial<Goal>): Promise<Goal | undefined>;
+  
+  // Goal relationships
+  getChildGoalRelationships(parentGoalId: number): Promise<{ goal: Goal, weight: number }[]>;
+  getParentGoalRelationships(childGoalId: number): Promise<{ goal: Goal, weight: number }[]>;
+  createGoalRelationship(relationship: { parentGoalId: number, childGoalId: number, weight: number }): Promise<void>;
+  
+  // Project goals
+  getProjectGoalsByGoal(goalId: number): Promise<{ project: Project, weight: number }[]>;
+  createProjectGoal(projectGoal: { projectId: number, goalId: number, weight: number }): Promise<void>;
   
   // Risks & Issues
   getRiskIssue(id: number): Promise<RiskIssue | undefined>;
@@ -96,6 +111,16 @@ export interface IStorage {
   getProjectCostHistoryByProject(projectId: number): Promise<ProjectCostHistory[]>;
   createProjectCostHistory(projectCostHistory: InsertProjectCostHistory): Promise<ProjectCostHistory>;
   
+  // Task Comments
+  getTaskComment(id: number): Promise<TaskComment | undefined>;
+  getTaskCommentsByTask(taskId: number): Promise<TaskComment[]>;
+  createTaskComment(comment: InsertTaskComment): Promise<TaskComment>;
+  
+  // Assignment Comments
+  getAssignmentComment(id: number): Promise<AssignmentComment | undefined>;
+  getAssignmentCommentsByAssignment(assignmentId: number): Promise<AssignmentComment[]>;
+  createAssignmentComment(comment: InsertAssignmentComment): Promise<AssignmentComment>;
+  
   // Session store
   sessionStore: session.Store;
 }
@@ -104,6 +129,7 @@ export class MemStorage implements IStorage {
   private users: Map<number, User>;
   private departments: Map<number, Department>;
   private projects: Map<number, Project>;
+  private projectMembers: Map<number, { projectId: number, userId: number }>;
   private tasks: Map<number, Task>;
   private changeRequests: Map<number, ChangeRequest>;
   private goals: Map<number, Goal>;
@@ -113,11 +139,16 @@ export class MemStorage implements IStorage {
   private actionItems: Map<number, ActionItem>;
   private weeklyUpdates: Map<number, WeeklyUpdate>;
   private projectCostHistory: Map<number, ProjectCostHistory>;
+  private goalRelationships: Map<number, { id: number, parentGoalId: number, childGoalId: number, weight: number }>;
+  private projectGoals: Map<number, { id: number, projectId: number, goalId: number, weight: number }>;
+  private taskComments: Map<number, TaskComment>;
+  private assignmentComments: Map<number, AssignmentComment>;
   
   // Counters for IDs
   private userIdCounter: number;
   private departmentIdCounter: number;
   private projectIdCounter: number;
+  private projectMemberIdCounter: number;
   private taskIdCounter: number;
   private changeRequestIdCounter: number;
   private goalIdCounter: number;
@@ -127,6 +158,10 @@ export class MemStorage implements IStorage {
   private actionItemIdCounter: number;
   private weeklyUpdateIdCounter: number;
   private projectCostHistoryIdCounter: number;
+  private goalRelationshipIdCounter: number;
+  private projectGoalIdCounter: number;
+  private taskCommentIdCounter: number;
+  private assignmentCommentIdCounter: number;
   
   sessionStore: session.Store;
 
@@ -134,6 +169,7 @@ export class MemStorage implements IStorage {
     this.users = new Map();
     this.departments = new Map();
     this.projects = new Map();
+    this.projectMembers = new Map();
     this.tasks = new Map();
     this.changeRequests = new Map();
     this.goals = new Map();
@@ -143,10 +179,15 @@ export class MemStorage implements IStorage {
     this.actionItems = new Map();
     this.weeklyUpdates = new Map();
     this.projectCostHistory = new Map();
+    this.goalRelationships = new Map();
+    this.projectGoals = new Map();
+    this.taskComments = new Map();
+    this.assignmentComments = new Map();
     
     this.userIdCounter = 1;
     this.departmentIdCounter = 1;
     this.projectIdCounter = 1;
+    this.projectMemberIdCounter = 1;
     this.taskIdCounter = 1;
     this.changeRequestIdCounter = 1;
     this.goalIdCounter = 1;
@@ -156,6 +197,10 @@ export class MemStorage implements IStorage {
     this.actionItemIdCounter = 1;
     this.weeklyUpdateIdCounter = 1;
     this.projectCostHistoryIdCounter = 1;
+    this.goalRelationshipIdCounter = 1;
+    this.projectGoalIdCounter = 1;
+    this.taskCommentIdCounter = 1;
+    this.assignmentCommentIdCounter = 1;
     
     this.sessionStore = new MemoryStore({
       checkPeriod: 86400000 // 24 hours
@@ -207,6 +252,19 @@ export class MemStorage implements IStorage {
         location: "Building C, Floor 3",
         phone: "+974 5000 3333",
         email: "technology@qaf.mil.qa"
+      },
+      { 
+        id: 4, 
+        name: "Project Management Office", 
+        nameAr: "مكتب إدارة المشاريع", 
+        code: "PMO-004",
+        description: "Central office for project management and coordination",
+        directorUserId: 7,
+        headUserId: null,
+        budget: 2500000,
+        location: "Building D, Floor 1",
+        phone: "+974 5000 4444",
+        email: "pmo@qaf.mil.qa"
       }
     ];
     
@@ -250,7 +308,136 @@ export class MemStorage implements IStorage {
     };
     
     this.users.set(superAdmin.id, superAdmin);
-    this.userIdCounter = 3;
+
+    // Add PMO Department Users (all sharing department 4)
+    const pmoDeptId = 4;
+    
+    // Department Director
+    const deptDirector: User = {
+      id: 7,
+      name: "Sarah Ahmed",
+      email: "sarah.ahmed@example.com",
+      phone: "+974 5000 7777",
+      username: "director",
+      password: "5d41402abc4b2a76b9719d911017c592.5eb63bbbe01eeed093cb22bb8f5acdc3", // "admin123"
+      role: "DepartmentDirector",
+      status: "Active",
+      departmentId: pmoDeptId,
+      passportImage: null,
+      idCardImage: null,
+      preferredLanguage: "en"
+    };
+    this.users.set(deptDirector.id, deptDirector);
+    
+    // Main PMO
+    const mainPmo: User = {
+      id: 8,
+      name: "Mohammed Ali",
+      email: "mohammed.ali@example.com",
+      phone: "+974 5000 8888",
+      username: "mainpmo",
+      password: "5d41402abc4b2a76b9719d911017c592.5eb63bbbe01eeed093cb22bb8f5acdc3", // "admin123"
+      role: "MainPMO",
+      status: "Active",
+      departmentId: pmoDeptId,
+      passportImage: null,
+      idCardImage: null,
+      preferredLanguage: "en"
+    };
+    this.users.set(mainPmo.id, mainPmo);
+    
+    // Sub PMO
+    const subPmo: User = {
+      id: 9,
+      name: "Fatima Khalid",
+      email: "fatima.khalid@example.com",
+      phone: "+974 5000 9999",
+      username: "subpmo",
+      password: "5d41402abc4b2a76b9719d911017c592.5eb63bbbe01eeed093cb22bb8f5acdc3", // "admin123"
+      role: "SubPMO",
+      status: "Active",
+      departmentId: pmoDeptId,
+      passportImage: null,
+      idCardImage: null,
+      preferredLanguage: "en"
+    };
+    this.users.set(subPmo.id, subPmo);
+    
+    // Project Manager
+    const projectManager: User = {
+      id: 10,
+      name: "Ahmad Nasser",
+      email: "ahmad.nasser@example.com",
+      phone: "+974 5000 1010",
+      username: "pmuser",
+      password: "5d41402abc4b2a76b9719d911017c592.5eb63bbbe01eeed093cb22bb8f5acdc3", // "admin123"
+      role: "ProjectManager",
+      status: "Active",
+      departmentId: pmoDeptId,
+      passportImage: null,
+      idCardImage: null,
+      preferredLanguage: "en"
+    };
+    this.users.set(projectManager.id, projectManager);
+    
+    this.userIdCounter = 11;
+
+    // Seed test projects
+    const projects = [
+      {
+        id: 1,
+        title: "Qatar Air Defense System",
+        description: "Implementation of advanced air defense system with radar integration, missile defense capabilities, and command center operations.",
+        client: "QAF Directorate",
+        status: "InProgress",
+        priority: "High",
+        budget: 5000000,
+        startDate: new Date(2023, 9, 15), // October 15, 2023
+        deadline: new Date(2024, 11, 30), // December 30, 2024
+        departmentId: 1, // Security department
+        managerUserId: 4, // Security director
+        actualCost: 2100000,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      },
+      {
+        id: 2,
+        title: "Radar Network Expansion",
+        description: "Expanding the current radar network with 5 new stations to improve coverage of coastal areas and enhance early warning capabilities.",
+        client: "QAF Technology Division",
+        status: "Planning",
+        priority: "Medium",
+        budget: 3200000,
+        startDate: new Date(2024, 5, 1), // June 1, 2024
+        deadline: new Date(2025, 4, 30), // May 30, 2025
+        departmentId: 3, // Technology department
+        managerUserId: 6, // Technology director
+        actualCost: 0,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      },
+      {
+        id: 3,
+        title: "Personnel Training Program",
+        description: "Comprehensive training program for personnel on new communication systems and emergency protocols.",
+        client: "QAF Operations",
+        status: "Completed",
+        priority: "Medium",
+        budget: 750000,
+        startDate: new Date(2023, 2, 10), // March 10, 2023
+        deadline: new Date(2023, 11, 15), // December 15, 2023
+        departmentId: 2, // Operations department
+        managerUserId: 5, // Operations director
+        actualCost: 720000,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      }
+    ];
+    
+    projects.forEach(project => {
+      this.projects.set(project.id, project as Project);
+      this.projectIdCounter = Math.max(this.projectIdCounter, project.id + 1);
+    });
   }
 
   // User Methods
@@ -372,6 +559,30 @@ export class MemStorage implements IStorage {
     };
     this.projects.set(id, updatedProject);
     return updatedProject;
+  }
+
+  // Project Member Methods
+  async getProjectMembers(projectId: number): Promise<User[]> {
+    const memberIds = Array.from(this.projectMembers.values())
+      .filter(pm => pm.projectId === projectId)
+      .map(pm => pm.userId);
+    
+    return Array.from(this.users.values())
+      .filter(user => memberIds.includes(user.id));
+  }
+
+  async addProjectMember(projectId: number, userId: number): Promise<void> {
+    const id = this.projectMemberIdCounter++;
+    this.projectMembers.set(id, { projectId, userId });
+  }
+
+  async removeProjectMember(projectId: number, userId: number): Promise<void> {
+    const memberEntryId = Array.from(this.projectMembers.entries())
+      .find(([_, pm]) => pm.projectId === projectId && pm.userId === userId)?.[0];
+    
+    if (memberEntryId !== undefined) {
+      this.projectMembers.delete(memberEntryId);
+    }
   }
 
   // Task Methods
@@ -514,6 +725,95 @@ export class MemStorage implements IStorage {
     };
     this.goals.set(id, updatedGoal);
     return updatedGoal;
+  }
+
+  // Goal relationships
+  async getChildGoalRelationships(parentGoalId: number): Promise<{ goal: Goal, weight: number }[]> {
+    const relationships = Array.from(this.goalRelationships.values())
+      .filter(rel => rel.parentGoalId === parentGoalId);
+    
+    const childGoals = relationships.map(rel => {
+      const goal = this.goals.get(rel.childGoalId);
+      if (!goal) return null;
+      
+      return {
+        goal,
+        weight: rel.weight
+      };
+    }).filter(Boolean) as { goal: Goal, weight: number }[];
+    
+    return childGoals;
+  }
+
+  async getParentGoalRelationships(childGoalId: number): Promise<{ goal: Goal, weight: number }[]> {
+    const relationships = Array.from(this.goalRelationships.values())
+      .filter(rel => rel.childGoalId === childGoalId);
+    
+    const parentGoals = relationships.map(rel => {
+      const goal = this.goals.get(rel.parentGoalId);
+      if (!goal) return null;
+      
+      return {
+        goal,
+        weight: rel.weight
+      };
+    }).filter(Boolean) as { goal: Goal, weight: number }[];
+    
+    return parentGoals;
+  }
+
+  async createGoalRelationship(relationship: { parentGoalId: number, childGoalId: number, weight: number }): Promise<void> {
+    const id = this.goalRelationshipIdCounter++;
+    
+    const parentGoal = this.goals.get(relationship.parentGoalId);
+    const childGoal = this.goals.get(relationship.childGoalId);
+    
+    if (!parentGoal || !childGoal) {
+      throw new Error("Parent or child goal does not exist");
+    }
+    
+    this.goalRelationships.set(id, {
+      id,
+      parentGoalId: relationship.parentGoalId,
+      childGoalId: relationship.childGoalId,
+      weight: relationship.weight || 1
+    });
+  }
+  
+  // Project goals
+  async getProjectGoalsByGoal(goalId: number): Promise<{ project: Project, weight: number }[]> {
+    const relationships = Array.from(this.projectGoals.values())
+      .filter(pg => pg.goalId === goalId);
+    
+    const projects = relationships.map(rel => {
+      const project = this.projects.get(rel.projectId);
+      if (!project) return null;
+      
+      return {
+        project,
+        weight: rel.weight
+      };
+    }).filter(Boolean) as { project: Project, weight: number }[];
+    
+    return projects;
+  }
+
+  async createProjectGoal(projectGoal: { projectId: number, goalId: number, weight: number }): Promise<void> {
+    const id = this.projectGoalIdCounter++;
+    
+    const project = this.projects.get(projectGoal.projectId);
+    const goal = this.goals.get(projectGoal.goalId);
+    
+    if (!project || !goal) {
+      throw new Error("Project or goal does not exist");
+    }
+    
+    this.projectGoals.set(id, {
+      id,
+      projectId: projectGoal.projectId,
+      goalId: projectGoal.goalId,
+      weight: projectGoal.weight || 1
+    });
   }
 
   // Risk & Issue Methods
@@ -733,6 +1033,52 @@ export class MemStorage implements IStorage {
     }
     
     return newProjectCostHistory;
+  }
+
+  // Task Comment methods
+  async getTaskComment(id: number): Promise<TaskComment | undefined> {
+    return this.taskComments.get(id);
+  }
+  
+  async getTaskCommentsByTask(taskId: number): Promise<TaskComment[]> {
+    return Array.from(this.taskComments.values())
+      .filter(comment => comment.taskId === taskId)
+      .sort((a, b) => {
+        const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+        const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+        return dateA - dateB;
+      });
+  }
+  
+  async createTaskComment(comment: InsertTaskComment): Promise<TaskComment> {
+    const id = this.taskCommentIdCounter++;
+    const now = new Date();
+    const newComment = { ...comment, id, createdAt: now } as TaskComment;
+    this.taskComments.set(id, newComment);
+    return newComment;
+  }
+  
+  // Assignment Comment methods
+  async getAssignmentComment(id: number): Promise<AssignmentComment | undefined> {
+    return this.assignmentComments.get(id);
+  }
+  
+  async getAssignmentCommentsByAssignment(assignmentId: number): Promise<AssignmentComment[]> {
+    return Array.from(this.assignmentComments.values())
+      .filter(comment => comment.assignmentId === assignmentId)
+      .sort((a, b) => {
+        const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+        const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+        return dateA - dateB;
+      });
+  }
+  
+  async createAssignmentComment(comment: InsertAssignmentComment): Promise<AssignmentComment> {
+    const id = this.assignmentCommentIdCounter++;
+    const now = new Date();
+    const newComment = { ...comment, id, createdAt: now } as AssignmentComment;
+    this.assignmentComments.set(id, newComment);
+    return newComment;
   }
 }
 

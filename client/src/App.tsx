@@ -12,22 +12,38 @@ import AuthPage from "@/pages/auth-page";
 import Dashboard from "@/pages/dashboard";
 import ProjectsPage from "@/pages/projects-page";
 import NewProjectPage from "@/pages/projects/new-project-page";
+import ProjectDetailsPage from "@/pages/projects/[id]";
 import CalendarPage from "@/pages/calendar-page";
 import TasksPage from "@/pages/tasks-page";
+import NewTaskPage from "@/pages/tasks/new-task-page";
 import GoalsPage from "@/pages/goals-page";
+import NewGoalPage from "@/pages/goals/new-goal-page";
+import GoalDetailsPage from "@/pages/goals/goal-details-page";
+import GoalsDependenciesPage from "@/pages/goals-dependencies-page";
 import RisksIssuesPage from "@/pages/risks-issues-page";
+import NewRiskIssuePage from "@/pages/risks-issues/new-risk-issue-page";
 import AssignmentsPage from "@/pages/assignments-page";
+import NewAssignmentPage from "@/pages/assignments/new-assignment-page";
 import ApprovalsPage from "@/pages/approvals-page";
 import SettingsPage from "@/pages/settings-page";
 import DepartmentsPage from "@/pages/departments-page";
 import ReportsPage from "@/pages/reports-page";
 import BudgetReportPage from "@/pages/reports/budget-page";
+import CostReportPage from "@/pages/reports/cost-page";
+import ForecastReportPage from "@/pages/reports/forecast-page";
+import ProjectStatusReportPage from "@/pages/reports/project-status-page";
+import ProjectTimelineReportPage from "@/pages/reports/project-timeline-page";
+import ResourceAllocationReportPage from "@/pages/reports/resource-allocation-page";
+import ResourceUtilizationReportPage from "@/pages/reports/resource-utilization-page";
+import RiskAssessmentReportPage from "@/pages/reports/risk-assessment-page";
+import IssueTrackingReportPage from "@/pages/reports/issue-tracking-page";
 import RepositoryPage from "@/pages/repository-page";
 import DependenciesPage from "@/pages/dependencies-page";
 import AnalyticsDashboardPage from "@/pages/analytics-dashboard";
 import UserPermissionsPage from "@/pages/user-permissions-page";
 import { ThemeProvider } from "@/providers/theme-provider";
 import { I18nProvider } from "@/hooks/use-i18n-new";
+import LoginHelper from "@/login-helper";
 
 function Router() {
   return (
@@ -35,8 +51,10 @@ function Router() {
       <ProtectedRoute path="/" component={Dashboard} />
       <ProtectedRoute path="/projects" component={ProjectsPage} />
       <ProtectedRoute path="/projects/new" component={NewProjectPage} />
+      <ProtectedRoute path="/projects/:id" component={ProjectDetailsPage} />
       <ProtectedRoute path="/calendar" component={CalendarPage} />
       <ProtectedRoute path="/tasks" component={TasksPage} />
+      <ProtectedRoute path="/tasks/new" component={NewTaskPage} />
       <ProtectedRoute 
         path="/goals" 
         component={GoalsPage} 
@@ -44,8 +62,18 @@ function Router() {
       />
       <ProtectedRoute 
         path="/goals/new" 
-        component={() => <div>New Goal - Page Under Construction</div>} 
+        component={NewGoalPage} 
         requiredRoles={["Administrator", "MainPMO", "SubPMO", "DepartmentDirector", "Executive"]} 
+      />
+      <ProtectedRoute 
+        path="/goals/dependencies" 
+        component={GoalsDependenciesPage} 
+        requiredPermissions={["canViewReports"]}
+      />
+      <ProtectedRoute 
+        path="/goals/:id" 
+        component={GoalDetailsPage} 
+        requiredPermissions={["canViewReports"]}
       />
       <ProtectedRoute 
         path="/risks-issues" 
@@ -54,11 +82,11 @@ function Router() {
       />
       <ProtectedRoute 
         path="/risks-issues/new" 
-        component={() => <div>New Risk/Issue - Page Under Construction</div>} 
+        component={NewRiskIssuePage} 
         requiredPermissions={["canCreateProject", "canEditProject"]}
       />
       <ProtectedRoute path="/assignments" component={AssignmentsPage} />
-      <ProtectedRoute path="/assignments/new" component={() => <div>New Assignment - Page Under Construction</div>} />
+      <ProtectedRoute path="/assignments/new" component={NewAssignmentPage} />
       <ProtectedRoute 
         path="/approvals" 
         component={ApprovalsPage}
@@ -82,6 +110,46 @@ function Router() {
       <ProtectedRoute 
         path="/reports/budget" 
         component={BudgetReportPage} 
+        requiredPermissions={["canViewReports"]}
+      />
+      <ProtectedRoute 
+        path="/reports/costs" 
+        component={CostReportPage} 
+        requiredPermissions={["canViewReports"]}
+      />
+      <ProtectedRoute 
+        path="/reports/forecast" 
+        component={ForecastReportPage} 
+        requiredPermissions={["canViewReports"]}
+      />
+      <ProtectedRoute 
+        path="/reports/projects/status" 
+        component={ProjectStatusReportPage} 
+        requiredPermissions={["canViewReports"]}
+      />
+      <ProtectedRoute 
+        path="/reports/projects/timeline" 
+        component={ProjectTimelineReportPage} 
+        requiredPermissions={["canViewReports"]}
+      />
+      <ProtectedRoute 
+        path="/reports/resources/allocation" 
+        component={ResourceAllocationReportPage} 
+        requiredPermissions={["canViewReports"]}
+      />
+      <ProtectedRoute 
+        path="/reports/resources/utilization" 
+        component={ResourceUtilizationReportPage} 
+        requiredPermissions={["canViewReports"]}
+      />
+      <ProtectedRoute 
+        path="/reports/risks/assessment" 
+        component={RiskAssessmentReportPage} 
+        requiredPermissions={["canViewReports"]}
+      />
+      <ProtectedRoute 
+        path="/reports/risks/issues" 
+        component={IssueTrackingReportPage} 
         requiredPermissions={["canViewReports"]}
       />
       <ProtectedRoute 
@@ -143,6 +211,7 @@ function App() {
             <Router />
           </AppLayout>
           <Toaster />
+          <LoginHelper />
         </TooltipProvider>
       </I18nProvider>
     </ThemeProvider>

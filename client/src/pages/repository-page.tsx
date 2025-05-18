@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useI18n } from '@/hooks/use-i18n-new';
 import { useAuth } from '@/hooks/use-auth';
+import { useLocation } from 'wouter';
 import { 
   Search, 
   Filter, 
@@ -40,11 +41,17 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { format } from 'date-fns';
-import { Project, Department } from '@shared/schema';
+import { Project, Department, User as UserType } from '@shared/schema';
+
+// Extended Project type for UI purposes
+interface ExtendedProject extends Project {
+  isTemplate?: boolean;
+}
 
 export default function RepositoryPage() {
   const { t } = useI18n();
   const { user } = useAuth();
+  const [, navigate] = useLocation();
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedTab, setSelectedTab] = useState("completed");
   
@@ -58,6 +65,18 @@ export default function RepositoryPage() {
     queryKey: ['/api/departments'],
   });
 
+  // Fetch users to get manager names
+  const { data: users, isLoading: isLoadingUsers } = useQuery<UserType[]>({
+    queryKey: ['/api/users'],
+  });
+
+  // Get manager name by ID
+  const getManagerName = (managerUserId: number | null) => {
+    if (!managerUserId || !users) return '-';
+    const manager = users.find(user => user.id === managerUserId);
+    return manager?.name || '-';
+  };
+
   // Filter projects based on search query and selected tab
   const filteredProjects = projects?.filter(project => {
     const matchesSearch = !searchQuery || 
@@ -67,8 +86,9 @@ export default function RepositoryPage() {
     if (selectedTab === "completed") {
       return matchesSearch && project.status === "Completed";
     } else if (selectedTab === "templates") {
-      // Assuming template projects have a property or tag that identifies them
-      return matchesSearch && project.type === "Template";
+      // For demonstration purposes, consider projects from a specific department as templates
+      // In a real app, you'd have a proper isTemplate flag or similar
+      return matchesSearch && project.departmentId === 4; // Assuming department 4 is for templates
     }
     return false;
   });
@@ -83,14 +103,26 @@ export default function RepositoryPage() {
     setSelectedTab(value);
   };
 
-  const handleCopyAsTemplate = (project: Project) => {
+  const handleProjectClick = (projectId: number) => {
+    navigate(`/projects/${projectId}`);
+  };
+
+  const handleCopyAsTemplate = (e: React.MouseEvent, project: Project) => {
+    e.stopPropagation(); // Prevent card click event
     // Logic to copy project as a template
     console.log('Copying project as template:', project.id);
   };
 
-  const handleDownload = (project: Project) => {
+  const handleDownload = (e: React.MouseEvent, project: Project) => {
+    e.stopPropagation(); // Prevent card click event
     // Logic to download project
     console.log('Downloading project:', project.id);
+  };
+
+  // Format date for display
+  const formatDate = (date: Date | string | null) => {
+    if (!date) return '-';
+    return format(new Date(date), 'MMM dd, yyyy');
   };
 
   return (
@@ -153,22 +185,26 @@ export default function RepositoryPage() {
             ) : filteredProjects && filteredProjects.length > 0 ? (
               <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
                 {filteredProjects.map(project => (
-                  <Card key={project.id} className="overflow-hidden">
+                  <Card 
+                    key={project.id} 
+                    className="overflow-hidden cursor-pointer hover:border-qatar-maroon transition-colors"
+                    onClick={() => handleProjectClick(project.id)}
+                  >
                     <CardHeader className="pb-3">
                       <div className="flex justify-between items-start">
                         <CardTitle className="text-xl">{project.title}</CardTitle>
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" className="h-8 w-8 p-0">
+                            <Button variant="ghost" className="h-8 w-8 p-0" onClick={(e) => e.stopPropagation()}>
                               <MoreHorizontal className="h-4 w-4" />
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={() => handleCopyAsTemplate(project)}>
+                            <DropdownMenuItem onClick={(e) => handleCopyAsTemplate(e, project)}>
                               <Copy className="mr-2 h-4 w-4" />
                               {t('copyAsTemplate')}
                             </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => handleDownload(project)}>
+                            <DropdownMenuItem onClick={(e) => handleDownload(e, project)}>
                               <Download className="mr-2 h-4 w-4" />
                               {t('download')}
                             </DropdownMenuItem>
@@ -182,7 +218,7 @@ export default function RepositoryPage() {
                     <CardContent className="pb-3">
                       <div className="flex items-center gap-3 text-sm">
                         <Calendar className="h-4 w-4 text-muted-foreground" />
-                        <span>{project.completedAt ? format(new Date(project.completedAt), 'MMM dd, yyyy') : '-'}</span>
+                        <span>{formatDate(project.updatedAt)}</span>
                       </div>
 
                       <div className="flex items-center gap-3 mt-2 text-sm">
@@ -192,7 +228,7 @@ export default function RepositoryPage() {
 
                       <div className="flex items-center gap-3 mt-2 text-sm">
                         <User className="h-4 w-4 text-muted-foreground" />
-                        <span>{project.managerName || '-'}</span>
+                        <span>{getManagerName(project.managerUserId)}</span>
                       </div>
                     </CardContent>
                     <Separator />
@@ -238,7 +274,7 @@ export default function RepositoryPage() {
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={() => handleDownload(project)}>
+                            <DropdownMenuItem onClick={(e) => handleDownload(e, project)}>
                               <Download className="mr-2 h-4 w-4" />
                               {t('download')}
                             </DropdownMenuItem>
@@ -257,7 +293,7 @@ export default function RepositoryPage() {
 
                       <div className="flex items-center gap-3 mt-2 text-sm">
                         <User className="h-4 w-4 text-muted-foreground" />
-                        <span>{project.managerName || '-'}</span>
+                        <span>{getManagerName(project.managerUserId)}</span>
                       </div>
                     </CardContent>
                     <Separator />

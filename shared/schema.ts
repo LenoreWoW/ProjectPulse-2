@@ -6,7 +6,7 @@ import { z } from "zod";
 export const roleEnum = pgEnum('role', ['User', 'ProjectManager', 'SubPMO', 'MainPMO', 'DepartmentDirector', 'Executive', 'Administrator']);
 export const userStatusEnum = pgEnum('user_status', ['Pending', 'Active', 'Inactive', 'Rejected']);
 export const projectStatusEnum = pgEnum('project_status', ['Pending', 'Planning', 'InProgress', 'OnHold', 'Completed']);
-export const taskStatusEnum = pgEnum('task_status', ['Todo', 'InProgress', 'Review', 'Completed']);
+export const taskStatusEnum = pgEnum('task_status', ['Todo', 'InProgress', 'Review', 'Completed', 'OnHold']);
 export const priorityEnum = pgEnum('priority', ['Low', 'Medium', 'High', 'Critical']);
 export const changeRequestTypeEnum = pgEnum('change_request_type', ['Schedule', 'Budget', 'Scope', 'Delegation', 'Status', 'Closure', 'AdjustTeam']);
 export const changeRequestStatusEnum = pgEnum('change_request_status', ['Pending', 'Approved', 'Rejected']);
@@ -53,7 +53,7 @@ export const projects = pgTable('projects', {
   descriptionAr: text('description_ar'),
   managerUserId: integer('manager_user_id').notNull(),
   departmentId: integer('department_id').notNull(),
-  client: text('client'),
+  client: text('client').notNull(),
   budget: doublePrecision('budget').default(0),
   priority: priorityEnum('priority').default('Medium'),
   startDate: timestamp('start_date').defaultNow(),
@@ -101,6 +101,7 @@ export const tasks = pgTable('tasks', {
   priority: priorityEnum('priority').default('Medium'),
   status: taskStatusEnum('status').default('Todo'),
   createdByUserId: integer('created_by_user_id').notNull(),
+  priorityOrder: integer('priority_order'),
   createdAt: timestamp('created_at').defaultNow(),
   updatedAt: timestamp('updated_at').defaultNow(),
 });
@@ -109,6 +110,15 @@ export const tasks = pgTable('tasks', {
 export const taskComments = pgTable('task_comments', {
   id: serial('id').primaryKey(),
   taskId: integer('task_id').notNull(),
+  userId: integer('user_id').notNull(),
+  content: text('content').notNull(),
+  createdAt: timestamp('created_at').defaultNow(),
+});
+
+// Assignment Comments
+export const assignmentComments = pgTable('assignment_comments', {
+  id: serial('id').primaryKey(),
+  assignmentId: integer('assignment_id').notNull(),
   userId: integer('user_id').notNull(),
   content: text('content').notNull(),
   createdAt: timestamp('created_at').defaultNow(),
@@ -140,6 +150,8 @@ export const goals = pgTable('goals', {
   priority: priorityEnum('priority').default('Medium'),
   createdByUserId: integer('created_by_user_id').notNull(),
   isStrategic: boolean('is_strategic').default(false),
+  departmentId: integer('department_id'),
+  isAnnual: boolean('is_annual').default(true),
   createdAt: timestamp('created_at').defaultNow(),
   updatedAt: timestamp('updated_at').defaultNow(),
 });
@@ -149,6 +161,14 @@ export const projectGoals = pgTable('project_goals', {
   id: serial('id').primaryKey(),
   projectId: integer('project_id').notNull(),
   goalId: integer('goal_id').notNull(),
+  weight: doublePrecision('weight').default(1),
+});
+
+// Goal-to-Goal relationships (with weight)
+export const goalRelationships = pgTable('goal_relationships', {
+  id: serial('id').primaryKey(),
+  parentGoalId: integer('parent_goal_id').notNull(),
+  childGoalId: integer('child_goal_id').notNull(),
   weight: doublePrecision('weight').default(1),
 });
 
@@ -224,16 +244,58 @@ export const weeklyUpdates = pgTable('weekly_updates', {
 
 export const insertUserSchema = createInsertSchema(users).omit({ id: true });
 export const insertDepartmentSchema = createInsertSchema(departments).omit({ id: true });
-export const insertProjectSchema = createInsertSchema(projects).omit({ id: true, createdAt: true, updatedAt: true });
-export const insertTaskSchema = createInsertSchema(tasks).omit({ id: true, createdAt: true, updatedAt: true });
+
+// Modify insertProjectSchema to handle date strings
+export const insertProjectSchema = createInsertSchema(projects)
+  .omit({ id: true, createdAt: true, updatedAt: true })
+  .transform((data) => {
+    // Convert date strings to Date objects
+    return {
+      ...data,
+      startDate: data.startDate ? new Date(data.startDate) : data.startDate,
+      deadline: data.deadline ? new Date(data.deadline) : data.deadline,
+    };
+  });
+
 export const insertChangeRequestSchema = createInsertSchema(changeRequests).omit({ id: true, requestedAt: true, reviewedAt: true });
+
 export const insertGoalSchema = createInsertSchema(goals).omit({ id: true, createdAt: true, updatedAt: true });
+
+export const insertTaskSchema = createInsertSchema(tasks)
+  .omit({ id: true, createdAt: true, updatedAt: true })
+  .transform((data) => {
+    // Convert date strings to Date objects
+    return {
+      ...data,
+      deadline: data.deadline ? new Date(data.deadline) : data.deadline,
+    };
+  });
+
 export const insertRiskIssueSchema = createInsertSchema(risksIssues).omit({ id: true, createdAt: true, updatedAt: true });
+
 export const insertNotificationSchema = createInsertSchema(notifications).omit({ id: true, createdAt: true });
-export const insertAssignmentSchema = createInsertSchema(assignments).omit({ id: true, createdAt: true, updatedAt: true });
+
+export const insertAssignmentSchema = createInsertSchema(assignments)
+  .omit({ id: true, createdAt: true, updatedAt: true })
+  .transform((data) => {
+    // Convert date strings to Date objects
+    return {
+      ...data,
+      deadline: data.deadline ? new Date(data.deadline) : data.deadline,
+    };
+  });
+
 export const insertActionItemSchema = createInsertSchema(actionItems).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertWeeklyUpdateSchema = createInsertSchema(weeklyUpdates).omit({ id: true, createdAt: true });
 export const insertProjectCostHistorySchema = createInsertSchema(projectCostHistory).omit({ id: true, updatedAt: true });
+export const insertProjectGoalSchema = createInsertSchema(projectGoals).omit({ id: true });
+export const insertGoalRelationshipSchema = createInsertSchema(goalRelationships).omit({ id: true });
+
+export const insertTaskCommentSchema = createInsertSchema(taskComments)
+  .omit({ id: true, createdAt: true });
+
+export const insertAssignmentCommentSchema = createInsertSchema(assignmentComments)
+  .omit({ id: true, createdAt: true });
 
 // Login schema (subset of user)
 export const loginSchema = z.object({
@@ -256,6 +318,10 @@ export type InsertAssignment = z.infer<typeof insertAssignmentSchema>;
 export type InsertActionItem = z.infer<typeof insertActionItemSchema>;
 export type InsertWeeklyUpdate = z.infer<typeof insertWeeklyUpdateSchema>;
 export type InsertProjectCostHistory = z.infer<typeof insertProjectCostHistorySchema>;
+export type InsertProjectGoal = z.infer<typeof insertProjectGoalSchema>;
+export type InsertGoalRelationship = z.infer<typeof insertGoalRelationshipSchema>;
+export type InsertTaskComment = z.infer<typeof insertTaskCommentSchema>;
+export type InsertAssignmentComment = z.infer<typeof insertAssignmentCommentSchema>;
 
 // Select Types
 export type User = typeof users.$inferSelect;
@@ -270,6 +336,10 @@ export type Assignment = typeof assignments.$inferSelect;
 export type ActionItem = typeof actionItems.$inferSelect;
 export type WeeklyUpdate = typeof weeklyUpdates.$inferSelect;
 export type ProjectCostHistory = typeof projectCostHistory.$inferSelect;
+export type ProjectGoal = typeof projectGoals.$inferSelect;
+export type GoalRelationship = typeof goalRelationships.$inferSelect;
+export type TaskComment = typeof taskComments.$inferSelect;
+export type AssignmentComment = typeof assignmentComments.$inferSelect;
 
 // Login Type
 export type LoginData = z.infer<typeof loginSchema>;

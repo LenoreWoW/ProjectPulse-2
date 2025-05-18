@@ -16,6 +16,11 @@ type Permission = {
   canViewReports: boolean;
   canViewAnalytics: boolean;
   canAccessAdminSettings: boolean;
+  
+  // Project manager specific permissions for owned projects
+  canEditOwnProject: boolean;
+  canManageOwnProjectTasks: boolean;
+  canUpdateOwnProjectCosts: boolean;
 };
 
 /**
@@ -42,6 +47,9 @@ export function usePermissions(): Permission {
       canViewReports: false,
       canViewAnalytics: false,
       canAccessAdminSettings: false,
+      canEditOwnProject: false,
+      canManageOwnProjectTasks: false,
+      canUpdateOwnProjectCosts: false,
     };
   }
   
@@ -63,7 +71,17 @@ export function usePermissions(): Permission {
     canViewReports: false,
     canViewAnalytics: false,
     canAccessAdminSettings: false,
+    canEditOwnProject: false,
+    canManageOwnProjectTasks: false,
+    canUpdateOwnProjectCosts: false,
   };
+  
+  // Always grant project managers control over their own projects' tasks and costs
+  if (role === "ProjectManager") {
+    permissions.canEditOwnProject = true;
+    permissions.canManageOwnProjectTasks = true;
+    permissions.canUpdateOwnProjectCosts = true;
+  }
   
   // Set permissions based on role
   switch (role) {
@@ -89,6 +107,9 @@ export function usePermissions(): Permission {
       permissions.canViewReports = true;
       permissions.canViewAnalytics = true;
       permissions.canAccessAdminSettings = true;
+      permissions.canEditOwnProject = true;
+      permissions.canManageOwnProjectTasks = true;
+      permissions.canUpdateOwnProjectCosts = true;
       break;
       
     case "SubPMO":
@@ -101,6 +122,9 @@ export function usePermissions(): Permission {
       permissions.canAssignTask = true;
       permissions.canViewReports = true;
       permissions.canViewAnalytics = true;
+      permissions.canEditOwnProject = true;
+      permissions.canManageOwnProjectTasks = true;
+      permissions.canUpdateOwnProjectCosts = true;
       break;
       
     case "DepartmentDirector":
@@ -113,6 +137,9 @@ export function usePermissions(): Permission {
       permissions.canAssignTask = true;
       permissions.canViewReports = true;
       permissions.canViewAnalytics = true;
+      permissions.canEditOwnProject = true;
+      permissions.canManageOwnProjectTasks = true;
+      permissions.canUpdateOwnProjectCosts = true;
       break;
       
     case "ProjectManager":
@@ -140,6 +167,22 @@ export function usePermissions(): Permission {
 }
 
 /**
+ * Hook to check if the user has ownership of a specific project
+ * @param projectId The ID of the project to check
+ * @param managerId The manager ID of the project
+ * @returns Boolean indicating if the user owns the project
+ */
+export function useProjectOwnership(projectId?: number, managerId?: number | null): boolean {
+  const { user } = useAuth();
+  
+  if (!user || !managerId) {
+    return false;
+  }
+  
+  return user.id === managerId;
+}
+
+/**
  * Higher-order component to conditionally render content based on permissions
  */
 export function PermissionGate({ 
@@ -152,6 +195,35 @@ export function PermissionGate({
   const permissions = usePermissions();
   
   if (!permissions[permission]) {
+    return null;
+  }
+  
+  return <>{children}</>;
+}
+
+/**
+ * Higher-order component to conditionally render content based on project ownership
+ */
+export function ProjectOwnershipGate({ 
+  children, 
+  projectId,
+  managerId,
+  requiredPermission
+}: { 
+  children: React.ReactNode, 
+  projectId?: number,
+  managerId?: number | null,
+  requiredPermission?: keyof Permission
+}) {
+  const isOwner = useProjectOwnership(projectId, managerId);
+  const permissions = usePermissions();
+  
+  // If a specific permission is required in addition to ownership
+  if (requiredPermission && !permissions[requiredPermission]) {
+    return null;
+  }
+  
+  if (!isOwner) {
     return null;
   }
   

@@ -1,11 +1,11 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import { format } from "date-fns";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
-import { CalendarIcon, Loader2 } from "lucide-react";
+import { CalendarIcon, Loader2, PlusCircle, X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
@@ -27,65 +27,148 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useI18n } from "@/hooks/use-i18n-new";
 import { cn } from "@/lib/utils";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { useAuth } from "@/hooks/use-auth";
+import { MultiSelect } from "@/components/ui";
+import { Badge } from "@/components/ui/badge";
 
 export default function NewProjectPage() {
   const [location, navigate] = useLocation();
   const { toast } = useToast();
-  const { t, locale } = useI18n();
+  const { t, language } = useI18n();
+  const { user } = useAuth();
+  const [selectedTeamMembers, setSelectedTeamMembers] = useState<string[]>([]);
+  const [departmentUsers, setDepartmentUsers] = useState<any[]>([]);
   
-  // Fetch departments for the select dropdown
+  // Fetch departments for reference
   const { data: departments = [], isLoading: isLoadingDepartments } = useQuery({
     queryKey: ["/api/departments"],
     staleTime: 60000, // 1 minute
   });
 
   // Fetch users for the manager select dropdown
-  const { data: users = [], isLoading: isLoadingUsers } = useQuery({
+  const { data: users = [], isLoading: isLoadingUsers } = useQuery<any[]>({
     queryKey: ["/api/users"],
     staleTime: 60000, // 1 minute
   });
 
   // Create a form schema based on the insertProjectSchema
-  const formSchema = insertProjectSchema
-    .extend({
-      startDate: z.date(),
-      endDate: z.date(),
-      departmentId: z.string().min(1, t("required")),
-      managerUserId: z.string().min(1, t("required")),
-    })
-    .refine((data) => data.endDate >= data.startDate, {
-      message: t("endDateMustBeAfterStartDate"),
-      path: ["endDate"],
-    });
+  const formSchema = z.object({
+    title: z.string().min(1, t("titleRequired")),
+    description: z.string().min(1, t("descriptionRequired")),
+    departmentId: z.string().min(1, t("departmentRequired")),
+    managerUserId: z.string().min(1, t("projectManagerRequired")),
+    client: z.string().min(1, t("clientRequired")),
+    budget: z.number({
+      required_error: t("budgetRequired"),
+      invalid_type_error: t("budgetMustBeNumber"),
+    }),
+    priority: z.string().min(1, t("priorityRequired")),
+    startDate: z.date({
+      required_error: t("startDateRequired"),
+    }),
+    deadline: z.date({
+      required_error: t("deadlineRequired"),
+    }),
+    status: z.string().min(1, t("statusRequired")),
+    actualCost: z.number({
+      required_error: t("actualCostRequired"),
+      invalid_type_error: t("costMustBeNumber"),
+    }),
+    teamMembers: z.array(z.string()).optional(),
+  }).refine((data) => data.deadline >= data.startDate, {
+    message: t("deadlineMustBeAfterStartDate"),
+    path: ["deadline"],
+  });
 
   type FormValues = z.infer<typeof formSchema>;
 
-  // Initialize the form with default values
+  // Default values for the form
+  const defaultValues: Partial<FormValues> = {
+    title: "",
+    description: "",
+    departmentId: user?.departmentId?.toString() || "",
+    managerUserId: user?.role === "ProjectManager" ? user.id.toString() : "",
+    client: "",
+    budget: 0,
+    priority: "Medium",
+    status: "Planning",
+    actualCost: 0,
+    teamMembers: [],
+  };
+
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
-    defaultValues: {
-      name: "",
-      description: "",
-      status: "Planning",
-      priority: "Medium",
-      budget: 0,
-      actualCost: 0,
-      departmentId: "",
-      managerUserId: "",
-    },
+    defaultValues,
   });
+
+  // Handle user/department changes
+  const handleManagerChange = (managerId: string) => {
+    if (!managerId || !users) return;
+    
+    const manager = users.find(u => u.id.toString() === managerId);
+    if (manager && manager.departmentId) {
+      form.setValue("departmentId", manager.departmentId.toString());
+      
+      // Update team members select options
+      const deptUsers = users.filter(u => u.departmentId === manager.departmentId);
+      setDepartmentUsers(deptUsers);
+    }
+  };
+
+  // Watch for manager changes to update department
+  const managerId = form.watch("managerUserId");
+  useEffect(() => {
+    if (managerId) {
+      handleManagerChange(managerId);
+    }
+  }, [managerId]);
+
+  // Handle team member selection
+  const handleTeamMemberChange = (selectedValues: string[]) => {
+    setSelectedTeamMembers(selectedValues);
+    form.setValue("teamMembers", selectedValues);
+  };
 
   const createProjectMutation = useMutation({
     mutationFn: async (formData: FormValues) => {
-      // Convert form data to match API expectations
+      // Find the manager to get their department if not already set
+      let departmentId = formData.departmentId;
+      if (!departmentId && formData.managerUserId && users) {
+        const manager = users.find((user) => user.id.toString() === formData.managerUserId);
+        if (manager && manager.departmentId) {
+          departmentId = manager.departmentId.toString();
+        }
+      }
+
+      if (!departmentId) {
+        throw new Error(t("noDepartmentFound"));
+      }
+      
+      // Convert form data to match API expectations - ensure proper typing
       const projectData = {
-        ...formData,
-        departmentId: Number(formData.departmentId),
-        managerUserId: Number(formData.managerUserId),
+        title: formData.title,
+        description: formData.description,
+        departmentId: parseInt(departmentId),
+        managerUserId: parseInt(formData.managerUserId),
+        client: formData.client,
+        budget: formData.budget,
+        priority: formData.priority,
+        startDate: formData.startDate instanceof Date ? formData.startDate.toISOString() : formData.startDate,
+        deadline: formData.deadline instanceof Date ? formData.deadline.toISOString() : formData.deadline,
+        status: formData.status,
+        actualCost: formData.actualCost,
+        teamMembers: formData.teamMembers?.map(id => parseInt(id)) || []
       };
-      const response = await apiRequest("POST", "/api/projects", projectData);
-      const data = await response.json();
-      return data;
+      
+      try {
+        console.log("Sending project data:", JSON.stringify(projectData, null, 2));
+        const response = await apiRequest("POST", "/api/projects", projectData);
+        const data = await response.json();
+        return data;
+      } catch (error) {
+        console.error("Project creation error:", error);
+        throw error;
+      }
     },
     onSuccess: () => {
       toast({
@@ -96,6 +179,7 @@ export default function NewProjectPage() {
       navigate("/projects");
     },
     onError: (error: Error) => {
+      console.error("Mutation error:", error);
       toast({
         title: t("error"),
         description: error.message,
@@ -123,12 +207,12 @@ export default function NewProjectPage() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <FormField
                   control={form.control}
-                  name="name"
+                  name="title"
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>{t("projectName")}</FormLabel>
                       <FormControl>
-                        <Input placeholder={t("enterProjectName")} {...field} />
+                        <Input id="project-title" placeholder={t("enterProjectName")} {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -145,8 +229,9 @@ export default function NewProjectPage() {
                         <Select
                           value={field.value}
                           onValueChange={field.onChange}
+                          name="status"
                         >
-                          <SelectTrigger>
+                          <SelectTrigger id="project-status">
                             <SelectValue placeholder={t("selectStatus")} />
                           </SelectTrigger>
                           <SelectContent>
@@ -173,8 +258,9 @@ export default function NewProjectPage() {
                         <Select
                           value={field.value}
                           onValueChange={field.onChange}
+                          name="priority"
                         >
-                          <SelectTrigger>
+                          <SelectTrigger id="project-priority">
                             <SelectValue placeholder={t("selectPriority")} />
                           </SelectTrigger>
                           <SelectContent>
@@ -192,30 +278,12 @@ export default function NewProjectPage() {
 
                 <FormField
                   control={form.control}
-                  name="departmentId"
+                  name="client"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>{t("department")}</FormLabel>
+                      <FormLabel>{t("client")}</FormLabel>
                       <FormControl>
-                        <Select
-                          value={field.value}
-                          onValueChange={field.onChange}
-                          disabled={isLoadingDepartments}
-                        >
-                          <SelectTrigger>
-                            <SelectValue placeholder={t("selectDepartment")} />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {departments.map((department) => (
-                              <SelectItem
-                                key={department.id}
-                                value={department.id.toString()}
-                              >
-                                {locale === 'ar' && department.nameAr ? department.nameAr : department.name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                        <Input id="project-client" placeholder={t("enterClientName")} {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -233,17 +301,18 @@ export default function NewProjectPage() {
                           value={field.value}
                           onValueChange={field.onChange}
                           disabled={isLoadingUsers}
+                          name="managerUserId"
                         >
-                          <SelectTrigger>
+                          <SelectTrigger id="project-manager">
                             <SelectValue placeholder={t("selectProjectManager")} />
                           </SelectTrigger>
                           <SelectContent>
                             {users
-                              .filter((user) => 
+                              .filter((user: any) => 
                                 user.role === "ProjectManager" || 
                                 user.role === "SubPMO" || 
                                 user.role === "MainPMO")
-                              .map((user) => (
+                              .map((user: any) => (
                                 <SelectItem
                                   key={user.id}
                                   value={user.id.toString()}
@@ -267,25 +336,7 @@ export default function NewProjectPage() {
                       <FormLabel>{t("budget")}</FormLabel>
                       <FormControl>
                         <Input
-                          type="number"
-                          placeholder="0"
-                          {...field}
-                          onChange={e => field.onChange(Number(e.target.value))}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="actualCost"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>{t("actualCost")}</FormLabel>
-                      <FormControl>
-                        <Input
+                          id="project-budget"
                           type="number"
                           placeholder="0"
                           {...field}
@@ -307,6 +358,8 @@ export default function NewProjectPage() {
                         <PopoverTrigger asChild>
                           <FormControl>
                             <Button
+                              type="button"
+                              id="project-start-date"
                               variant="outline"
                               className={cn(
                                 "pl-3 text-left font-normal",
@@ -338,14 +391,16 @@ export default function NewProjectPage() {
 
                 <FormField
                   control={form.control}
-                  name="endDate"
+                  name="deadline"
                   render={({ field }) => (
                     <FormItem className="flex flex-col">
-                      <FormLabel>{t("endDate")}</FormLabel>
+                      <FormLabel>{t("deadline")}</FormLabel>
                       <Popover>
                         <PopoverTrigger asChild>
                           <FormControl>
                             <Button
+                              type="button"
+                              id="project-deadline"
                               variant="outline"
                               className={cn(
                                 "pl-3 text-left font-normal",
@@ -374,6 +429,34 @@ export default function NewProjectPage() {
                     </FormItem>
                   )}
                 />
+
+                {/* Team Members Multi-Select */}
+                {form.watch("departmentId") && (
+                  <FormField
+                    control={form.control}
+                    name="teamMembers"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel id="project-team-members-label">{t("teamMembers")}</FormLabel>
+                        <FormControl>
+                          <div>
+                            <MultiSelect
+                              options={departmentUsers.map(user => ({
+                                label: user.name,
+                                value: user.id.toString()
+                              }))}
+                              selected={selectedTeamMembers}
+                              onChange={handleTeamMemberChange}
+                              placeholder={t("selectTeamMembers")}
+                              id="project-team-members"
+                            />
+                          </div>
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                )}
               </div>
 
               <FormField
@@ -384,6 +467,7 @@ export default function NewProjectPage() {
                     <FormLabel>{t("description")}</FormLabel>
                     <FormControl>
                       <Textarea
+                        id="project-description"
                         placeholder={t("enterProjectDescription")}
                         className="resize-y"
                         {...field}

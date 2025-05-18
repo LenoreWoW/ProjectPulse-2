@@ -1,26 +1,89 @@
 import { QueryClient, QueryFunction } from "@tanstack/react-query";
 
-async function throwIfResNotOk(res: Response) {
-  if (!res.ok) {
-    const text = (await res.text()) || res.statusText;
-    throw new Error(`${res.status}: ${text}`);
+async function throwIfResNotOk(response: Response) {
+  if (!response.ok) {
+    const contentType = response.headers.get('content-type');
+    if (contentType && contentType.includes('application/json')) {
+      try {
+        const errorData = await response.json();
+        console.log("API Error:", errorData);
+        
+        // Enhanced error handling for validation errors
+        if (errorData.errors && Array.isArray(errorData.errors)) {
+          const errorDetails = errorData.errors.map((err: any) => 
+            `${err.path}: ${err.message}`
+          ).join(', ');
+          
+          throw new Error(`${response.status}: ${errorData.message}. Details: ${errorDetails}`);
+        }
+        
+        throw new Error(`${response.status}: ${errorData.message || 'Unknown error'}`);
+      } catch (e) {
+        if (e instanceof Error) {
+          throw e; // Rethrow the error we just created
+        }
+        throw new Error(`${response.status}: Failed to parse error response`);
+      }
+    } else {
+      throw new Error(`${response.status}: ${response.statusText}`);
+    }
   }
+  return response;
 }
 
-export async function apiRequest(
-  method: string,
-  url: string,
-  data?: unknown | undefined,
-): Promise<Response> {
-  const res = await fetch(url, {
-    method,
-    headers: data ? { "Content-Type": "application/json" } : {},
-    body: data ? JSON.stringify(data) : undefined,
-    credentials: "include",
-  });
+export async function apiRequest(method: string, url: string, data?: any) {
+  console.log(`Making API request: ${method} ${url}`);
+  if (data) {
+    console.log("Request data:", JSON.stringify(data, null, 2));
+  }
 
-  await throwIfResNotOk(res);
-  return res;
+  try {
+    const response = await fetch(url, {
+      method,
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: data ? JSON.stringify(data) : undefined,
+      credentials: 'include',
+    });
+
+    // Check response without trying to parse JSON first
+    if (!response.ok) {
+      const contentType = response.headers.get('content-type');
+      
+      // Only try to parse as JSON if the content type is application/json
+      if (contentType && contentType.includes('application/json')) {
+        try {
+          const errorData = await response.json();
+          console.error("API Error:", errorData);
+          
+          // Enhanced error handling for validation errors
+          if (errorData.errors && Array.isArray(errorData.errors)) {
+            const errorDetails = errorData.errors.map((err: any) => 
+              `${err.path}: ${err.message}`
+            ).join(', ');
+            
+            throw new Error(`${response.status}: ${errorData.message}. Details: ${errorDetails}`);
+          }
+          
+          throw new Error(`${response.status}: ${errorData.message || 'Unknown error'}`);
+        } catch (e) {
+          if (e instanceof Error) {
+            throw e; // Rethrow the error we just created
+          }
+          throw new Error(`${response.status}: Failed to parse error response`);
+        }
+      } else {
+        // For non-JSON responses, return a generic error
+        throw new Error(`${response.status}: ${response.statusText}`);
+      }
+    }
+    
+    return response;
+  } catch (error) {
+    console.error("API Request failed:", error);
+    throw error;
+  }
 }
 
 type UnauthorizedBehavior = "returnNull" | "throw";
