@@ -29,13 +29,19 @@ const {
   POSTGRES_DB = 'projectpulse',
   POSTGRES_USER = 'postgres',
   POSTGRES_PASSWORD = 'postgres',
+  DB_SSL = 'false'
 } = process.env;
+
+// Parse SSL setting from environment
+const sslEnabled = DB_SSL === 'true';
+const sslConfig = sslEnabled ? { rejectUnauthorized: false } : false;
 
 console.log('==== Database Initialization Check ====');
 console.log(`Host: ${POSTGRES_HOST}`);
 console.log(`Port: ${POSTGRES_PORT}`);
 console.log(`Database: ${POSTGRES_DB}`);
 console.log(`User: ${POSTGRES_USER}`);
+console.log(`SSL Enabled: ${sslEnabled}`);
 console.log('=====================================');
 
 // Function to run pg_isready to check if PostgreSQL is running
@@ -89,6 +95,7 @@ async function checkDatabaseExists() {
       database: 'postgres', // Connect to default postgres database
       user: POSTGRES_USER,
       password: POSTGRES_PASSWORD,
+      ssl: sslConfig
     });
     
     const result = await pool.query(`SELECT 1 FROM pg_database WHERE datname = '${POSTGRES_DB}'`);
@@ -111,6 +118,7 @@ async function createDatabase() {
       database: 'postgres', // Connect to default postgres database
       user: POSTGRES_USER,
       password: POSTGRES_PASSWORD,
+      ssl: sslConfig
     });
     
     await pool.query(`CREATE DATABASE ${POSTGRES_DB}`);
@@ -137,6 +145,7 @@ async function applySchema() {
       database: POSTGRES_DB,
       user: POSTGRES_USER,
       password: POSTGRES_PASSWORD,
+      ssl: sslConfig
     });
     
     await pool.query(schema);
@@ -160,6 +169,7 @@ async function createAdminUser() {
       database: POSTGRES_DB,
       user: POSTGRES_USER,
       password: POSTGRES_PASSWORD,
+      ssl: sslConfig
     });
     
     // Check if admin user exists
@@ -193,11 +203,15 @@ async function createAdminUser() {
 async function initializeDatabase() {
   console.log('Checking PostgreSQL installation...');
   
-  // Check if psql is available
-  const isPsqlAvailable = await checkPsqlAvailable();
-  if (!isPsqlAvailable) {
-    console.error('PostgreSQL client is not available. Please install PostgreSQL and ensure it is in your PATH.');
-    process.exit(1);
+  // Skip psql check when connecting to remote databases that require SSL
+  if (!sslEnabled) {
+    // Check if psql is available
+    const isPsqlAvailable = await checkPsqlAvailable();
+    if (!isPsqlAvailable) {
+      console.warn('PostgreSQL client is not available. Continuing anyway as we may be in a container environment.');
+    }
+  } else {
+    console.log('Skipping psql check for SSL connection to remote database.');
   }
   
   // Check if database exists

@@ -4,16 +4,28 @@ import dotenv from 'dotenv';
 // Load environment variables from .env file
 dotenv.config();
 
+// Parse SSL setting from environment
+const sslEnabled = process.env.DB_SSL === 'true';
+const sslConfig = sslEnabled ? { rejectUnauthorized: false } : false;
+
 // Database connection configuration
 export const dbConfig = {
-  host: process.env.DB_HOST || 'localhost',
-  port: parseInt(process.env.DB_PORT || '5432'),
-  database: process.env.DB_NAME || 'projectpulse',
-  user: process.env.DB_USER || 'postgres',
-  password: process.env.DB_PASSWORD || 'postgres',
+  host: process.env.POSTGRES_HOST || process.env.DB_HOST || 'localhost',
+  port: parseInt(process.env.POSTGRES_PORT || process.env.DB_PORT || '5432'),
+  database: process.env.POSTGRES_DB || process.env.DB_NAME || 'projectpulse',
+  user: process.env.POSTGRES_USER || process.env.DB_USER || 'postgres',
+  password: process.env.POSTGRES_PASSWORD || process.env.DB_PASSWORD || 'postgres',
   max: parseInt(process.env.DB_POOL_MAX || '10'), // Maximum number of clients in the pool
   idleTimeoutMillis: parseInt(process.env.DB_IDLE_TIMEOUT || '30000'), // How long a client is allowed to remain idle before being closed
+  ssl: sslConfig
 };
+
+console.log('Database configuration:');
+console.log(`- Host: ${dbConfig.host}`);
+console.log(`- Port: ${dbConfig.port}`);
+console.log(`- Database: ${dbConfig.database}`);
+console.log(`- User: ${dbConfig.user}`);
+console.log(`- SSL Enabled: ${sslEnabled}`);
 
 // Create a new pool instance using the configuration
 export const pool = new Pool(dbConfig);
