@@ -7,7 +7,7 @@ interface Translations {
 }
 
 // English translations
-const en: Record<string, string> = {
+const enTranslations = {
   // Common
   dashboard: "Dashboard",
   calendar: "Calendar",
@@ -24,7 +24,60 @@ const en: Record<string, string> = {
   analytics: "Analytics",
   settings: "Settings",
   userPermissions: "User Permissions",
-  "Project Management System": "Project Management System",
+  projectManagementSystem: "Project Management System",
+  
+  // Status and States
+  statusPending: "Pending",
+  statusInProgress: "In Progress",
+  statusCompleted: "Completed",
+  taskStatus_Pending: "Pending",
+  taskStatus_InProgress: "In Progress",
+  taskStatus_Completed: "Completed",
+  returnedToProjectManager: "Returned to PM",
+  returnedToSubPMO: "Returned to Sub PMO",
+  actionRequired: "Action required",
+  editRequest: "Edit Request",
+  awaitingRevisions: "Awaiting revisions",
+  planning: "Planning",
+  inProgress: "In Progress",
+  onHold: "On Hold",
+  cancelled: "Cancelled",
+  onTrack: "On Track",
+  reviewNeeded: "Review Needed",
+  completed: "Completed",
+  atRisk: "At Risk",
+  pendingApproval: "Pending Approval",
+  pendingApprovalStatus: "Pending Approval",
+  
+  // Priority Levels
+  priorityLow: "Low",
+  priorityMedium: "Medium",
+  priorityHigh: "High",
+  priorityCritical: "Critical",
+  
+  // UI Components
+  close: "Close",
+  loading: "Loading...",
+  details: "Details",
+  projectManager: "Project Manager",
+  subPMO: "Sub PMO",
+  assignedTo: "Assigned To",
+  createdBy: "Created By",
+  assignedBy: "Assigned By",
+  fromUser: "From",
+  comments: "Comments",
+  cancel: "Cancel",
+  create: "Create",
+  edit: "Edit",
+  delete: "Delete",
+  submit: "Submit",
+  save: "Save",
+  selectDate: "Select Date",
+  selectDepartment: "Select Department",
+  selectManager: "Select Manager",
+  selectPriority: "Select Priority",
+  selectStatus: "Select Status",
+  selectAssignee: "Select Assignee",
   
   // User
   login: "Login",
@@ -40,21 +93,18 @@ const en: Record<string, string> = {
   // Document Upload
   requiredDocuments: "Required Documents",
   passportUpload: "Passport",
-  idCardUpload: "National ID",
+  idCardUpload: "ID Card",
   passportRequired: "Passport is required",
-  idCardRequired: "National ID is required",
-  documentRequirementNote: "Please upload clear scans or photos of your original documents. Files must be less than 5MB.",
+  idCardRequired: "ID Card is required",
+  documentRequirementNote: "Please upload clear images of your original documents. Files must be less than 5 MB.",
   dropFileHere: "Drop file here",
-  orClickToBrowse: "or click to browse",
+  orClickToBrowse: "Or click to browse",
   removeFile: "Remove",
   
   // Dashboard
   activeProjects: "Active Projects",
   allProjects: "All Projects",
   projectsCompleted: "Completed",
-  completed: "Completed",
-  atRisk: "At Risk",
-  pendingApproval: "Pending Approval",
   viewAll: "View All",
   budgetOverview: "Budget Overview",
   totalBudget: "Total Budget",
@@ -81,304 +131,361 @@ const en: Record<string, string> = {
   progress: "Progress",
   dueIn: "Due in",
   days: "days",
-  onTrack: "On Track",
-  reviewNeeded: "Review Needed",
   client: "Client",
   enterClientName: "Enter client name",
+  totalProjects: "Total Projects",
+  totalProjectBudget: "Total Project Budget",
+  noProjectsFound: "No projects found",
+  createYourFirstProject: "Create your first project to get started",
+  
+  // Project Details
+  projectDetails: "Project Details",
+  overview: "Overview",
+  changeRequests: "Change Requests",
+  weeklyUpdates: "Weekly Updates",
+  documentation: "Documentation",
+  costHistory: "Cost History",
+  startDate: "Start Date",
+  deadline: "Deadline",
+  manager: "Manager",
+  budget: "Budget",
+  actualCost: "Actual Cost",
+  editProject: "Edit Project",
+  deleteProject: "Delete Project",
+  teamMembers: "Team Members",
+  noTeamMembers: "No team members assigned to this project",
+  addTeamMember: "Add Team Member",
+  removeTeamMember: "Remove",
+  projectCardsByStatus: "Project Cards by Status",
+  kanbanBoard: "Kanban Board",
+  listView: "List View",
+  
+  // Project and Goal Common Fields
+  weight: "Weight",
+  relatedProjects: "Related Projects",
+  relatedGoal: "Related Goal",
+  projectGoals: "Project Goals",
+  selectProject: "Select Project",
+  
+  // New Project Form
+  projectTitle: "Project Title",
+  enterProjectTitle: "Enter project title",
+  projectDescription: "Project Description",
+  enterProjectDescription: "Enter project description",
+  projectCreated: "Project Created",
+  projectCreatedDescription: "Project has been created successfully",
+  createProject: "Create Project",
+  linkProjectToGoals: "Link this project to strategic or annual goals",
+  addGoal: "Add Goal",
+  selectGoal: "Select Goal",
+  linkToExistingProjects: "Link this project to existing projects it depends on",
+  thisProjectDependsOn: "This project depends on",
+  selectRelatedProject: "Select Related Project",
+  addRelatedProject: "Add Related Project",
+  projectsRelatedToThis: "Projects Related to This",
+  projectsThatDependOnThis: "Projects that depend on this one",
+  projectThatDependsOnThis: "Project that depends on this",
+  addRelatedToProject: "Add Dependent Project",
+  
+  // Project Week in Review
+  weekInReview: "Week in Review",
+  currentStatus: "Current Status",
+  progressUpdate: "Progress Update",
+  keyAchievements: "Key Achievements",
+  nextSteps: "Next Steps",
+  challenges: "Challenges",
+  submitWeeklyUpdate: "Submit Weekly Update",
+  weeklyUpdateSubmitted: "Weekly Update Submitted",
+  noWeeklyUpdatesYet: "No weekly updates yet",
+  submitYourFirstWeeklyUpdate: "Submit your first weekly update to track progress",
+  weeklyUpdatesDescription: "Weekly progress reports for this project",
+  
+  // Project Team Management
+  projectTeam: "Project Team",
+  addMember: "Add Member",
+  memberAdded: "Member Added",
+  memberAddedDescription: "Team member has been added successfully",
+  memberRemoved: "Member Removed",
+  memberRemovedDescription: "Team member has been removed successfully",
+  teamMembersDescription: "Manage the team members assigned to this project",
+  changeTeamNotice: "Changes to the team require approval",
+  
+  // Tasks
+  newTask: "New Task",
+  taskCreated: "Task Created",
+  taskCreatedDescription: "Task has been created successfully",
+  createTaskDescription: "Create a new task for your project",
+  taskTitle: "Task Title",
+  enterTaskTitle: "Enter task title",
+  description: "Description",
+  enterTaskDescription: "Enter task description",
+  createTask: "Create Task",
+  assignTo: "Assign To",
+  dueDate: "Due Date",
+  priority: "Priority",
+  taskDetails: "Task Details",
+  editTask: "Edit Task",
+  deleteTask: "Delete Task",
+  markAsCompleted: "Mark as Completed",
+  reopenTask: "Reopen Task",
+  commentSection: "Add Comment",
+  enterComment: "Enter comment...",
+  viewTasks: "View Tasks",
+  noTasksFound: "No tasks found",
+  createYourFirstTask: "Create your first task to get started",
+  tasksDescription: "Manage tasks for this project",
+  
+  // Comments
+  addComment: "Add Comment",
+  postComment: "Post Comment",
+  enterYourComment: "Enter your comment...",
+  commentAdded: "Comment Added",
+  commentAddedDescription: "Your comment has been added successfully",
+  commentsDescription: "Discussion thread for this item",
+  noCommentsYet: "No comments yet",
+  beTheFirstToComment: "Be the first to add a comment",
+  
+  // Delete Confirmations
+  confirmDelete: "Confirm Delete",
+  deleteWarningGeneric: "This action cannot be undone. Are you sure you want to proceed?",
+  deleteProjectWarning: "This will permanently delete the project and all associated tasks, documents, and history. This action cannot be undone.",
+  deleteTaskWarning: "This will permanently delete the task and all associated comments. This action cannot be undone.",
+  confirmDeleteButton: "Yes, Delete",
+  cancelDeleteButton: "Cancel",
+  
+  // Project Change Requests
+  newChangeRequest: "New Change Request",
+  changeRequestCreated: "Change Request Created",
+  changeRequestCreatedDescription: "Change request has been submitted for approval",
+  changeType: "Change Type",
+  requestedChange: "Requested Change",
+  justification: "Justification",
+  impactDescription: "Impact",
+  approvedBy: "Approved By",
+  rejectionReason: "Rejection Reason",
+  enterRejectionReason: "Enter detailed reason for rejection...",
+  rejectionReasonRequired: "Please provide a reason for rejection",
+  changeDetails: "Change Details",
+  createChangeRequest: "Create Change Request",
+  viewChangeRequests: "View Change Requests",
+  noChangeRequestsFound: "No change requests found",
+  createYourFirstChangeRequest: "Create your first change request",
+  changeRequestsDescription: "Manage change requests for this project",
+  statusChange: "Status Change",
+  budgetChange: "Budget Change",
+  deadlineChange: "Deadline Change",
+  scopeChange: "Scope Change",
+  resourceChange: "Resource Change",
+  otherChange: "Other Change",
+  currentValue: "Current Value",
+  newValue: "New Value",
+  approve: "Approve",
+  approveRequest: "Approve Request",
+  reject: "Reject",
+  rejectRequest: "Reject Request",
+  returnTo: "Return To",
+  returnToProjectManager: "Return to Project Manager",
+  returnToSubPMO: "Return to Sub-PMO",
+  provideRevisions: "Provide Revisions",
   
   // Goals
   newGoal: "New Goal",
+  goalCreated: "Goal Created",
+  goalCreatedDescription: "Goal has been created successfully",
+  createGoalDescription: "Create a new goal for your organization",
+  goalTitle: "Goal Title",
+  enterGoalTitle: "Enter goal title",
+  enterGoalDescription: "Enter goal description",
+  createGoal: "Create Goal",
+  viewGoals: "View Goals",
+  noGoalsFound: "No goals found",
+  createYourFirstGoal: "Create your first goal",
+  goalsDescription: "Manage organizational goals",
   strategicGoals: "Strategic Goals",
   annualGoals: "Annual Goals",
   departmentGoals: "Department Goals",
-  noStrategicGoals: "No strategic goals found",
-  noAnnualGoals: "No annual goals found",
-  goalCreated: "Goal Created",
-  goalCreatedDescription: "The goal has been created successfully",
-  enterGoalTitle: "Enter goal title",
-  selectGoalType: "Select goal type",
-  selectProjects: "Select related projects",
-  selectGoals: "Select related goals",
-  relatedProjects: "Related Projects",
-  relatedGoals: "Related Goals",
-  targetDate: "Target Date",
-  selectDate: "Select date",
-  weight: "Weight",
-  goalWeight: "Goal Weight",
-  projectWeight: "Project Weight",
-  isAnnual: "Annual Goal",
+  departmentGoalNote: "This goal will be specific to a department",
   isStrategic: "Strategic Goal",
-  addRelatedProject: "Add Related Project",
+  isAnnual: "Annual Goal",
+  relatedGoals: "Related Goals",
   addRelatedGoal: "Add Related Goal",
-  departmentGoalNote: "Only department directors can add or edit department goals",
+  noRelatedGoals: "No related goals",
+  noRelatedProjects: "No related projects",
+  
+  // Risks & Issues
+  newRiskIssue: "New Risk/Issue",
+  riskIssueCreated: "Risk/Issue Created",
+  riskIssueCreatedDescription: "Risk/Issue has been created successfully",
+  createRiskIssueDescription: "Document a new risk or issue for your project",
+  riskIssueTitle: "Risk/Issue Title",
+  enterRiskIssueTitle: "Enter risk/issue title",
+  enterRiskIssueDescription: "Enter risk/issue description",
+  riskIssueType: "Type",
+  selectRiskIssueType: "Select Type",
+  riskType: "Risk",
+  issueType: "Issue",
+  probabilityLevel: "Probability",
+  selectProbabilityLevel: "Select Probability",
+  riskImpactLevel: "Impact",
+  selectRiskImpactLevel: "Select Impact",
+  mitigationPlan: "Mitigation Plan",
+  enterMitigationPlan: "Enter mitigation plan",
+  createRiskIssue: "Create Risk/Issue",
+  viewRisksIssues: "View Risks & Issues",
+  noRisksIssuesFound: "No risks or issues found",
+  createYourFirstRiskIssue: "Document your first risk or issue",
+  risksIssuesDescription: "Manage risks and issues for this project",
+  
+  // Error Messages
+  error: "Error",
+  somethingWentWrong: "Something went wrong",
+  tryAgainLater: "Please try again later",
+  pageNotFound: "Page Not Found",
+  pageNotFoundDescription: "The page you are looking for does not exist or has been moved.",
+  backToDashboard: "Back to Dashboard",
+  
+  // Notifications
+  notificationSettings: "Notification Settings",
+  emailNotifications: "Email Notifications",
+  inAppNotifications: "In-App Notifications",
+  notificationPreferences: "Notification Preferences",
+  taskAssignments: "Task Assignments",
+  projectUpdates: "Project Updates",
+  approvalRequests: "Approval Requests",
+  riskIssueAlerts: "Risk & Issue Alerts",
+  deadlineReminders: "Deadline Reminders",
+  notificationFrequency: "Notification Frequency",
+  immediately: "Immediately",
+  daily: "Daily Digest",
+  weekly: "Weekly Digest",
+  savePreferences: "Save Preferences",
+  preferencesUpdated: "Preferences Updated",
+  preferencesUpdatedDescription: "Your notification preferences have been updated",
+  
+  // Settings
+  accountSettings: "Account Settings",
+  profileInformation: "Profile Information",
+  updateProfile: "Update Profile",
+  changePassword: "Change Password",
+  currentPassword: "Current Password",
+  newPassword: "New Password",
+  confirmNewPassword: "Confirm New Password",
+  profileUpdated: "Profile Updated",
+  profileUpdatedDescription: "Your profile information has been updated",
+  passwordChanged: "Password Changed",
+  passwordChangedDescription: "Your password has been changed successfully",
+  
+  // Reports
+  generateReport: "Generate Report",
+  reportType: "Report Type",
+  selectReportType: "Select Report Type",
+  projectStatusReport: "Project Status Report",
+  resourceAllocationReport: "Resource Allocation Report",
+  budgetReport: "Budget Report",
+  customDateRange: "Custom Date Range",
+  filterByDepartment: "Filter by Department",
+  exportAs: "Export As",
+  pdf: "PDF",
+  excel: "Excel",
+  csv: "CSV",
   
   // Approvals
   pendingApprovals: "Pending Approvals",
-  approve: "Approve",
-  reject: "Reject",
-  budgetIncreaseRequest: "Budget Increase Request",
-  timelineExtension: "Timeline Extension",
-  projectClosure: "Project Closure",
+  noPendingApprovals: "No pending approvals",
+  approvalsDescription: "Review and approve change requests",
   
-  // Statuses
-  statusPending: "Pending",
-  statusPlanning: "Planning",
-  inProgress: "In Progress",
-  statusOnHold: "On Hold",
-  statusCompleted: "Completed",
+  // Weekly Updates
+  weeklyUpdateTitle: "Weekly Update - Week of {{startDate}} to {{endDate}}",
+  submitWeeklyStatus: "Submit Weekly Status",
+  progressDetails: "Progress Details",
+  weeklyStatusSubmitted: "Weekly Status Submitted",
+  weeklyStatusSubmittedDescription: "Your weekly status update has been submitted",
+  enterProgressDetails: "Provide details on progress made this week",
+  enterNextSteps: "Outline the next steps and upcoming work",
+  enterChallenges: "Document any blockers or challenges faced",
+  enterKeyAchievements: "List key milestones or achievements completed",
   
-  // Project details
-  editCost: "Edit Cost",
-  details: "Details",
-  viewDetails: "View Details",
-  overview: "Overview",
-  weeklyUpdates: "Weekly Updates",
-  changeRequests: "Change Requests",
-  logs: "Logs",
-  comments: "Comments",
-  projectManager: "Project Manager",
-  noProjectsFound: "No projects found",
-  
-  // Form fields
-  submit: "Submit",
-  cancel: "Cancel",
-  save: "Save",
-  search: "Search",
-  
-  // Notifications
-  notificationsTitle: "Notifications",
-  markAsRead: "Mark as Read",
-  markAllAsRead: "Mark All as Read",
-  
-  // Errors
-  error: "Error",
-  somethingWentWrong: "Something went wrong",
-  tryAgain: "Please try again",
-  
-  // User Permissions
-  userPermissionsManagement: "User Permissions Management",
-  manageUserRolesAndPermissions: "Manage user roles and custom permissions",
-  editPermissions: "Edit Permissions",
-  searchUsers: "Search users by name, email, or role...",
-  noUsersFound: "No users found",
-  noUsersMatchSearch: "No users match your search criteria",
-  editUserPermissions: "Edit User Permissions",
-  editingPermissionsFor: "Editing permissions for",
-  role: "Role",
-  selectRole: "Select a role",
-  useCustomPermissions: "Use custom permissions",
-  customPermissions: "Custom Permissions",
-  saveChanges: "Save Changes",
-  permissionsUpdated: "Permissions Updated",
-  userPermissionsUpdatedSuccessfully: "User permissions have been updated successfully",
-  errorLoadingUsers: "Error loading users",
-  accessDenied: "Access Denied",
-  noPermissionToManageUsers: "You don't have permission to manage users",
-  
-  // User Roles
-  User: "User",
-  ProjectManager: "Project Manager",
-  SubPMO: "Sub-PMO",
-  MainPMO: "Main PMO",
-  DepartmentDirector: "Department Director",
-  Executive: "Executive",
-  Administrator: "Administrator",
-  
-  // Languages and theme
-  language: "Language",
-  english: "English",
-  arabic: "Arabic",
-  darkMode: "Dark Mode",
-  lightMode: "Light Mode",
-  
-  // Budget
-  budget: "Budget",
-  cost: "Cost",
-  
-  // Date and time
-  date: "Date",
-  time: "Time",
-  
-  // Assignments
-  newAssignment: "New Assignment",
-  createNewAssignment: "Create New Assignment",
-  fillDetailsBelow: "Fill in the details below",
-  assignmentName: "Assignment Name",
-  enterAssignmentName: "Enter assignment name",
-  description: "Description",
-  enterDescription: "Enter description",
-  assignee: "Assignee",
-  selectAssignee: "Select assignee",
-  assignedToMe: "Assigned to Me",
-  assignedByMe: "Assigned by Me",
-  assignedTo: "Assigned to",
-  assignedBy: "Assigned by",
-  priority: "Priority",
+  // Additional translations for UI consistency
+  todo: "To Do",
+  review: "Review",
   low: "Low",
   medium: "Medium",
   high: "High",
-  critical: "Critical",
-  selectPriority: "Select priority",
-  deadline: "Deadline",
-  daysLeft: "days left",
-  daysOverdue: "days overdue",
-  dueToday: "Due today",
-  loading: "Loading...",
-  createAssignment: "Create Assignment",
-  creating: "Creating...",
-  searchAssignments: "Search assignments...",
-  noCompletedAssignments: "No completed assignments found",
-  completedOn: "Completed on",
-  
-  // Repository & Dependencies
-  repositoryDescription: "Access completed projects and templates from the central repository",
-  projectTemplates: "Project Templates",
-  completedProjects: "Completed Projects",
-  searchRepositoryPlaceholder: "Search projects by name, department, or owner...",
-  noCompletedProjects: "No completed projects available",
-  noCompletedProjectsFound: "No completed projects match your search",
-  noTemplates: "No project templates available",
-  noTemplatesFound: "No templates match your search criteria",
-  copyAsTemplate: "Copy as Template",
-  template: "Template",
-  download: "Download",
-  
-  // Dependencies
-  dependenciesDescription: "Visualize project dependencies and relationships",
-  searchDependenciesPlaceholder: "Search for projects, connections, or dependencies...",
-  projectDependencies: "Project Dependencies",
-  projectDependenciesDescription: "Interactive visualization of project relationships and dependencies",
-  goalDependencies: "Goal Dependencies",
-  goalDependenciesDescription: "Interactive visualization of how goals relate to projects and other goals",
-  noDependencies: "No dependencies to display",
-  noDependenciesFound: "No dependencies match your search criteria",
-  noDependenciesDescription: "Create relationships between projects to see them here",
-  exportGraph: "Export Graph",
-  connections: "Connections",
-  noDependencyConnections: "No connections to other projects",
-  selectNodeToViewDetails: "Select a node to view details",
-  legend: "Legend",
-  defaultNode: "Default Node",
-  hoverOverNodesTip: "Hover over nodes to see their connections",
-  noGoalDependencies: "No goal dependencies to display",
-  noGoalDependenciesDescription: "Create relationships between goals and projects to see them here",
-  searchGoalsDependenciesPlaceholder: "Search for goals, projects, or connections...",
-  strategicGoal: "Strategic Goal",
-  annualGoal: "Annual Goal",
-  supportsGoal: "Supports",
-  contributesTo: "Contributes to",
-  goalType: "Goal Type",
-  strategic: "Strategic",
-  annual: "Annual",
-  goalDetails: "Goal Details",
-  highPriority: "High Priority",
-  relationshipWeight: "Relationship Weight",
-  noGoalConnections: "No connections to other goals or projects",
-  contributesToProjects: "Contributes to Projects",
-  parentTo: "Parent to",
-  childOf: "Child of",
-  
-  // Analytics
-  analyticsDashboard: "Analytics Dashboard",
-  analyticsDescription: "Comprehensive view of project metrics, trends, and KPIs",
-  projectAnalytics: "Project Analytics",
-  taskAnalytics: "Task Analytics",
-  budgetAnalytics: "Budget Analytics",
-  thisWeek: "This Week",
-  thisMonth: "This Month",
-  thisQuarter: "This Quarter",
-  thisYear: "This Year",
-  export: "Export",
-  ofTotalProjects: "of total projects",
-  completedThisMonth: "completed this month",
-  needsAttention: "needs immediate attention",
-  spent: "spent",
-  total: "total",
-  projectStatusDistribution: "Project Status Distribution",
-  projectStatusDistributionDesc: "Distribution of projects by their current status",
-  departmentProjectDistribution: "Department Project Distribution",
-  departmentProjectDistributionDesc: "Number of projects by department",
-  projectCompletionTrend: "Project Completion Trend",
-  projectCompletionTrendDesc: "Monthly trend of project starts and completions",
-  taskCompletionRate: "Task Completion Rate",
-  taskCompletionRateDesc: "Weekly trend of tasks completed vs total tasks",
-  riskTrend: "Risk Trend",
-  riskTrendDesc: "Monthly distribution of risks by priority level",
-  budgetAllocationVsSpend: "Budget Allocation vs Spend",
-  budgetAllocationVsSpendDesc: "Monthly comparison of allocated budget and actual spend",
-  departmentBudgetAllocation: "Department Budget Allocation",
-  departmentBudgetAllocationDesc: "Budget distribution across departments",
-  
-  // Weekly Update Component
-  selected: "Selected",
-  selectForUpdate: "Select for update",
-  enterWeeklyUpdate: "Enter weekly update details...",
-  
-  // 404 page
-  page_not_found: "404 Page Not Found",
-  page_not_found_message: "Did you forget to add the page to the router?",
-
-  // Comments and Notifications
-  comments: "Comments",
-  noComments: "No comments yet",
-  writeComment: "Write a comment...",
-  postComment: "Post Comment",
-  posting: "Posting...",
-  commentAdded: "Comment Added",
-  commentAddedDescription: "Your comment has been posted successfully",
-  commentAddError: "Failed to add comment. Please try again.",
-  unknownUser: "Unknown User",
-  
-  // Task Dialog
-  taskNotFound: "Task not found",
-  noDescription: "No description provided",
-  assignedTo: "Assigned To",
-  createdBy: "Created By",
-  loading: "Loading...",
-  details: "Details",
-  
-  // Assignment Dialog
-  assignmentNotFound: "Assignment not found",
-  assignedBy: "Assigned By",
-  fromUser: "From",
-  
-  // Common UI Elements
-  close: "Close",
-  
-  // Status and Priority Labels
-  statusPending: "Pending",
-  statusInProgress: "In Progress",
-  statusCompleted: "Completed",
-  taskStatus_Pending: "Pending",
-  taskStatus_InProgress: "In Progress",
-  taskStatus_Completed: "Completed",
-  
-  // Delete Confirmations
-  deleteTaskTitle: "Delete Task",
-  deleteTaskConfirmation: "Are you sure you want to delete this task?",
-  deleteAssignmentTitle: "Delete Assignment",
-  deleteAssignmentConfirmation: "Are you sure you want to delete this assignment?",
+  critical: "Critical"
 };
 
 // Arabic translations
-const ar: Record<string, string> = {
+const arTranslations = {
   // Common
-  dashboard: "لوحة التحكم",
+  dashboard: "لوحة المعلومات",
   calendar: "التقويم",
   projects: "المشاريع",
   tasks: "المهام",
   goals: "الأهداف",
-  risksAndIssues: "المخاطر والمشكلات",
+  risksAndIssues: "المخاطر والمشاكل",
   assignments: "التكليفات",
   approvals: "الموافقات",
   dependencies: "الاعتماديات",
   repository: "المستودع المركزي",
-  departments: "الأقسام",
+  departments: "الإدارات",
   reports: "التقارير",
   analytics: "التحليلات",
   settings: "الإعدادات",
   userPermissions: "صلاحيات المستخدمين",
-  "Project Management System": "نظام إدارة المشاريع",
+  projectManagementSystem: "نظام إدارة المشاريع",
+  
+  // Status and States
+  statusPending: "قيد الانتظار",
+  statusInProgress: "قيد التنفيذ",
+  statusCompleted: "مكتمل",
+  taskStatus_Pending: "قيد الانتظار",
+  taskStatus_InProgress: "قيد التنفيذ",
+  taskStatus_Completed: "مكتمل",
+  returnedToProjectManager: "أُعيد إلى مدير المشروع",
+  returnedToSubPMO: "أُعيد إلى مكتب إدارة المشاريع الفرعي",
+  actionRequired: "يتطلب إجراء",
+  editRequest: "تعديل الطلب",
+  awaitingRevisions: "بانتظار المراجعات",
+  planning: "التخطيط",
+  inProgress: "قيد التنفيذ",
+  onHold: "معلق",
+  cancelled: "ملغي",
+  onTrack: "على المسار الصحيح",
+  reviewNeeded: "يحتاج إلى مراجعة",
+  completed: "مكتمل",
+  atRisk: "في خطر",
+  pendingApproval: "في انتظار الموافقة",
+  pendingApprovalStatus: "في انتظار الموافقة",
+  
+  // Priority Levels
+  priorityLow: "منخفض",
+  priorityMedium: "متوسط",
+  priorityHigh: "مرتفع",
+  priorityCritical: "حرج",
+  
+  // UI Components
+  close: "إغلاق",
+  loading: "جاري التحميل...",
+  details: "التفاصيل",
+  projectManager: "مدير المشروع",
+  subPMO: "مكتب إدارة المشاريع الفرعي",
+  assignedTo: "مُسند إلى",
+  createdBy: "أنشئ بواسطة",
+  assignedBy: "أُسند بواسطة",
+  fromUser: "من",
+  comments: "التعليقات",
+  cancel: "إلغاء",
+  create: "إنشاء",
+  edit: "تعديل",
+  delete: "حذف",
+  submit: "إرسال",
+  save: "حفظ",
+  selectDate: "اختر التاريخ",
+  selectDepartment: "اختر الإدارة",
+  selectManager: "اختر المدير",
+  selectPriority: "اختر الأولوية",
+  selectStatus: "اختر الحالة",
+  selectAssignee: "اختر المسؤول",
   
   // User
   login: "تسجيل الدخول",
@@ -397,18 +504,15 @@ const ar: Record<string, string> = {
   idCardUpload: "بطاقة الهوية",
   passportRequired: "جواز السفر مطلوب",
   idCardRequired: "بطاقة الهوية مطلوبة",
-  documentRequirementNote: "يرجى تحميل صور واضحة من مستنداتك الأصلية. يجب أن تكون الملفات أقل من 5 ميجابايت.",
-  dropFileHere: "ضع الملف هنا",
+  documentRequirementNote: "يرجى تحميل صور واضحة من المستندات الأصلية. يجب أن تكون الملفات أقل من 5 ميجابايت.",
+  dropFileHere: "أسقط الملف هنا",
   orClickToBrowse: "أو انقر للتصفح",
   removeFile: "إزالة",
   
   // Dashboard
   activeProjects: "المشاريع النشطة",
   allProjects: "جميع المشاريع",
-  projectsCompleted: "المكتملة",
-  completed: "مكتمل",
-  atRisk: "في خطر",
-  pendingApproval: "في انتظار الموافقة",
+  projectsCompleted: "مكتملة",
   viewAll: "عرض الكل",
   budgetOverview: "نظرة عامة على الميزانية",
   totalBudget: "إجمالي الميزانية",
@@ -418,558 +522,152 @@ const ar: Record<string, string> = {
   acrossAllActiveProjects: "عبر جميع المشاريع النشطة",
   ofTotalBudget: "من إجمالي الميزانية",
   potentialOverspend: "تجاوز محتمل للميزانية",
-  weeklyUpdateReminder: "تذكير التحديث الأسبوعي",
+  weeklyUpdateReminder: "تذكير بالتحديث الأسبوعي",
   submissionDue: "موعد التسليم",
   submitUpdate: "إرسال التحديث",
-  welcomeBack: "أهلاً بعودتك",
-  dashboardIntro: "تتبع محفظة مشاريعك، راقب التقدم، وحافظ على متابعة الموافقات.",
+  welcomeBack: "مرحبًا بعودتك",
+  dashboardIntro: "تتبع محفظة مشاريعك، وراقب التقدم، وابق على اطلاع بالموافقات.",
   allProjectsDescription: "عرض جميع المشاريع في النظام",
-  projectsInStatus: "المشاريع بحالة: {{status}}",
+  projectsInStatus: "المشاريع في حالة {{status}}",
   
-  // Projects
-  newProject: "مشروع جديد",
-  recentProjects: "المشاريع الحديثة",
-  project: "المشروع",
-  department: "القسم",
-  status: "الحالة",
-  progress: "التقدم",
-  dueIn: "مستحق في",
-  days: "أيام",
-  onTrack: "على المسار",
-  reviewNeeded: "بحاجة للمراجعة",
-  client: "العميل",
-  enterClientName: "أدخل اسم العميل",
+  // For Risks & Issues section
+  riskIssueType: "النوع",
+  selectRiskIssueType: "اختر النوع",
+  riskType: "خطر",
+  issueType: "مشكلة",
+  probabilityLevel: "احتمالية",
+  selectProbabilityLevel: "اختر الاحتمالية",
+  riskImpactLevel: "التأثير",
+  selectRiskImpactLevel: "اختر التأثير",
   
-  // Goals
-  newGoal: "هدف جديد",
-  strategicGoals: "هدف إستراتيجي",
-  annualGoals: "هدف سنوي",
-  departmentGoals: "هدف القسم",
-  noStrategicGoals: "لم يتم العثور على هدف إستراتيجي",
-  noAnnualGoals: "لم يتم العثور على هدف سنوي",
-  goalCreated: "هدف إنشاء",
-  goalCreatedDescription: "تم إنشاء الهدف بنجاح",
-  enterGoalTitle: "أدخل عنوان الهدف",
-  selectGoalType: "اختر نوع الهدف",
-  selectProjects: "اختر المشاريع المرتبطة",
-  selectGoals: "اختر الهدف المرتبط",
-  relatedProjects: "المشاريع المرتبطة",
-  relatedGoals: "الهدف المرتبط",
-  targetDate: "تاريخ الهدف",
-  selectDate: "اختر التاريخ",
-  weight: "الوزن",
-  goalWeight: "وزن الهدف",
-  projectWeight: "وزن المشروع",
-  isAnnual: "هدف سنوي",
-  isStrategic: "هدف إستراتيجي",
-  addRelatedProject: "إضافة مشروع مرتبط",
-  addRelatedGoal: "إضافة هدف مرتبط",
-  departmentGoalNote: "يمكن لمدير القسم إضافة أو تعديل هدف القسم فقط",
-  
-  // Approvals
-  pendingApprovals: "الموافقات المعلقة",
-  approve: "موافقة",
-  reject: "رفض",
-  budgetIncreaseRequest: "طلب زيادة الميزانية",
-  timelineExtension: "تمديد الجدول الزمني",
-  projectClosure: "إغلاق المشروع",
-  
-  // Statuses
-  statusPending: "معلق",
-  statusPlanning: "التخطيط",
-  inProgress: "قيد التنفيذ",
-  statusOnHold: "متوقف",
-  statusCompleted: "مكتمل",
-  
-  // Project details
-  editCost: "تعديل التكلفة",
-  details: "التفاصيل",
-  viewDetails: "عرض التفاصيل",
-  overview: "نظرة عامة",
-  weeklyUpdates: "التحديثات الأسبوعية",
-  changeRequests: "طلبات التغيير",
-  logs: "السجلات",
-  comments: "التعليقات",
-  projectManager: "مدير المشروع",
-  noProjectsFound: "لم يتم العثور على مشاريع",
-  
-  // Form fields
-  submit: "إرسال",
-  cancel: "إلغاء",
-  save: "حفظ",
-  search: "بحث",
-  
-  // Notifications
-  notificationsTitle: "الإشعارات",
-  markAsRead: "تحديد كمقروء",
-  markAllAsRead: "تحديد الكل كمقروء",
-  
-  // Errors
-  error: "خطأ",
-  somethingWentWrong: "حدث خطأ ما",
-  tryAgain: "يرجى المحاولة مرة أخرى",
-  
-  // User Permissions
-  userPermissionsManagement: "إدارة صلاحيات المستخدمين",
-  manageUserRolesAndPermissions: "إدارة أدوار المستخدمين والصلاحيات المخصصة",
-  editPermissions: "تعديل الصلاحيات",
-  searchUsers: "البحث عن المستخدمين بالاسم أو البريد الإلكتروني أو الدور...",
-  noUsersFound: "لم يتم العثور على مستخدمين",
-  noUsersMatchSearch: "لا يوجد مستخدمين يطابقون معايير البحث",
-  editUserPermissions: "تعديل صلاحيات المستخدم",
-  editingPermissionsFor: "تعديل صلاحيات المستخدم",
-  role: "الدور",
-  selectRole: "اختر دورًا",
-  useCustomPermissions: "استخدام صلاحيات مخصصة",
-  customPermissions: "صلاحيات مخصصة",
-  saveChanges: "حفظ التغييرات",
-  permissionsUpdated: "تم تحديث الصلاحيات",
-  userPermissionsUpdatedSuccessfully: "تم تحديث صلاحيات المستخدم بنجاح",
-  errorLoadingUsers: "خطأ في تحميل المستخدمين",
-  accessDenied: "تم رفض الوصول",
-  noPermissionToManageUsers: "ليس لديك صلاحية لإدارة المستخدمين",
-  
-  // User Roles
-  User: "مستخدم",
-  ProjectManager: "مدير مشروع",
-  SubPMO: "مكتب إدارة مشاريع فرعي",
-  MainPMO: "مكتب إدارة مشاريع رئيسي",
-  DepartmentDirector: "مدير قسم",
-  Executive: "تنفيذي",
-  Administrator: "مسؤول النظام",
-  
-  // Languages and theme
-  language: "اللغة",
-  english: "الإنجليزية",
-  arabic: "العربية",
-  darkMode: "الوضع الداكن",
-  lightMode: "الوضع الفاتح",
-  
-  // Budget
-  budget: "الميزانية",
-  cost: "التكلفة",
-  
-  // Date and time
-  date: "التاريخ",
-  time: "الوقت",
-  
-  // Assignments
-  newAssignment: "مهمة جديدة",
-  createNewAssignment: "إنشاء مهمة جديدة",
-  fillDetailsBelow: "أدخل التفاصيل أدناه",
-  assignmentName: "اسم المهمة",
-  enterAssignmentName: "أدخل اسم المهمة",
-  description: "الوصف",
-  enterDescription: "أدخل الوصف",
-  assignee: "المسؤل",
-  selectAssignee: "اختر المسؤل",
-  assignedToMe: "مسند إلي",
-  assignedByMe: "مسند بواسطتي",
-  assignedTo: "مسند إلى",
-  assignedBy: "مسند بواسطة",
-  priority: "الأولوية",
+  // Additional Arabic translations for UI consistency
+  todo: "للعمل",
+  review: "مراجعة",
   low: "منخفض",
   medium: "متوسط",
-  high: "عالي",
+  high: "مرتفع",
   critical: "حرج",
-  selectPriority: "اختر الأولوية",
-  deadline: "الموعد النهائي",
-  daysLeft: "يتبقى أيام",
-  daysOverdue: "يتأخر أيام",
-  dueToday: "مستحق اليوم",
-  loading: "جاري التحميل...",
-  createAssignment: "إنشاء المهمة",
-  creating: "جاري الإنشاء...",
-  searchAssignments: "البحث عن المهام...",
-  noCompletedAssignments: "لم تجد مهام مكتملة",
-  completedOn: "مكتمل في",
   
-  // Repository & Dependencies
-  repositoryDescription: "الوصول إلى المشاريع المكتملة والقوالب من المستودع المركزي",
-  projectTemplates: "قوالب المشاريع",
-  completedProjects: "المشاريع المكتملة",
-  searchRepositoryPlaceholder: "البحث عن المشاريع حسب الاسم أو القسم أو المالك...",
-  noCompletedProjects: "لا توجد مشاريع مكتملة",
-  noCompletedProjectsFound: "لا توجد مشاريع مكتملة تطابق بحثك",
-  noTemplates: "لا تتوفر قوالب للمشاريع",
-  noTemplatesFound: "لا توجد قوالب تطابق معايير البحث الخاصة بك",
-  copyAsTemplate: "نسخ كقالب",
-  template: "قالب",
-  download: "تنزيل",
+  // Reports
+  budgetAndCostReport: "تقرير الميزانية والتكلفة",
+  projectStatusReport: "تقرير حالة المشروع",
   
-  // Dependencies
-  dependenciesDescription: "تصور تبعيات المشروع والعلاقات",
-  searchDependenciesPlaceholder: "البحث عن المشاريع أو الاتصالات أو التبعيات...",
-  projectDependencies: "تبعيات المشروع",
-  projectDependenciesDescription: "تصور تفاعلي لعلاقات المشروع والتبعيات",
-  goalDependencies: "تبعيات الأهداف",
-  goalDependenciesDescription: "تصور تفاعلي لعلاقات الأهداف والمشاريع",
-  noDependencies: "لا توجد تبعيات للعرض",
-  noDependenciesFound: "لا توجد تبعيات تطابق معايير البحث الخاصة بك",
-  noDependenciesDescription: "قم بإنشاء علاقات بين المشاريع لرؤيتها هنا",
-  exportGraph: "تصدير الرسم البياني",
-  connections: "الاتصالات",
-  noDependencyConnections: "لا توجد اتصالات بمشاريع أخرى",
-  selectNodeToViewDetails: "حدد عقدة لعرض التفاصيل",
-  legend: "المفتاح",
-  defaultNode: "العقدة الافتراضية",
-  hoverOverNodesTip: "مرر مؤشر الماوس فوق العقد لرؤية اتصالاتها",
-  searchGoalsDependenciesPlaceholder: "البحث عن الأهداف أو المشاريع أو الاتصالات...",
-  strategicGoal: "هدف إستراتيجي",
-  annualGoal: "هدف سنوي",
-  supportsGoal: "يدعم",
-  contributesTo: "يساهم في",
-  goalType: "نوع الهدف",
-  strategic: "إستراتيجي",
-  annual: "سنوي",
-  goalDetails: "تفاصيل الهدف",
-  highPriority: "أولوية عالية",
-  relationshipWeight: "وزن العلاقة",
-  noGoalConnections: "لا توجد علاقات بين الأهداف والمشاريع",
-  contributesToProjects: "يساهم في المشاريع",
-  parentTo: "أبو",
-  childOf: "طفل",
-  
-  // Analytics
-  analyticsDashboard: "لوحة التحليلات",
-  analyticsDescription: "نظرة شاملة على مقاييس المشروع والاتجاهات ومؤشرات الأداء",
-  projectAnalytics: "تحليلات المشروع",
-  taskAnalytics: "تحليلات المهام",
-  budgetAnalytics: "تحليلات الميزانية",
-  thisWeek: "هذا الأسبوع",
-  thisMonth: "هذا الشهر",
-  thisQuarter: "هذا الربع",
-  thisYear: "هذا العام",
-  export: "تصدير",
-  ofTotalProjects: "من إجمالي المشاريع",
-  completedThisMonth: "اكتمل هذا الشهر",
-  needsAttention: "يحتاج إلى اهتمام فوري",
-  spent: "أنفق",
-  total: "الإجمالي",
-  projectStatusDistribution: "توزيع حالة المشروع",
-  projectStatusDistributionDesc: "توزيع المشاريع حسب حالتها الحالية",
-  departmentProjectDistribution: "توزيع مشاريع الأقسام",
-  departmentProjectDistributionDesc: "عدد المشاريع حسب القسم",
-  projectCompletionTrend: "اتجاه إكمال المشروع",
-  projectCompletionTrendDesc: "الاتجاه الشهري لبدء المشاريع واكمالها",
-  taskCompletionRate: "معدل إكمال المهام",
-  taskCompletionRateDesc: "الاتجاه الأسبوعي للمهام المكتملة مقابل إجمالي المهام",
-  riskTrend: "اتجاه المخاطر",
-  riskTrendDesc: "التوزيع الشهري للمخاطر حسب مستوى الأولوية",
-  budgetAllocationVsSpend: "تخصيص الميزانية مقابل الإنفاق",
-  budgetAllocationVsSpendDesc: "مقارنة شهرية للميزانية المخصصة والإنفاق الفعلي",
-  departmentBudgetAllocation: "تخصيص ميزانية القسم",
-  departmentBudgetAllocationDesc: "توزيع الميزانية عبر الأقسام",
-  
-  // Weekly Update Component
-  selected: "محدد",
-  selectForUpdate: "حدد للتحديث",
-  enterWeeklyUpdate: "أدخل تفاصيل التحديث الأسبوعي...",
-  
-  // 404 page
-  page_not_found: "404 الصفحة غير موجودة",
-  page_not_found_message: "هل نسيت إضافة الصفحة إلى جهاز التوجيه؟",
-
-  // Comments and Notifications
-  comments: "التعليقات",
-  noComments: "لا يوجد تعليقات حتى الآن",
-  writeComment: "اكتب تعليقًا...",
-  postComment: "نشر التعليق",
-  posting: "جاري النشر...",
-  commentAdded: "تمت إضافة التعليق",
-  commentAddedDescription: "تم نشر تعليقك بنجاح",
-  commentAddError: "فشل في إضافة التعليق. يرجى المحاولة مرة أخرى.",
-  unknownUser: "مستخدم غير معروف",
-  
-  // Task Dialog
-  taskNotFound: "المهمة غير موجودة",
-  noDescription: "لا يوجد وصف",
-  assignedTo: "مكلف إلى",
-  createdBy: "أنشئت بواسطة",
-  loading: "جاري التحميل...",
-  details: "التفاصيل",
+  // Project and Goal Common Fields
+  weight: "الوزن",
+  relatedProjects: "المشاريع ذات الصلة",
+  projectGoals: "أهداف المشروع",
+  linkProjectToGoals: "ربط هذا المشروع بالأهداف الاستراتيجية أو السنوية",
+  relatedGoal: "الهدف المرتبط",
+  addGoal: "إضافة هدف",
+  selectGoal: "اختر هدفًا",
+  linkToExistingProjects: "ربط هذا المشروع بالمشاريع الموجودة التي يعتمد عليها",
+  thisProjectDependsOn: "هذا المشروع يعتمد على",
+  selectRelatedProject: "اختر مشروعًا مرتبطًا",
+  addRelatedProject: "إضافة مشروع مرتبط",
+  projectsRelatedToThis: "المشاريع المرتبطة بهذا",
+  projectsThatDependOnThis: "المشاريع التي تعتمد على هذا المشروع",
+  projectThatDependsOnThis: "مشروع يعتمد على هذا",
+  selectProject: "اختر مشروعًا",
+  addRelatedToProject: "إضافة مشروع تابع",
   
   // Assignment Dialog
   assignmentNotFound: "التكليف غير موجود",
-  assignedBy: "تم التكليف بواسطة",
-  fromUser: "من",
   
-  // Common UI Elements
-  close: "إغلاق",
+  // Task Card
+  taskNotFound: "المهمة غير موجودة",
+  noDescription: "لا يوجد وصف",
+  unassigned: "غير معين",
+  overdue: "متأخر",
   
-  // Status and Priority Labels
-  statusPending: "قيد الانتظار",
-  statusInProgress: "قيد التنفيذ",
-  statusCompleted: "مكتمل",
-  taskStatus_Pending: "قيد الانتظار",
-  taskStatus_InProgress: "قيد التنفيذ",
-  taskStatus_Completed: "مكتمل",
-  
-  // Delete Confirmations
+  // Dialog Controls
   deleteTaskTitle: "حذف المهمة",
-  deleteTaskConfirmation: "هل أنت متأكد من رغبتك في حذف هذه المهمة؟",
+  deleteTaskConfirmation: "هل أنت متأكد أنك تريد حذف هذه المهمة؟",
   deleteAssignmentTitle: "حذف التكليف",
-  deleteAssignmentConfirmation: "هل أنت متأكد من رغبتك في حذف هذا التكليف؟",
+  deleteAssignmentConfirmation: "هل أنت متأكد أنك تريد حذف هذا التكليف؟",
+  
+  // Comment System
+  writeComment: "اكتب تعليقًا...",
+  posting: "جاري النشر...",
+  noComments: "لا توجد تعليقات",
+  unknownUser: "مستخدم غير معروف",
+  commentAddError: "فشل في إضافة التعليق"
 };
 
-// Add translations for reports
-const reportsTranslations = {
-  comingSoon: "Coming Soon",
-  timelineReportUnderDevelopment: "The Project Timeline report is under development and will be available soon.",
-  resourceReportUnderDevelopment: "The Resource Allocation report is under development and will be available soon.",
-  utilizationReportUnderDevelopment: "The Resource Utilization report is under development and will be available soon.",
-  riskReportUnderDevelopment: "The Risk Assessment report is under development and will be available soon.",
-  issueReportUnderDevelopment: "The Issue Tracking report is under development and will be available soon.",
-  
-  projectTimelineReport: "Project Timeline Report",
-  projectTimelineInDevelopment: "Track project timelines and milestones",
-  
-  resourceAllocationReport: "Resource Allocation Report",
-  resourceAllocationInDevelopment: "Analyze resource allocation across projects",
-  
-  resourceUtilizationReport: "Resource Utilization Report",
-  resourceUtilizationInDevelopment: "Track resource utilization efficiency",
-  
-  riskAssessmentReport: "Risk Assessment Report",
-  riskAssessmentInDevelopment: "Evaluate project risk levels",
-  
-  issueTrackingReport: "Issue Tracking Report",
-  issueTrackingInDevelopment: "Monitor and track project issues",
-  
-  // Budget and Cost Reports
-  plannedCosts: "Planned Costs",
-  actualCosts: "Actual Costs",
-  costVariance: "Cost Variance",
-  fromPlannedCosts: "From planned costs",
-  costsByCategory: "Costs by Category",
-  plannedVsActualCostsByCategory: "Comparison of planned vs actual costs by category",
-  category: "Category",
-  costTrends: "Cost Trends",
-  plannedVsActualCostTrends: "Historical trends of planned vs actual costs",
-  costBreakdown: "Cost Breakdown",
-  costBreakdownByCategory: "Distribution of costs by category",
-  planned: "Planned",
-  actual: "Actual",
-  toDate: "To date",
-  
-  // Forecast Reports
-  currentYearForecast: "Current Year Forecast",
-  nextYearForecast: "Next Year Forecast",
-  forecastChange: "Forecast Change",
-  yearOverYear: "Year over year",
-  varianceFromBudget: "Variance from Budget",
-  quarterlyFinancialForecast: "Quarterly Financial Forecast",
-  forecastVsActualByQuarter: "Comparison of forecasted vs actual figures by quarter",
-  forecastedRevenue: "Forecasted Revenue",
-  actualRevenue: "Actual Revenue",
-  forecastedCost: "Forecasted Cost",
-  actualCost: "Actual Cost",
-  projectForecasts: "Project Forecasts",
-  forecastsByProject: "Financial forecasts by project",
-  fiscalYear2023: "Fiscal Year 2023",
-  fiscalYear2024: "Fiscal Year 2024",
-  profitForecast: "Profit Forecast",
-  forecastedVsActualProfit: "Comparison of forecasted vs actual profit",
-  forecastedProfit: "Forecasted Profit",
-  actualProfit: "Actual Profit",
-  
-  // Project Status
-  totalProjects: "Total Projects",
-  activeProjects: "Active projects",
-  inProgress: "In Progress",
-  currentlyInProgress: "Currently in progress",
-  completed: "Completed",
-  successfullyCompleted: "Successfully completed",
-  delayed: "Delayed",
-  behindSchedule: "Behind schedule",
-  projectStatusDistribution: "Project Status Distribution",
-  projectsByStatus: "Distribution of projects by status",
-  riskDistribution: "Risk Distribution",
-  projectsByRiskLevel: "Distribution of projects by risk level",
-  projectsByDepartment: "Projects by Department",
-  departmentProjectStatus: "Status of projects in each department",
-  planning: "Planning",
-  projectsList: "Projects List",
-  detailedProjectInformation: "Detailed information for each project",
-  projectName: "Project Name",
-  riskLevel: "Risk Level",
-  progress: "Progress",
-  dueDate: "Due Date",
-  completion: "Completion",
-};
-
-// Merge with existing translations
-const enTranslations = {
-  // ... existing English translations ...
-  ...reportsTranslations,
-};
-
-// Add Arabic translations for reports
-const reportsTranslationsArabic = {
-  comingSoon: "قريبا",
-  timelineReportUnderDevelopment: "تقرير الجدول الزمني للمشروع قيد التطوير وسيكون متاحًا قريبًا.",
-  resourceReportUnderDevelopment: "تقرير تخصيص الموارد قيد التطوير وسيكون متاحًا قريبًا.",
-  utilizationReportUnderDevelopment: "تقرير استخدام الموارد قيد التطوير وسيكون متاحًا قريبًا.",
-  riskReportUnderDevelopment: "تقرير تقييم المخاطر قيد التطوير وسيكون متاحًا قريبًا.",
-  issueReportUnderDevelopment: "تقرير تتبع المشكلات قيد التطوير وسيكون متاحًا قريبًا.",
-  
-  projectTimelineReport: "تقرير الجدول الزمني للمشروع",
-  projectTimelineInDevelopment: "تتبع الجداول الزمنية للمشروع والمعالم الرئيسية",
-  
-  resourceAllocationReport: "تقرير تخصيص الموارد",
-  resourceAllocationInDevelopment: "تحليل تخصيص الموارد عبر المشاريع",
-  
-  resourceUtilizationReport: "تقرير استخدام الموارد",
-  resourceUtilizationInDevelopment: "تتبع كفاءة استخدام الموارد",
-  
-  riskAssessmentReport: "تقرير تقييم المخاطر",
-  riskAssessmentInDevelopment: "تقييم مستويات مخاطر المشروع",
-  
-  issueTrackingReport: "تقرير تتبع المشكلات",
-  issueTrackingInDevelopment: "مراقبة وتتبع مشكلات المشروع",
-  
-  // Budget and Cost Reports
-  plannedCosts: "التكاليف المخططة",
-  actualCosts: "التكاليف الفعلية",
-  costVariance: "تباين التكلفة",
-  fromPlannedCosts: "من التكاليف المخططة",
-  costsByCategory: "التكاليف حسب الفئة",
-  plannedVsActualCostsByCategory: "مقارنة التكاليف المخططة مقابل الفعلية حسب الفئة",
-  category: "الفئة",
-  costTrends: "اتجاهات التكلفة",
-  plannedVsActualCostTrends: "الاتجاهات التاريخية للتكاليف المخططة مقابل الفعلية",
-  costBreakdown: "تفصيل التكلفة",
-  costBreakdownByCategory: "توزيع التكاليف حسب الفئة",
-  planned: "مخطط",
-  actual: "فعلي",
-  toDate: "حتى الآن",
-  
-  // Forecast Reports
-  currentYearForecast: "توقعات العام الحالي",
-  nextYearForecast: "توقعات العام القادم",
-  forecastChange: "تغير التوقعات",
-  yearOverYear: "سنة بعد سنة",
-  varianceFromBudget: "التباين عن الميزانية",
-  quarterlyFinancialForecast: "التوقعات المالية الربعية",
-  forecastVsActualByQuarter: "مقارنة الأرقام المتوقعة مقابل الفعلية حسب الربع",
-  forecastedRevenue: "الإيرادات المتوقعة",
-  actualRevenue: "الإيرادات الفعلية",
-  forecastedCost: "التكلفة المتوقعة",
-  projectForecasts: "توقعات المشروع",
-  forecastsByProject: "التوقعات المالية حسب المشروع",
-  fiscalYear2023: "السنة المالية 2023",
-  fiscalYear2024: "السنة المالية 2024",
-  profitForecast: "توقعات الربح",
-  forecastedVsActualProfit: "مقارنة الربح المتوقع مقابل الفعلي",
-  forecastedProfit: "الربح المتوقع",
-  actualProfit: "الربح الفعلي",
-  
-  // Project Status
-  totalProjects: "إجمالي المشاريع",
-  activeProjects: "المشاريع النشطة",
-  inProgress: "قيد التنفيذ",
-  currentlyInProgress: "قيد التنفيذ حاليًا",
-  completed: "مكتمل",
-  successfullyCompleted: "اكتمل بنجاح",
-  delayed: "متأخر",
-  behindSchedule: "متأخر عن الجدول الزمني",
-  projectStatusDistribution: "توزيع حالة المشروع",
-  projectsByStatus: "توزيع المشاريع حسب الحالة",
-  riskDistribution: "توزيع المخاطر",
-  projectsByRiskLevel: "توزيع المشاريع حسب مستوى المخاطر",
-  projectsByDepartment: "المشاريع حسب القسم",
-  departmentProjectStatus: "حالة المشاريع في كل قسم",
-  planning: "التخطيط",
-  projectsList: "قائمة المشاريع",
-  detailedProjectInformation: "معلومات مفصلة لكل مشروع",
-  projectName: "اسم المشروع",
-  riskLevel: "مستوى المخاطر",
-  progress: "التقدم",
-  dueDate: "تاريخ الاستحقاق",
-  completion: "الإكمال",
-};
-
-// Merge with existing Arabic translations
-const arTranslations = {
-  // ... existing Arabic translations ...
-  ...reportsTranslationsArabic,
-};
-
+// Merge translations
 const translations: Translations = {
-  en,
-  ar,
+  en: enTranslations,
+  ar: arTranslations
 };
 
-type I18nContextType = {
+// Create the context
+const I18nContext = createContext<{
   language: string;
   setLanguage: (lang: string) => void;
   t: (key: string, params?: Record<string, string>) => string;
   isRtl: boolean;
-};
+}>({
+  language: 'en',
+  setLanguage: () => {},
+  t: (key) => key,
+  isRtl: false,
+});
 
-const I18nContext = createContext<I18nContextType | null>(null);
-
-// Named export for the provider
+// Provider component
 export function I18nProvider({ children }: { children: ReactNode }) {
-  const [language, setLanguage] = useState(() => {
-    // Try to load user's preferred language from localStorage
-    const savedLanguage = localStorage.getItem('language');
-    return savedLanguage || 'en'; // Default to English
-  });
+  const [language, setLanguage] = useState('en');
   
-  const isRtl = language === 'ar';
-
-  useEffect(() => {
-    // Set language direction
-    document.documentElement.setAttribute('dir', isRtl ? 'rtl' : 'ltr');
-    document.documentElement.setAttribute('lang', language);
-    
-    // Save language preference
-    localStorage.setItem('language', language);
-  }, [language, isRtl]);
-
-  const t = (key: string, params?: Record<string, string>): string => {
-    if (!translations[language]) {
-      return key; // Fallback to key if language not found
-    }
-    
-    let text = '';
-    if (!translations[language][key]) {
-      // If key not found in current language, check English
-      if (language !== 'en' && translations['en'] && translations['en'][key]) {
-        text = translations['en'][key];
+  // Change language
+  const changeLanguage = (lang: string) => {
+    if (translations[lang]) {
+      setLanguage(lang);
+      // Store language preference
+      localStorage.setItem('language', lang);
+      
+      // Update document direction for RTL languages
+      if (lang === 'ar') {
+        document.documentElement.setAttribute('dir', 'rtl');
       } else {
-        return key; // Fallback to key if translation not found
+        document.documentElement.setAttribute('dir', 'ltr');
       }
-    } else {
-      text = translations[language][key];
     }
+  };
+  
+  // Get translation
+  const t = (key: string, params?: Record<string, string>): string => {
+    const translation = translations[language]?.[key] || key;
     
-    // Handle parameter substitution
     if (params) {
-      Object.keys(params).forEach(param => {
-        text = text.replace(`{{${param}}}`, params[param]);
-      });
+      return Object.keys(params).reduce((acc, paramKey) => {
+        const placeholder = `{{${paramKey}}}`;
+        const value = params[paramKey];
+        return acc.replace(placeholder, value);
+      }, translation);
     }
     
-    return text;
+    return translation;
   };
-
-  const context = {
-    language,
-    setLanguage,
-    t,
-    isRtl
-  };
-
+  
+  // Initialize language from localStorage
+  useEffect(() => {
+    const savedLanguage = localStorage.getItem('language') || 'en';
+    changeLanguage(savedLanguage);
+  }, []);
+  
   return (
-    <I18nContext.Provider value={context}>
+    <I18nContext.Provider 
+      value={{ 
+        language, 
+        setLanguage: changeLanguage, 
+        t,
+        isRtl: language === 'ar' 
+      }}
+    >
       {children}
     </I18nContext.Provider>
   );
 }
 
-// Separate named export for the hook
+// Custom hook for using i18n
 export function useI18n() {
   const context = useContext(I18nContext);
   if (!context) {

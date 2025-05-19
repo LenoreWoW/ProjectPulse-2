@@ -23,13 +23,50 @@ import {
   LineChart,
   ShieldCheck,
   Plus,
+  Moon,
+  Sun,
+  LogOut,
 } from "lucide-react";
+import { 
+  DropdownMenu, 
+  DropdownMenuContent, 
+  DropdownMenuItem, 
+  DropdownMenuLabel, 
+  DropdownMenuSeparator, 
+  DropdownMenuTrigger 
+} from "@/components/ui/dropdown-menu";
+import { Button } from "@/components/ui/button";
 
 export function Sidebar() {
   const [location] = useLocation();
-  const { t, isRtl } = useI18n();
-  const { user } = useAuth();
+  const { t, language, setLanguage, isRtl } = useI18n();
+  const { user, logoutMutation } = useAuth();
   const [collapsed, setCollapsed] = useState(false);
+  const [darkMode, setDarkMode] = useState(() => 
+    document.documentElement.classList.contains("dark")
+  );
+
+  const toggleDarkMode = () => {
+    const isDark = !darkMode;
+    setDarkMode(isDark);
+    
+    if (isDark) {
+      document.documentElement.classList.add("dark");
+      localStorage.setItem("theme", "dark");
+    } else {
+      document.documentElement.classList.remove("dark");
+      localStorage.setItem("theme", "light");
+    }
+  };
+
+  const toggleLanguage = () => {
+    const newLanguage = language === "en" ? "ar" : "en";
+    setLanguage(newLanguage);
+  };
+
+  const handleLogout = () => {
+    logoutMutation.mutate();
+  };
 
   // Navigation rendering logic defined below directly with PermissionGate controls
 
@@ -113,16 +150,76 @@ export function Sidebar() {
       </nav>
 
       {!collapsed && (
-        <div className="p-4 border-t border-maroon-700 dark:border-maroon-800">
-          <div className="flex items-center">
-            <div className="w-8 h-8 rounded-full bg-maroon-600 text-white flex items-center justify-center font-bold">
-              {user?.name?.charAt(0).toUpperCase() || "U"}
-            </div>
-            <div className={`${isRtl ? 'mr-3' : 'ml-3'}`}>
-              <p className="text-sm font-medium text-white">{user?.name}</p>
-              <p className="text-xs text-gray-300 dark:text-gray-400">{user?.role}</p>
-            </div>
-          </div>
+        <div className="p-2 border-t border-maroon-700 dark:border-maroon-800">
+          {/* Discord-style user settings */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button className="w-full text-start flex items-center p-2 rounded-lg hover:bg-maroon-700 dark:hover:bg-maroon-800 transition-colors duration-200 cursor-pointer">
+                <div className="w-8 h-8 rounded-full bg-maroon-600 text-white flex items-center justify-center font-bold">
+                  {user?.name?.charAt(0).toUpperCase() || "U"}
+                </div>
+                <div className={`${isRtl ? 'mr-3' : 'ml-3'} flex-1`}>
+                  <p className="text-sm font-medium text-white">{user?.name}</p>
+                  <p className="text-xs text-gray-300 dark:text-gray-400">{user?.role}</p>
+                </div>
+                <div className="flex space-x-1 rtl:space-x-reverse">
+                  {darkMode ? (
+                    <Sun className="h-4 w-4 text-gray-300" />
+                  ) : (
+                    <Moon className="h-4 w-4 text-gray-300" />
+                  )}
+                  <span className="text-xs font-bold text-gray-300">
+                    {language === "en" ? "EN" : "AR"}
+                  </span>
+                </div>
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align={isRtl ? "end" : "start"} side="top" className="w-56 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100">
+              <DropdownMenuLabel className="pb-2 border-b">{user?.name}</DropdownMenuLabel>
+              
+              {/* User Settings Section */}
+              <div className="py-1 px-1">
+                <DropdownMenuItem 
+                  className="flex items-center justify-between cursor-pointer rounded-md my-1 px-2 py-2 hover:bg-maroon-50 dark:hover:bg-maroon-900/20"
+                  onClick={toggleDarkMode}
+                >
+                  <div className="flex items-center gap-2">
+                    {darkMode ? (
+                      <Sun className="h-4 w-4 text-maroon-600 dark:text-maroon-300" />
+                    ) : (
+                      <Moon className="h-4 w-4 text-maroon-600 dark:text-maroon-300" />
+                    )}
+                    <span>{darkMode ? t("lightMode") : t("darkMode")}</span>
+                  </div>
+                </DropdownMenuItem>
+                
+                <DropdownMenuItem 
+                  className="flex items-center justify-between cursor-pointer rounded-md my-1 px-2 py-2 hover:bg-maroon-50 dark:hover:bg-maroon-900/20"
+                  onClick={toggleLanguage}
+                >
+                  <div className="flex items-center gap-2">
+                    <span className="w-4 h-4 flex items-center justify-center font-bold text-xs text-maroon-600 dark:text-maroon-300">
+                      {language === "en" ? "AR" : "EN"}
+                    </span>
+                    <span>{language === "en" ? t("arabicLanguage") : t("englishLanguage")}</span>
+                  </div>
+                </DropdownMenuItem>
+              </div>
+              
+              <DropdownMenuSeparator />
+              
+              {/* User Actions */}
+              <div className="py-1 px-1">
+                <DropdownMenuItem 
+                  className="flex items-center cursor-pointer rounded-md my-1 px-2 py-2 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20"
+                  onClick={handleLogout}
+                >
+                  <LogOut className="mr-2 h-4 w-4" />
+                  <span>{t("logout")}</span>
+                </DropdownMenuItem>
+              </div>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       )}
     </aside>

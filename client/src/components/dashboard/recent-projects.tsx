@@ -1,4 +1,4 @@
-import { useI18n } from "@/hooks/use-i18n";
+import { useI18n } from "@/hooks/use-i18n-new";
 import { useQuery } from "@tanstack/react-query";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Project } from "@shared/schema";

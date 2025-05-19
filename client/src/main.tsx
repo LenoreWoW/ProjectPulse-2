@@ -1,7 +1,6 @@
 import { createRoot } from "react-dom/client";
 import App from "./App";
 import "./index.css";
-import { I18nProvider } from "@/hooks/use-i18n";
 import { AuthProvider } from "@/hooks/use-auth";
 import { ThemeProvider } from "next-themes";
 import { QueryClientProvider } from "@tanstack/react-query";
@@ -15,6 +14,7 @@ if (savedTheme === 'dark' || (!savedTheme && prefersDark)) {
 }
 
 // Apply RTL from saved language preference
+// Note: This is now handled entirely by the I18nProvider in App.tsx
 const savedLanguage = localStorage.getItem('language');
 if (savedLanguage === 'ar') {
   document.documentElement.setAttribute('dir', 'rtl');
@@ -24,11 +24,9 @@ if (savedLanguage === 'ar') {
 createRoot(document.getElementById("root")!).render(
   <QueryClientProvider client={queryClient}>
     <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-      <I18nProvider>
-        <AuthProvider>
-          <App />
-        </AuthProvider>
-      </I18nProvider>
+      <AuthProvider>
+        <App />
+      </AuthProvider>
     </ThemeProvider>
   </QueryClientProvider>
 );

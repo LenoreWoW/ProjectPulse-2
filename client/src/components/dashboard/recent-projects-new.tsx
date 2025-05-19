@@ -1,4 +1,4 @@
-import { useI18n } from "@/hooks/use-i18n";
+import { useI18n } from "@/hooks/use-i18n-new";
 import { useQuery } from "@tanstack/react-query";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Project } from "@shared/schema";
@@ -14,6 +14,16 @@ import {
   Building
 } from "lucide-react";
 
+// Extended Project interface with additional properties
+interface ExtendedProject extends Project {
+  totalTasks?: number;
+  completedTasks?: number;
+  type?: string;
+  department?: {
+    name: string;
+  };
+}
+
 interface RecentProjectsProps {
   className?: string;
 }
@@ -21,7 +31,7 @@ interface RecentProjectsProps {
 export function RecentProjects({ className = "" }: RecentProjectsProps) {
   const { t, isRtl } = useI18n();
   
-  const { data: projects, isLoading, error } = useQuery<Project[]>({
+  const { data: projects, isLoading, error } = useQuery<ExtendedProject[]>({
     queryKey: ["/api/projects"],
   });
   
@@ -76,8 +86,8 @@ export function RecentProjects({ className = "" }: RecentProjectsProps) {
   };
   
   // Get days until deadline
-  const getDaysUntilDeadline = (deadline: string) => {
-    const deadlineDate = new Date(deadline);
+  const getDaysUntilDeadline = (deadline: string | Date) => {
+    const deadlineDate = deadline instanceof Date ? deadline : new Date(deadline);
     const today = new Date();
     
     // Reset both dates to just the date part, no time
@@ -99,7 +109,7 @@ export function RecentProjects({ className = "" }: RecentProjectsProps) {
   };
   
   // Get project icon based on type
-  const getProjectIcon = (project: Project) => {
+  const getProjectIcon = (project: ExtendedProject) => {
     switch (project.type?.toLowerCase()) {
       case 'security':
         return <Shield className="h-5 w-5" />;
@@ -113,7 +123,7 @@ export function RecentProjects({ className = "" }: RecentProjectsProps) {
   };
   
   // Calculate progress percentage
-  const getProgress = (project: Project) => {
+  const getProgress = (project: ExtendedProject) => {
     if (!project.totalTasks || project.totalTasks === 0) return 0;
     return Math.round((project.completedTasks || 0) / project.totalTasks * 100);
   };
@@ -225,8 +235,8 @@ export function RecentProjects({ className = "" }: RecentProjectsProps) {
                         </div>
                       </div>
                     </div>
-                    <span className={`px-2.5 py-1 text-xs font-medium rounded-lg ${getStatusClasses(project.status)}`}>
-                      {formatStatus(project.status)}
+                    <span className={`px-2.5 py-1 text-xs font-medium rounded-lg ${getStatusClasses(project.status || '')}`}>
+                      {formatStatus(project.status || '')}
                     </span>
                   </div>
                   

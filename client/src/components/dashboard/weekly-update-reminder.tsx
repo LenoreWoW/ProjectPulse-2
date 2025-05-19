@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { useI18n } from '@/hooks/use-i18n';
+import { useI18n } from '@/hooks/use-i18n-new';
 import { useAuth } from '@/hooks/use-auth';
 import { format, startOfWeek, addDays } from 'date-fns';
 import { 

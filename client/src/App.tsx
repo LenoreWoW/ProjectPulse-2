@@ -37,6 +37,7 @@ import ResourceAllocationReportPage from "@/pages/reports/resource-allocation-pa
 import ResourceUtilizationReportPage from "@/pages/reports/resource-utilization-page";
 import RiskAssessmentReportPage from "@/pages/reports/risk-assessment-page";
 import IssueTrackingReportPage from "@/pages/reports/issue-tracking-page";
+import CustomAnalyticsPage from "@/pages/reports/custom-analytics-page";
 import RepositoryPage from "@/pages/repository-page";
 import DependenciesPage from "@/pages/dependencies-page";
 import AnalyticsDashboardPage from "@/pages/analytics-dashboard";
@@ -44,6 +45,7 @@ import UserPermissionsPage from "@/pages/user-permissions-page";
 import { ThemeProvider } from "@/providers/theme-provider";
 import { I18nProvider } from "@/hooks/use-i18n-new";
 import LoginHelper from "@/login-helper";
+import LoginReminder from "@/components/login-reminder";
 
 function Router() {
   return (
@@ -153,6 +155,11 @@ function Router() {
         requiredPermissions={["canViewReports"]}
       />
       <ProtectedRoute 
+        path="/reports/custom-analytics" 
+        component={CustomAnalyticsPage} 
+        requiredPermissions={["canViewReports"]}
+      />
+      <ProtectedRoute 
         path="/reports/analytics" 
         component={AnalyticsDashboardPage} 
         requiredPermissions={["canViewAnalytics"]}
@@ -212,6 +219,7 @@ function App() {
           </AppLayout>
           <Toaster />
           <LoginHelper />
+          <LoginReminder />
         </TooltipProvider>
       </I18nProvider>
     </ThemeProvider>

@@ -40,6 +40,9 @@ import {
   ArrowRightLeft,
   Users
 } from "lucide-react";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 
 export default function ApprovalsPage() {
   const { t } = useI18n();
@@ -49,6 +52,8 @@ export default function ApprovalsPage() {
   const [selectedRequest, setSelectedRequest] = useState<ChangeRequest | null>(null);
   const [isApproveDialogOpen, setIsApproveDialogOpen] = useState(false);
   const [isRejectDialogOpen, setIsRejectDialogOpen] = useState(false);
+  const [rejectionReason, setRejectionReason] = useState('');
+  const [rejectionTarget, setRejectionTarget] = useState<'ProjectManager' | 'SubPMO'>('ProjectManager');
   
   // Fetch pending change requests
   const { 
@@ -61,8 +66,25 @@ export default function ApprovalsPage() {
   
   // Handle approve/reject
   const approveMutation = useMutation({
-    mutationFn: async ({ id, status }: { id: number, status: 'Approved' | 'Rejected' }) => {
-      const res = await apiRequest("PUT", `/api/change-requests/${id}`, { status });
+    mutationFn: async ({ 
+      id, 
+      status, 
+      rejectionReason, 
+      returnTo 
+    }: { 
+      id: number, 
+      status: 'Approved' | 'Rejected' | 'PendingMainPMO', 
+      rejectionReason?: string,
+      returnTo?: 'ProjectManager' | 'SubPMO'
+    }) => {
+      const payload: any = { status };
+      
+      if (status === 'Rejected') {
+        payload.rejectionReason = rejectionReason;
+        payload.returnTo = returnTo;
+      }
+      
+      const res = await apiRequest("PUT", `/api/change-requests/${id}`, payload);
       return await res.json();
     },
     onSuccess: () => {
@@ -122,12 +144,68 @@ export default function ApprovalsPage() {
           icon: <Users className="h-5 w-5" />,
           bgClass: 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-300'
         };
+      case 'Faculty':
+        return {
+          label: t('facultyChange'),
+          icon: <Users className="h-5 w-5" />,
+          bgClass: 'bg-teal-100 text-teal-800 dark:bg-teal-900/30 dark:text-teal-300'
+        };
       default:
         return {
           label: type,
           icon: <FileText className="h-5 w-5" />,
           bgClass: 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
         };
+    }
+  };
+  
+  // Get status badge based on request status
+  const getStatusBadge = (status: string | null) => {
+    if (!status) return null;
+    
+    switch (status) {
+      case 'Pending':
+        return (
+          <span className="px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300">
+            {t("pending")}
+          </span>
+        );
+      case 'PendingMainPMO':
+        return (
+          <span className="px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300">
+            {t("pendingMainPMO")}
+          </span>
+        );
+      case 'Approved':
+        return (
+          <span className="px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300">
+            {t("approved")}
+          </span>
+        );
+      case 'Rejected':
+        return (
+          <span className="px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300">
+            {t("rejected")}
+          </span>
+        );
+      case 'ReturnedToProjectManager':
+        return (
+          <span className="px-2 py-1 rounded-full text-xs font-medium bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300">
+            {t("returnedToProjectManager")}
+          </span>
+        );
+      case 'ReturnedToSubPMO':
+        return (
+          <span className="px-2 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300">
+            {t("returnedToSubPMO")}
+          </span>
+        );
+      default:
+        return (
+          <span className="px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300">
+            {status}
+          </span>
+        );
     }
   };
   
@@ -168,7 +246,33 @@ export default function ApprovalsPage() {
   // Handle request rejection
   const handleReject = (request: ChangeRequest) => {
     setSelectedRequest(request);
+    setRejectionReason('');
+    setRejectionTarget('ProjectManager'); // Default to Project Manager
     setIsRejectDialogOpen(true);
+  };
+  
+  // Handle reject confirmation
+  const handleRejectConfirm = () => {
+    if (!rejectionReason.trim()) {
+      toast({
+        title: t("rejectionReasonRequired"),
+        description: t("pleaseProvideRejectionReason"),
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (selectedRequest) {
+      // For SubPMO users, always return to Project Manager
+      const targetUser = user?.role === 'MainPMO' ? rejectionTarget : 'ProjectManager';
+      
+      approveMutation.mutate({ 
+        id: selectedRequest.id, 
+        status: 'Rejected',
+        rejectionReason: rejectionReason,
+        returnTo: targetUser
+      });
+    }
   };
   
   return (
@@ -244,17 +348,35 @@ export default function ApprovalsPage() {
                   {pendingRequests.map((request) => {
                     const { label, icon, bgClass } = getTypeInfo(request.type);
                     
+                    // Show rejection reason for returned requests
+                    const showRejectionReason = request.status === 'ReturnedToProjectManager' || 
+                                                request.status === 'ReturnedToSubPMO';
+                    
+                    // Check if this returned request requires action from current user
+                    const requiresUserAction = 
+                      (request.status === 'ReturnedToProjectManager' && 
+                       request.requestedByUserId === user?.id) || 
+                      (request.status === 'ReturnedToSubPMO' && 
+                       user?.role === 'SubPMO');
+                    
                     return (
-                      <Card key={request.id} className="hover:border-maroon-200 dark:hover:border-maroon-800 transition-all">
+                      <Card 
+                        key={request.id} 
+                        className={`hover:border-maroon-200 dark:hover:border-maroon-800 transition-all
+                          ${requiresUserAction ? 'border-l-4 border-l-orange-500' : ''}`}
+                      >
                         <CardHeader>
                           <div className="flex justify-between items-start">
                             <CardTitle className="text-xl flex items-center">
                               Project ID: {request.projectId}
                             </CardTitle>
-                            <span className={`flex items-center px-3 py-1 rounded-full text-sm ${bgClass}`}>
-                              {icon}
-                              <span className="ml-1">{label}</span>
-                            </span>
+                            <div className="flex gap-2 items-center">
+                              {getStatusBadge(request.status)}
+                              <span className={`flex items-center px-3 py-1 rounded-full text-sm ${bgClass}`}>
+                                {icon}
+                                <span className="ml-1">{label}</span>
+                              </span>
+                            </div>
                           </div>
                           <CardDescription>
                             {t("requestType")}: {request.type}
@@ -266,6 +388,19 @@ export default function ApprovalsPage() {
                               {request.details}
                             </p>
                           </div>
+                          
+                          {/* Show rejection reason if available */}
+                          {showRejectionReason && request.rejectionReason && (
+                            <div className="bg-red-50 dark:bg-red-900/20 p-4 rounded-lg mb-4 border border-red-200 dark:border-red-800">
+                              <h4 className="font-medium text-red-800 dark:text-red-300 mb-1">
+                                {t("rejectionReason")}:
+                              </h4>
+                              <p className="text-red-700 dark:text-red-400">
+                                {request.rejectionReason}
+                              </p>
+                            </div>
+                          )}
+                          
                           <div className="flex justify-between text-sm text-gray-500 dark:text-gray-400">
                             <div className="flex items-center">
                               <User className="h-4 w-4 mr-1" />
@@ -278,26 +413,48 @@ export default function ApprovalsPage() {
                           </div>
                         </CardContent>
                         <CardFooter className="flex justify-between border-t pt-3">
-                          <span className="text-xs text-maroon-700 dark:text-maroon-400">
-                            {t("awaitingYourDecision")}
-                          </span>
-                          <div className="space-x-2">
-                            <Button 
-                              className="bg-qatar-maroon hover:bg-maroon-800 text-white"
-                              onClick={() => handleApprove(request)}
-                            >
-                              <Check className="mr-2 h-4 w-4" />
-                              {t("approve")}
-                            </Button>
-                            <Button 
-                              variant="outline" 
-                              className="text-red-600 border-red-300 hover:bg-red-50 dark:border-red-700 dark:hover:bg-red-950"
-                              onClick={() => handleReject(request)}
-                            >
-                              <X className="mr-2 h-4 w-4" />
-                              {t("reject")}
-                            </Button>
-                          </div>
+                          {/* Show different button sets based on request status */}
+                          {(request.status === 'Pending' || request.status === 'PendingMainPMO') ? (
+                            <>
+                              <span className="text-xs text-maroon-700 dark:text-maroon-400">
+                                {t("awaitingYourDecision")}
+                              </span>
+                              <div className="space-x-2">
+                                <Button 
+                                  className="bg-qatar-maroon hover:bg-maroon-800 text-white"
+                                  onClick={() => handleApprove(request)}
+                                >
+                                  <Check className="mr-2 h-4 w-4" />
+                                  {t("approve")}
+                                </Button>
+                                <Button 
+                                  variant="outline" 
+                                  className="text-red-600 border-red-300 hover:bg-red-50 dark:border-red-700 dark:hover:bg-red-950"
+                                  onClick={() => handleReject(request)}
+                                >
+                                  <X className="mr-2 h-4 w-4" />
+                                  {t("reject")}
+                                </Button>
+                              </div>
+                            </>
+                          ) : requiresUserAction ? (
+                            <>
+                              <span className="text-xs text-orange-700 dark:text-orange-400">
+                                {t("actionRequired")}
+                              </span>
+                              <Button 
+                                className="bg-blue-600 hover:bg-blue-700 text-white"
+                                onClick={() => window.location.href = `/projects/${request.projectId}?tab=change-requests&edit=${request.id}`}
+                              >
+                                <FileText className="mr-2 h-4 w-4" />
+                                {t("editRequest")}
+                              </Button>
+                            </>
+                          ) : (
+                            <span className="text-xs text-gray-500 dark:text-gray-400 w-full text-center">
+                              {t("awaitingRevisions")}
+                            </span>
+                          )}
                         </CardFooter>
                       </Card>
                     );
@@ -331,13 +488,46 @@ export default function ApprovalsPage() {
                   {getTypeInfo(selectedRequest.type).label}
                 </span>
               )}
+              {selectedRequest && (
+                <div className="mt-2 text-sm">
+                  {selectedRequest.type === 'Faculty' ? (
+                    <p className="italic text-green-600 dark:text-green-400">
+                      Faculty change requests only require SubPMO approval. Once approved, the changes will be implemented immediately.
+                    </p>
+                  ) : user?.role === 'SubPMO' ? (
+                    <p className="italic text-blue-600 dark:text-blue-400">
+                      Your approval will send this request to Main PMO for final approval.
+                    </p>
+                  ) : (
+                    <p className="italic text-maroon-600 dark:text-maroon-400">
+                      Your approval will implement the requested changes immediately.
+                    </p>
+                  )}
+                </div>
+              )}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>{t("cancel")}</AlertDialogCancel>
             <AlertDialogAction
               className="bg-qatar-maroon hover:bg-maroon-800 text-white"
-              onClick={() => selectedRequest && approveMutation.mutate({ id: selectedRequest.id, status: 'Approved' })}
+              onClick={() => {
+                if (selectedRequest) {
+                  // For Faculty changes, directly approve with no pending state
+                  let newStatus: 'Approved' | 'Rejected' | 'PendingMainPMO' = 'Approved';
+                  
+                  // For non-Faculty change requests, SubPMO approval sets status to PendingMainPMO
+                  if (selectedRequest.type !== 'Faculty' && 
+                      user?.role === 'SubPMO') {
+                    newStatus = 'PendingMainPMO';
+                  }
+                  
+                  approveMutation.mutate({ 
+                    id: selectedRequest.id, 
+                    status: newStatus 
+                  });
+                }
+              }}
             >
               {approveMutation.isPending ? (
                 <Clock className="mr-2 h-4 w-4 animate-spin" />
@@ -352,7 +542,7 @@ export default function ApprovalsPage() {
       
       {/* Reject Dialog */}
       <AlertDialog open={isRejectDialogOpen} onOpenChange={setIsRejectDialogOpen}>
-        <AlertDialogContent>
+        <AlertDialogContent className="max-w-md">
           <AlertDialogHeader>
             <AlertDialogTitle className="text-red-700 dark:text-red-400">{t("confirmRejection")}</AlertDialogTitle>
             <AlertDialogDescription>
@@ -364,11 +554,68 @@ export default function ApprovalsPage() {
               )}
             </AlertDialogDescription>
           </AlertDialogHeader>
+          
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="rejectionReason" className="text-red-700 dark:text-red-400">
+                {t("rejectionReason")} <span className="text-red-500">*</span>
+              </Label>
+              <Textarea 
+                id="rejectionReason"
+                value={rejectionReason}
+                onChange={(e) => setRejectionReason(e.target.value)}
+                placeholder={t("enterRejectionReason")}
+                className="resize-none h-24"
+              />
+              {rejectionReason.trim() === '' && (
+                <p className="text-xs text-red-500">{t("rejectionReasonRequired")}</p>
+              )}
+            </div>
+            
+            {/* Only show return to options for MainPMO */}
+            {user?.role === 'MainPMO' && (
+              <div className="space-y-2">
+                <Label htmlFor="returnTo" className="text-gray-700 dark:text-gray-300">
+                  {t("returnRequestTo")}
+                </Label>
+                <RadioGroup 
+                  value={rejectionTarget} 
+                  onValueChange={(value) => setRejectionTarget(value as 'ProjectManager' | 'SubPMO')}
+                  className="flex flex-col space-y-1"
+                >
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="ProjectManager" id="projectManager" />
+                    <Label htmlFor="projectManager" className="font-normal">
+                      {t("projectManager")}
+                    </Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="SubPMO" id="subPmo" />
+                    <Label htmlFor="subPmo" className="font-normal">
+                      {t("subPMO")}
+                    </Label>
+                  </div>
+                </RadioGroup>
+                <p className="text-xs text-gray-500 dark:text-gray-400">
+                  {rejectionTarget === 'ProjectManager' 
+                    ? t("returnToProjectManagerHint") 
+                    : t("returnToSubPMOHint")}
+                </p>
+              </div>
+            )}
+            
+            {user?.role === 'SubPMO' && (
+              <div className="mt-2 text-xs italic text-blue-600 dark:text-blue-400">
+                {t("subPMORejectHint")}
+              </div>
+            )}
+          </div>
+          
           <AlertDialogFooter>
             <AlertDialogCancel>{t("cancel")}</AlertDialogCancel>
             <AlertDialogAction
               className="bg-red-600 hover:bg-red-700 text-white"
-              onClick={() => selectedRequest && approveMutation.mutate({ id: selectedRequest.id, status: 'Rejected' })}
+              onClick={handleRejectConfirm}
             >
               {approveMutation.isPending ? (
                 <Clock className="mr-2 h-4 w-4 animate-spin" />

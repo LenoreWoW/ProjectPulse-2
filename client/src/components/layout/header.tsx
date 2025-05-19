@@ -4,11 +4,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { 
   Search, 
   Menu, 
-  Moon, 
-  Sun, 
-  Bell, 
-  User,
-  LogOut
+  Bell
 } from "lucide-react";
 import { 
   DropdownMenu, 
@@ -26,33 +22,8 @@ interface HeaderProps {
 }
 
 export function Header({ onMobileMenuToggle }: HeaderProps) {
-  const { t, language, setLanguage, isRtl } = useI18n();
-  const { user, logoutMutation } = useAuth();
-  const [darkMode, setDarkMode] = useState(() => 
-    document.documentElement.classList.contains("dark")
-  );
-
-  const toggleDarkMode = () => {
-    const isDark = !darkMode;
-    setDarkMode(isDark);
-    
-    if (isDark) {
-      document.documentElement.classList.add("dark");
-      localStorage.setItem("theme", "dark");
-    } else {
-      document.documentElement.classList.remove("dark");
-      localStorage.setItem("theme", "light");
-    }
-  };
-
-  const toggleLanguage = () => {
-    const newLanguage = language === "en" ? "ar" : "en";
-    setLanguage(newLanguage);
-  };
-
-  const handleLogout = () => {
-    logoutMutation.mutate();
-  };
+  const { t, isRtl } = useI18n();
+  const { user } = useAuth();
 
   return (
     <header className="bg-qatar-maroon dark:bg-qatar-maroon shadow-md z-10 border-b border-maroon-700 dark:border-maroon-800">
@@ -77,7 +48,7 @@ export function Header({ onMobileMenuToggle }: HeaderProps) {
           </div>
         </div>
 
-        <div className="flex items-center space-x-4 rtl:space-x-reverse">
+        <div className="flex items-center">
           {/* Notifications */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -99,67 +70,6 @@ export function Header({ onMobileMenuToggle }: HeaderProps) {
                     {t("noNotifications")}
                   </p>
                 </div>
-              </div>
-            </DropdownMenuContent>
-          </DropdownMenu>
-
-          {/* User Menu (Discord Style) */}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="p-1.5 rounded-lg text-white hover:bg-maroon-700 dark:text-gray-200 dark:hover:bg-maroon-800 flex items-center gap-2"
-              >
-                <div className="w-7 h-7 rounded-full bg-white/20 text-white flex items-center justify-center font-bold text-xs">
-                  {user?.name?.charAt(0).toUpperCase() || "U"}
-                </div>
-                <span className="hidden md:inline-block">{user?.name?.split(' ')[0]}</span>
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-56">
-              <DropdownMenuLabel className="pb-2 border-b">{user?.name}</DropdownMenuLabel>
-              
-              {/* User Settings Section */}
-              <div className="py-1 px-1">
-                <DropdownMenuItem 
-                  className="flex items-center justify-between cursor-pointer rounded-md my-1 px-2 py-2 hover:bg-maroon-50 dark:hover:bg-maroon-900/20"
-                  onClick={toggleDarkMode}
-                >
-                  <div className="flex items-center gap-2">
-                    {darkMode ? (
-                      <Sun className="h-4 w-4 text-maroon-600 dark:text-maroon-300" />
-                    ) : (
-                      <Moon className="h-4 w-4 text-maroon-600 dark:text-maroon-300" />
-                    )}
-                    <span>{darkMode ? t("lightMode") : t("darkMode")}</span>
-                  </div>
-                </DropdownMenuItem>
-                
-                <DropdownMenuItem 
-                  className="flex items-center justify-between cursor-pointer rounded-md my-1 px-2 py-2 hover:bg-maroon-50 dark:hover:bg-maroon-900/20"
-                  onClick={toggleLanguage}
-                >
-                  <div className="flex items-center gap-2">
-                    <span className="w-4 h-4 flex items-center justify-center font-bold text-xs text-maroon-600 dark:text-maroon-300">
-                      {language === "en" ? "AR" : "EN"}
-                    </span>
-                    <span>{language === "en" ? t("arabicLanguage") : t("englishLanguage")}</span>
-                  </div>
-                </DropdownMenuItem>
-              </div>
-              
-              <DropdownMenuSeparator />
-              
-              {/* User Actions */}
-              <div className="py-1 px-1">
-                <DropdownMenuItem 
-                  className="flex items-center cursor-pointer rounded-md my-1 px-2 py-2 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20"
-                  onClick={handleLogout}
-                >
-                  <LogOut className="mr-2 h-4 w-4" />
-                  <span>{t("logout")}</span>
-                </DropdownMenuItem>
               </div>
             </DropdownMenuContent>
           </DropdownMenu>

@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, boolean, timestamp, doublePrecision, pgEnum } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, timestamp, doublePrecision, pgEnum, varchar } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -8,25 +8,32 @@ export const userStatusEnum = pgEnum('user_status', ['Pending', 'Active', 'Inact
 export const projectStatusEnum = pgEnum('project_status', ['Pending', 'Planning', 'InProgress', 'OnHold', 'Completed']);
 export const taskStatusEnum = pgEnum('task_status', ['Todo', 'InProgress', 'Review', 'Completed', 'OnHold']);
 export const priorityEnum = pgEnum('priority', ['Low', 'Medium', 'High', 'Critical']);
-export const changeRequestTypeEnum = pgEnum('change_request_type', ['Schedule', 'Budget', 'Scope', 'Delegation', 'Status', 'Closure', 'AdjustTeam']);
-export const changeRequestStatusEnum = pgEnum('change_request_status', ['Pending', 'Approved', 'Rejected']);
+export const changeRequestTypeEnum = pgEnum('change_request_type', ['Schedule', 'Budget', 'Scope', 'Delegation', 'Status', 'Closure', 'AdjustTeam', 'Faculty']);
+export const changeRequestStatusEnum = pgEnum('change_request_status', ['Pending', 'PendingMainPMO', 'Approved', 'Rejected', 'ReturnedToProjectManager', 'ReturnedToSubPMO']);
 export const riskTypeEnum = pgEnum('risk_type', ['Risk', 'Issue']);
 export const riskStatusEnum = pgEnum('risk_status', ['Open', 'InProgress', 'Resolved', 'Closed']);
+export const milestoneStatusEnum = pgEnum('milestone_status', ['NotStarted', 'InProgress', 'Completed', 'Delayed', 'AtRisk']);
 
 // Department
 export const departments = pgTable('departments', {
   id: serial('id').primaryKey(),
   name: text('name').notNull(),
-  nameAr: text('name_ar').notNull(),
-  code: text('code'),
+  nameAr: text('name_ar'),
+  code: text('code').notNull(),
   description: text('description'),
+  descriptionAr: text('description_ar'),
   directorUserId: integer('director_user_id'),
   headUserId: integer('head_user_id'),
-  budget: doublePrecision('budget'),
+  budget: doublePrecision('budget').default(0),
   location: text('location'),
   phone: text('phone'),
   email: text('email'),
+  createdAt: timestamp('created_at').defaultNow(),
+  updatedAt: timestamp('updated_at').defaultNow(),
 });
+
+// Create insertDepartmentSchema
+export const insertDepartmentSchema = createInsertSchema(departments).omit({ id: true });
 
 // User
 export const users = pgTable('users', {
@@ -136,6 +143,8 @@ export const changeRequests = pgTable('change_requests', {
   status: changeRequestStatusEnum('status').default('Pending'),
   reviewedByUserId: integer('reviewed_by_user_id'),
   reviewedAt: timestamp('reviewed_at'),
+  rejectionReason: text('rejection_reason'),
+  returnTo: varchar('return_to', { length: 50 }),
   comments: text('comments'),
 });
 
@@ -195,6 +204,8 @@ export const notifications = pgTable('notifications', {
   message: text('message').notNull(),
   messageAr: text('message_ar'),
   isRead: boolean('is_read').default(false),
+  requiresApproval: boolean('requires_approval').default(false),
+  lastReminderSent: timestamp('last_reminder_sent'),
   createdAt: timestamp('created_at').defaultNow(),
 });
 
@@ -240,12 +251,33 @@ export const weeklyUpdates = pgTable('weekly_updates', {
   createdAt: timestamp('created_at').defaultNow(),
 });
 
+// Milestones
+export const milestones = pgTable('milestones', {
+  id: serial('id').primaryKey(),
+  projectId: integer('project_id').notNull(),
+  title: text('title').notNull(),
+  titleAr: text('title_ar'),
+  description: text('description'),
+  descriptionAr: text('description_ar'),
+  deadline: timestamp('deadline'),
+  status: milestoneStatusEnum('status').default('NotStarted'),
+  completionPercentage: doublePrecision('completion_percentage').default(0),
+  createdByUserId: integer('created_by_user_id').notNull(),
+  createdAt: timestamp('created_at').defaultNow(),
+  updatedAt: timestamp('updated_at').defaultNow(),
+});
+
+// Task-Milestone Relationship
+export const taskMilestones = pgTable('task_milestones', {
+  id: serial('id').primaryKey(),
+  taskId: integer('task_id').notNull(),
+  milestoneId: integer('milestone_id').notNull(),
+  weight: doublePrecision('weight').default(1), // Weight for milestone completion calculation
+});
+
 // ===== Insert Schemas =====
 
 export const insertUserSchema = createInsertSchema(users).omit({ id: true });
-export const insertDepartmentSchema = createInsertSchema(departments).omit({ id: true });
-
-// Modify insertProjectSchema to handle date strings
 export const insertProjectSchema = createInsertSchema(projects)
   .omit({ id: true, createdAt: true, updatedAt: true })
   .transform((data) => {
@@ -256,6 +288,33 @@ export const insertProjectSchema = createInsertSchema(projects)
       deadline: data.deadline ? new Date(data.deadline) : data.deadline,
     };
   });
+
+// Define updateProjectSchema for partial updates
+export const updateProjectSchema = z.object({
+  id: z.number().optional(),
+  title: z.string().optional(),
+  titleAr: z.string().optional().nullable(),
+  description: z.string().optional().nullable(),
+  descriptionAr: z.string().optional().nullable(),
+  managerUserId: z.number().optional(),
+  departmentId: z.number().optional(),
+  client: z.string().optional(),
+  budget: z.number().optional().nullable(),
+  priority: z.enum(['Low', 'Medium', 'High', 'Critical']).optional(),
+  startDate: z.date().optional().nullable(),
+  deadline: z.date().optional().nullable(),
+  status: z.enum(['Pending', 'Planning', 'InProgress', 'OnHold', 'Completed', 'Cancelled']).optional(),
+  actualCost: z.number().optional().nullable(),
+  createdAt: z.date().optional(),
+  updatedAt: z.date().optional()
+}).transform((data) => {
+  // Ensure date fields are properly converted
+  return {
+    ...data,
+    startDate: data.startDate ? new Date(data.startDate) : data.startDate,
+    deadline: data.deadline ? new Date(data.deadline) : data.deadline,
+  };
+});
 
 export const insertChangeRequestSchema = createInsertSchema(changeRequests).omit({ id: true, requestedAt: true, reviewedAt: true });
 
@@ -297,6 +356,20 @@ export const insertTaskCommentSchema = createInsertSchema(taskComments)
 export const insertAssignmentCommentSchema = createInsertSchema(assignmentComments)
   .omit({ id: true, createdAt: true });
 
+export const insertProjectDependencySchema = createInsertSchema(projectDependencies).omit({ id: true });
+
+export const insertMilestoneSchema = createInsertSchema(milestones)
+  .omit({ id: true, createdAt: true, updatedAt: true, completionPercentage: true })
+  .transform((data) => {
+    // Convert date strings to Date objects
+    return {
+      ...data,
+      deadline: data.deadline ? new Date(data.deadline) : data.deadline,
+    };
+  });
+
+export const insertTaskMilestoneSchema = createInsertSchema(taskMilestones).omit({ id: true });
+
 // Login schema (subset of user)
 export const loginSchema = z.object({
   username: z.string().min(1, "Username is required"),
@@ -322,6 +395,9 @@ export type InsertProjectGoal = z.infer<typeof insertProjectGoalSchema>;
 export type InsertGoalRelationship = z.infer<typeof insertGoalRelationshipSchema>;
 export type InsertTaskComment = z.infer<typeof insertTaskCommentSchema>;
 export type InsertAssignmentComment = z.infer<typeof insertAssignmentCommentSchema>;
+export type InsertProjectDependency = z.infer<typeof insertProjectDependencySchema>;
+export type InsertMilestone = z.infer<typeof insertMilestoneSchema>;
+export type InsertTaskMilestone = z.infer<typeof insertTaskMilestoneSchema>;
 
 // Select Types
 export type User = typeof users.$inferSelect;
@@ -340,6 +416,136 @@ export type ProjectGoal = typeof projectGoals.$inferSelect;
 export type GoalRelationship = typeof goalRelationships.$inferSelect;
 export type TaskComment = typeof taskComments.$inferSelect;
 export type AssignmentComment = typeof assignmentComments.$inferSelect;
+export type Milestone = typeof milestones.$inferSelect;
+export type TaskMilestone = typeof taskMilestones.$inferSelect;
 
 // Login Type
 export type LoginData = z.infer<typeof loginSchema>;
+
+export const updateTaskSchema = z.object({
+  id: z.number().optional(),
+  projectId: z.number().optional(),
+  title: z.string().optional(),
+  titleAr: z.string().optional().nullable(),
+  description: z.string().optional().nullable(),
+  descriptionAr: z.string().optional().nullable(),
+  assignedUserId: z.number().optional().nullable(),
+  deadline: z.date().optional().nullable(),
+  priority: z.enum(['Low', 'Medium', 'High', 'Critical']).optional(),
+  status: z.enum(['Todo', 'InProgress', 'Review', 'Completed', 'OnHold']).optional(),
+  createdByUserId: z.number().optional(),
+  priorityOrder: z.number().optional().nullable(),
+  createdAt: z.date().optional(),
+  updatedAt: z.date().optional()
+}).transform((data) => {
+  // Ensure date fields are properly converted
+  return {
+    ...data,
+    deadline: data.deadline ? new Date(data.deadline) : data.deadline,
+  };
+});
+
+export const updateChangeRequestSchema = z.object({
+  id: z.number().optional(),
+  projectId: z.number().optional(),
+  type: z.enum(['Schedule', 'Budget', 'Scope', 'Delegation', 'Status', 'Closure', 'AdjustTeam', 'Faculty']).optional(),
+  details: z.string().optional(),
+  detailsAr: z.string().optional().nullable(),
+  requestedByUserId: z.number().optional(),
+  requestedAt: z.date().optional(),
+  status: z.enum(['Pending', 'PendingMainPMO', 'Approved', 'Rejected', 'ReturnedToProjectManager', 'ReturnedToSubPMO']).optional(),
+  reviewedByUserId: z.number().optional().nullable(),
+  reviewedAt: z.date().optional().nullable(),
+  rejectionReason: z.string().optional().nullable(),
+  returnTo: z.string().optional().nullable(),
+  comments: z.string().optional().nullable()
+});
+
+export const updateAssignmentSchema = z.object({
+  id: z.number().optional(),
+  assignedByUserId: z.number().optional(),
+  assignedToUserId: z.number().optional(),
+  title: z.string().optional(),
+  titleAr: z.string().optional().nullable(),
+  description: z.string().optional().nullable(),
+  descriptionAr: z.string().optional().nullable(),
+  deadline: z.date().optional().nullable(),
+  priority: z.enum(['Low', 'Medium', 'High', 'Critical']).optional(),
+  status: z.enum(['Todo', 'InProgress', 'Review', 'Completed', 'OnHold']).optional(),
+  createdAt: z.date().optional(),
+  updatedAt: z.date().optional()
+}).transform((data) => {
+  // Ensure date fields are properly converted
+  return {
+    ...data,
+    deadline: data.deadline ? new Date(data.deadline) : data.deadline,
+  };
+});
+
+export const updateActionItemSchema = z.object({
+  id: z.number().optional(),
+  userId: z.number().optional(),
+  title: z.string().optional(),
+  titleAr: z.string().optional().nullable(),
+  description: z.string().optional().nullable(),
+  descriptionAr: z.string().optional().nullable(),
+  deadline: z.date().optional().nullable(),
+  priority: z.enum(['Low', 'Medium', 'High', 'Critical']).optional(),
+  status: z.enum(['Todo', 'InProgress', 'Review', 'Completed', 'OnHold']).optional(),
+  createdAt: z.date().optional(),
+  updatedAt: z.date().optional()
+}).transform((data) => {
+  // Ensure date fields are properly converted
+  return {
+    ...data,
+    deadline: data.deadline ? new Date(data.deadline) : data.deadline,
+  };
+});
+
+export const updateWeeklyUpdateSchema = z.object({
+  id: z.number().optional(),
+  projectId: z.number().optional(),
+  week: z.string().optional(),
+  comments: z.string().optional(),
+  commentsAr: z.string().optional().nullable(),
+  createdByUserId: z.number().optional(),
+  createdAt: z.date().optional(),
+  updatedAt: z.date().optional()
+}).transform((data) => {
+  // Ensure date fields are properly converted
+  return {
+    ...data,
+    createdAt: data.createdAt ? new Date(data.createdAt) : data.createdAt,
+    updatedAt: data.updatedAt ? new Date(data.updatedAt) : data.updatedAt,
+  };
+});
+
+export const updateMilestoneSchema = z.object({
+  id: z.number().optional(),
+  projectId: z.number().optional(),
+  title: z.string().optional(),
+  titleAr: z.string().optional().nullable(),
+  description: z.string().optional().nullable(),
+  descriptionAr: z.string().optional().nullable(),
+  deadline: z.date().optional().nullable(),
+  status: z.enum(['NotStarted', 'InProgress', 'Completed', 'Delayed', 'AtRisk']).optional(),
+  completionPercentage: z.number().optional(),
+  createdByUserId: z.number().optional(),
+  createdAt: z.date().optional(),
+  updatedAt: z.date().optional()
+}).transform((data) => {
+  // Ensure date fields are properly converted
+  return {
+    ...data,
+    deadline: data.deadline ? new Date(data.deadline) : data.deadline,
+  };
+});
+
+// Add types for update schemas
+export type UpdateTask = z.infer<typeof updateTaskSchema>;
+export type UpdateChangeRequest = z.infer<typeof updateChangeRequestSchema>;
+export type UpdateAssignment = z.infer<typeof updateAssignmentSchema>;
+export type UpdateActionItem = z.infer<typeof updateActionItemSchema>;
+export type UpdateProject = z.infer<typeof updateProjectSchema>;
+export type UpdateWeeklyUpdate = z.infer<typeof updateWeeklyUpdateSchema>;
+export type UpdateMilestone = z.infer<typeof updateMilestoneSchema>;

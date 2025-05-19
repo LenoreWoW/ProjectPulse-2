@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useI18n } from "@/hooks/use-i18n";
+import { useI18n } from "@/hooks/use-i18n-new";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/use-auth";
 import {
@@ -68,12 +68,19 @@ const riskData = [
 const COLORS = ["#e53e3e", "#ed8936", "#38a169", "#3182ce"];
 const RISK_COLORS = ["#8A1538", "#f97316", "#22c55e"];
 
+interface BudgetSummary {
+  totalBudget: number;
+  actualCost: number;
+  remainingBudget: number;
+  variance: number;
+}
+
 export default function ReportsPage() {
   const { t } = useI18n();
   const { user } = useAuth();
   
   // Get budget summary from API
-  const { data: budgetSummary = { totalBudget: 900000, actualCost: 875000, remainingBudget: 25000, variance: -2.8 } } = useQuery({
+  const { data: budgetSummary = { totalBudget: 900000, actualCost: 875000, remainingBudget: 25000, variance: -2.8 } } = useQuery<unknown, unknown, BudgetSummary>({
     queryKey: ["/api/budget-summary"],
   });
   
@@ -101,6 +108,20 @@ export default function ReportsPage() {
           title: t("financialForecast"),
           description: t("financialForecastDescription"),
           link: "/reports/forecast"
+        }
+      ]
+    },
+    {
+      id: "customAnalytics",
+      title: t("customAnalytics"),
+      description: t("customAnalyticsDescription"),
+      icon: <FileBarChart className="h-10 w-10 text-qatar-maroon" />,
+      reports: [
+        {
+          id: "custom-analytics",
+          title: t("customAnalytics"),
+          description: t("customAnalyticsDescription"),
+          link: "/reports/custom-analytics"
         }
       ]
     },

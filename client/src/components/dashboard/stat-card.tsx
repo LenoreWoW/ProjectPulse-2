@@ -1,5 +1,5 @@
 import { ReactNode } from "react";
-import { useI18n } from "@/hooks/use-i18n";
+import { useI18n } from "@/hooks/use-i18n-new";
 
 export interface StatCardProps {
   title: string;

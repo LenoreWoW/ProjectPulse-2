@@ -3,7 +3,7 @@ import { useLocation } from "wouter";
 import { format } from "date-fns";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm, useFieldArray } from "react-hook-form";
+import { useForm, useFieldArray, SubmitHandler, UseFormReturn } from "react-hook-form";
 import { z } from "zod";
 import { CalendarIcon, Loader2, Plus, Trash2 } from "lucide-react";
 
@@ -55,6 +55,7 @@ const formSchema = z.object({
   ).optional(),
 });
 
+// Updated type for FormValues
 type FormValues = z.infer<typeof formSchema>;
 
 export default function NewGoalPage() {
@@ -73,8 +74,8 @@ export default function NewGoalPage() {
     staleTime: 60000, // 1 minute
   });
 
-  // Fetch projects for relationship selection
-  const { data: projects = [], isLoading: isLoadingProjects } = useQuery({
+  // Fetch projects for relationship selection with proper typing
+  const { data: projects = [], isLoading: isLoadingProjects } = useQuery<Project[]>({
     queryKey: ["/api/projects"],
     staleTime: 60000, // 1 minute
   });
@@ -100,7 +101,7 @@ export default function NewGoalPage() {
     }
   }, [isTypeParam, canCreateDepartmentGoal]);
   
-  // Initialize the form
+  // Initialize the form with proper typing
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -109,7 +110,7 @@ export default function NewGoalPage() {
       priority: "Medium",
       isStrategic: false,
       isAnnual: true,
-      departmentId: user?.departmentId,
+      departmentId: user?.departmentId || undefined,
       relatedProjects: [],
       relatedGoals: [],
     },
@@ -129,6 +130,7 @@ export default function NewGoalPage() {
         }
       }
     } else {
+      // Make sure departmentId is undefined, not null
       form.setValue("departmentId", undefined);
     }
   }, [isDepartmentGoal, user?.role, user?.departmentId, form]);
@@ -185,7 +187,8 @@ export default function NewGoalPage() {
     },
   });
 
-  const onSubmit = (values: FormValues) => {
+  // Update the onSubmit function with SubmitHandler
+  const onSubmit: SubmitHandler<FormValues> = (values) => {
     // Filter out invalid projects and goals before submission
     const cleanedValues = {
       ...values,
@@ -200,7 +203,7 @@ export default function NewGoalPage() {
   // Filter projects for selection dropdown (exclude already selected)
   const getAvailableProjects = () => {
     const selectedIds = projectFields.map(field => field.projectId);
-    return (projects as Project[]).filter(project => !selectedIds.includes(project.id));
+    return projects.filter(project => !selectedIds.includes(project.id));
   };
 
   // Filter goals for selection dropdown (exclude already selected and self-references)
@@ -211,7 +214,7 @@ export default function NewGoalPage() {
 
   // Get project name by ID
   const getProjectName = (id: number) => {
-    const project = (projects as Project[]).find(p => p.id === id);
+    const project = projects.find(p => p.id === id);
     return project ? project.title : "";
   };
 
@@ -405,7 +408,10 @@ export default function NewGoalPage() {
                     type="button"
                     variant="outline"
                     size="sm"
-                    onClick={() => appendProject({ projectId: projects.length > 0 ? projects[0].id : undefined as any, weight: 1 })}
+                    onClick={() => appendProject({ 
+                      projectId: projects.length > 0 ? projects[0].id : 0, 
+                      weight: 1 
+                    })}
                     disabled={getAvailableProjects().length === 0}
                   >
                     <Plus className="mr-1 h-4 w-4" /> {t("addRelatedProject")}
@@ -491,7 +497,10 @@ export default function NewGoalPage() {
                     type="button"
                     variant="outline"
                     size="sm"
-                    onClick={() => appendGoal({ goalId: goals.length > 0 ? goals[0].id : undefined as any, weight: 1 })}
+                    onClick={() => appendGoal({ 
+                      goalId: goals.length > 0 ? goals[0].id : 0, 
+                      weight: 1 
+                    })}
                     disabled={getAvailableGoals().length === 0}
                   >
                     <Plus className="mr-1 h-4 w-4" /> {t("addRelatedGoal")}

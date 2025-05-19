@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useI18n } from "@/hooks/use-i18n";
+import { useI18n } from "@/hooks/use-i18n-new";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { User, Department } from "@shared/schema";
 import { useAuth } from "@/hooks/use-auth";
@@ -267,7 +267,7 @@ export default function UsersManagementPage() {
       user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       user.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       user.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      user.role.toLowerCase().includes(searchTerm.toLowerCase())
+      (user.role ? user.role.toLowerCase().includes(searchTerm.toLowerCase()) : false)
   );
 
   // Get department name by id
@@ -936,7 +936,7 @@ export default function UsersManagementPage() {
                     )}
                   </div>
                 </TableCell>
-                <TableCell>{t(user.role.toLowerCase())}</TableCell>
+                <TableCell>{user.role ? t(user.role.toLowerCase()) : '-'}</TableCell>
                 <TableCell>{getDepartmentName(user.departmentId)}</TableCell>
                 <TableCell>
                   <span 
@@ -945,7 +945,7 @@ export default function UsersManagementPage() {
                         ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300'
                         : 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-300'}`}
                   >
-                    {t(user.status.toLowerCase())}
+                    {user.status ? t(user.status.toLowerCase()) : '-'}
                   </span>
                 </TableCell>
                 {canManageUsers && (

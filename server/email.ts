@@ -43,6 +43,11 @@ interface EmailParams {
   html?: string;
 }
 
+// Extended SentMessageInfo for Ethereal email preview URLs
+interface EtherealMessageInfo extends nodemailer.SentMessageInfo {
+  preview?: string;
+}
+
 /**
  * Send an email using Nodemailer
  */
@@ -56,7 +61,7 @@ export async function sendEmail(params: EmailParams): Promise<boolean> {
       html: params.html || '',
     };
 
-    const info = await transporter.sendMail(msg);
+    const info = await transporter.sendMail(msg) as EtherealMessageInfo;
     console.log(`Email sent to: ${params.to}`);
     
     // If using ethereal, log the preview URL
@@ -69,6 +74,37 @@ export async function sendEmail(params: EmailParams): Promise<boolean> {
     console.error('Email sending error:', error);
     return false;
   }
+}
+
+/**
+ * Send password reset email
+ */
+export async function sendPasswordResetEmail(email: string, resetToken: string): Promise<boolean> {
+  const resetUrl = `${process.env.CLIENT_URL || 'http://localhost:3000'}/reset-password?token=${resetToken}`;
+  
+  return sendEmail({
+    to: email,
+    subject: 'Password Reset - Qatar Armed Forces Project Management System',
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #8A1538; border-radius: 5px;">
+        <div style="background-color: #8A1538; padding: 15px; text-align: center; color: white; border-radius: 5px 5px 0 0;">
+          <h2 style="margin: 0;">Password Reset</h2>
+        </div>
+        <div style="padding: 20px;">
+          <p>You have requested to reset your password. Please click the link below to reset your password:</p>
+          <p style="text-align: center;">
+            <a href="${resetUrl}" style="display: inline-block; padding: 10px 20px; background-color: #8A1538; color: white; text-decoration: none; border-radius: 3px;">Reset Password</a>
+          </p>
+          <p>If you did not request this password reset, please ignore this email and your password will remain unchanged.</p>
+          <p>This link will expire in 1 hour.</p>
+          <p>Regards,<br>Qatar Armed Forces PMO Team</p>
+        </div>
+        <div style="background-color: #f1f1f1; padding: 10px; text-align: center; font-size: 12px; color: #666; border-radius: 0 0 5px 5px;">
+          <p>This is an automated message, please do not reply.</p>
+        </div>
+      </div>
+    `
+  });
 }
 
 /**
@@ -111,6 +147,78 @@ export async function sendRegistrationRejectedEmail(email: string): Promise<bool
         <div style="padding: 20px;">
           <p>We regret to inform you that your registration has been rejected.</p>
           <p>For assistance, please contact the system administrator.</p>
+          <p>Regards,<br>Qatar Armed Forces PMO Team</p>
+        </div>
+        <div style="background-color: #f1f1f1; padding: 10px; text-align: center; font-size: 12px; color: #666; border-radius: 0 0 5px 5px;">
+          <p>This is an automated message, please do not reply.</p>
+        </div>
+      </div>
+    `
+  });
+}
+
+/**
+ * Send approval notification email
+ */
+export async function sendApprovalNotificationEmail(
+  email: string, 
+  itemType: string, 
+  itemName: string, 
+  itemId: number,
+  approvalUrl: string
+): Promise<boolean> {
+  return sendEmail({
+    to: email,
+    subject: `Action Required: New ${itemType} Requires Your Approval - Qatar Armed Forces Project Management System`,
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #8A1538; border-radius: 5px;">
+        <div style="background-color: #8A1538; padding: 15px; text-align: center; color: white; border-radius: 5px 5px 0 0;">
+          <h2 style="margin: 0;">Action Required: Approval Request</h2>
+        </div>
+        <div style="padding: 20px;">
+          <p>A new ${itemType} requires your approval:</p>
+          <p><strong>${itemName}</strong> (ID: ${itemId})</p>
+          <p style="text-align: center;">
+            <a href="${approvalUrl}" style="display: inline-block; padding: 10px 20px; background-color: #8A1538; color: white; text-decoration: none; border-radius: 3px;">Review and Approve</a>
+          </p>
+          <p>Please review and take action on this request promptly.</p>
+          <p>Regards,<br>Qatar Armed Forces PMO Team</p>
+        </div>
+        <div style="background-color: #f1f1f1; padding: 10px; text-align: center; font-size: 12px; color: #666; border-radius: 0 0 5px 5px;">
+          <p>This is an automated message, please do not reply.</p>
+        </div>
+      </div>
+    `
+  });
+}
+
+/**
+ * Send approval reminder email
+ */
+export async function sendApprovalReminderEmail(
+  email: string, 
+  itemType: string, 
+  itemName: string, 
+  itemId: number,
+  approvalUrl: string,
+  daysWaiting: number
+): Promise<boolean> {
+  return sendEmail({
+    to: email,
+    subject: `REMINDER: ${itemType} Still Requires Your Approval - Qatar Armed Forces Project Management System`,
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #8A1538; border-radius: 5px;">
+        <div style="background-color: #8A1538; padding: 15px; text-align: center; color: white; border-radius: 5px 5px 0 0;">
+          <h2 style="margin: 0;">REMINDER: Action Required</h2>
+        </div>
+        <div style="padding: 20px;">
+          <p><strong>This item has been waiting for your approval for ${daysWaiting > 1 ? `${daysWaiting} days` : '1 day'}.</strong></p>
+          <p>The following ${itemType} still requires your approval:</p>
+          <p><strong>${itemName}</strong> (ID: ${itemId})</p>
+          <p style="text-align: center;">
+            <a href="${approvalUrl}" style="display: inline-block; padding: 10px 20px; background-color: #8A1538; color: white; text-decoration: none; border-radius: 3px;">Review and Approve</a>
+          </p>
+          <p>Please review and take action on this request promptly.</p>
           <p>Regards,<br>Qatar Armed Forces PMO Team</p>
         </div>
         <div style="background-color: #f1f1f1; padding: 10px; text-align: center; font-size: 12px; color: #666; border-radius: 0 0 5px 5px;">

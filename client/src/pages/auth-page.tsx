@@ -8,6 +8,7 @@ import { useForm } from "react-hook-form";
 import { insertUserSchema } from "@shared/schema";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { AlertDialog, AlertDialogContent, AlertDialogDescription, AlertDialogHeader, AlertDialogTitle, AlertDialogFooter, AlertDialogAction } from "@/components/ui/alert-dialog";
 
 // Import HD Qatar landmark images directly
 import landmark1 from "../assets/landmarks/hd/image_1747300730144.png"; // Qatar Islamic Cultural Center
@@ -40,8 +41,25 @@ import { Loader2 } from "lucide-react";
 
 export default function AuthPage() {
   const { user, isLoading, loginMutation, registerMutation } = useAuth();
-  const { t, isRtl } = useI18n();
+  const { t, isRtl, setLanguage } = useI18n();
   const [activeTab, setActiveTab] = useState<string>("login");
+  const [showArabicReminder, setShowArabicReminder] = useState(false);
+  
+  // Show Arabic reminder dialog when login tab is active
+  useEffect(() => {
+    if (activeTab === "login") {
+      const timer = setTimeout(() => {
+        setShowArabicReminder(true);
+      }, 500);
+      return () => clearTimeout(timer);
+    }
+  }, [activeTab]);
+  
+  // Set Arabic as default language when dialog is acknowledged
+  const handleReminderClose = () => {
+    setShowArabicReminder(false);
+    setLanguage("ar");
+  };
 
   // If the user is already logged in, redirect to home
   if (user) {
@@ -103,7 +121,7 @@ export default function AuthPage() {
       role: "User",
       status: "Pending",
       departmentId: 1, // Default department
-      preferredLanguage: "en",
+      preferredLanguage: "ar", // Default to Arabic language
       passportImageFile: undefined,
       idCardImageFile: undefined,
     },
@@ -154,27 +172,21 @@ export default function AuthPage() {
     processFiles();
   }
 
+  // Get current Qatar landmark image
+  const currentLandmarkImage = qatarLandmarks[currentImageIndex];
+
   return (
-    <div className="h-screen flex items-center justify-center p-0 overflow-hidden relative">
-      {/* Dynamic background with Qatar landmarks */}
-      <div className="absolute inset-0 w-full h-full bg-black">
-        {qatarLandmarks.map((landmark, index) => (
-          <div
-            key={index}
-            className="absolute inset-0 w-full h-full transition-opacity duration-1000"
-            style={{
-              backgroundImage: `url(${landmark})`,
-              backgroundSize: 'cover',
-              backgroundPosition: 'center',
-              backgroundRepeat: 'no-repeat',
-              opacity: index === currentImageIndex ? 1 : 0,
-              zIndex: 1,
-              transform: 'scale(1.1)', // Increased zoom for better edge coverage
-            }}
-          />
-        ))}
-        {/* Overlay for better text readability - 70% opacity for improved contrast */}
-        <div className="absolute inset-0 bg-black bg-opacity-70 z-2" />
+    <div className="min-h-screen w-full flex items-center justify-center bg-qatar-black text-qatar-white overflow-hidden relative p-4">
+      {/* Background image with gradient overlay */}
+      <div
+        className="absolute inset-0 bg-cover bg-center z-0"
+        style={{
+          backgroundImage: `url(${currentLandmarkImage})`,
+          backgroundPosition: 'center',
+          backgroundSize: 'cover',
+        }}
+      >
+        <div className="absolute inset-0 bg-gradient-to-b from-qatar-black/60 to-qatar-black/80"></div>
       </div>
       
       <div className="w-full max-w-md" style={{ position: 'relative', zIndex: 9999 }}>
@@ -434,8 +446,6 @@ export default function AuthPage() {
             </Tabs>
           </CardContent>
         </Card>
-
-        {/* Right side: Removed from mobile view */}
       </div>
     </div>
   );

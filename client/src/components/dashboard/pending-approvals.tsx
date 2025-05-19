@@ -1,4 +1,4 @@
-import { useI18n } from "@/hooks/use-i18n";
+import { useI18n } from "@/hooks/use-i18n-new";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
@@ -38,8 +38,25 @@ export function PendingApprovals({ className = "" }: PendingApprovalsProps) {
   });
   
   const approveMutation = useMutation({
-    mutationFn: async ({ id, status }: { id: number, status: 'Approved' | 'Rejected' }) => {
-      const res = await apiRequest("PUT", `/api/change-requests/${id}`, { status });
+    mutationFn: async ({ 
+      id, 
+      status,
+      rejectionReason,
+      returnTo 
+    }: { 
+      id: number, 
+      status: 'Approved' | 'Rejected' | 'PendingMainPMO',
+      rejectionReason?: string,
+      returnTo?: 'ProjectManager' | 'SubPMO'
+    }) => {
+      const payload: any = { status };
+      
+      if (status === 'Rejected') {
+        payload.rejectionReason = rejectionReason;
+        payload.returnTo = returnTo;
+      }
+      
+      const res = await apiRequest("PUT", `/api/change-requests/${id}`, payload);
       return await res.json();
     },
     onSuccess: () => {

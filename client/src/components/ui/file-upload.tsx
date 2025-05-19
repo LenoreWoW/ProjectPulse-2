@@ -2,7 +2,7 @@ import React, { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { Upload, AlertCircle, CheckCircle2, File } from "lucide-react";
-import { useI18n } from "@/hooks/use-i18n";
+import { useI18n } from "@/hooks/use-i18n-new";
 
 interface FileUploadProps {
   id: string;

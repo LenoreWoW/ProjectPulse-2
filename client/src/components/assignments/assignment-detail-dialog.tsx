@@ -7,7 +7,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { format } from "date-fns";
 import { useI18n } from "@/hooks/use-i18n-new";
 import { Badge } from "@/components/ui/badge";
-import { CalendarDays, Clock } from "lucide-react";
+import { CalendarDays, Clock, CheckCircle } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useAuth } from "@/hooks/use-auth";
 
 // Add the Spinner component
 const Spinner = ({ className = "", size = "default" }: { className?: string; size?: "default" | "sm" | "lg" }) => {
@@ -55,49 +57,18 @@ interface AssignmentComment {
 }
 
 const AssignmentDetailDialog: React.FC<AssignmentDetailDialogProps> = ({ assignmentId, isOpen, onClose }) => {
-  const i18n = useI18n();
+  const { t, isRtl } = useI18n();
   const { toast } = useToast();
+  const { user } = useAuth();
   const queryClient = useQueryClient();
   const [newComment, setNewComment] = useState("");
-
-  // Create a translation object with the missing keys
-  const t = {
-    ...i18n,
-    commentAdded: "Comment Added",
-    commentAddedDescription: "Your comment has been posted successfully",
-    error: "Error",
-    commentAddError: "Failed to add comment. Please try again.",
-    assignmentNotFound: "Assignment not found",
-    details: "Details",
-    noDescription: "No description provided",
-    assignedTo: "Assigned To",
-    assignedBy: "Assigned By",
-    loading: "Loading...",
-    comments: "Comments",
-    noComments: "No comments yet",
-    unknownUser: "Unknown User",
-    writeComment: "Write a comment...",
-    posting: "Posting...",
-    postComment: "Post Comment",
-    close: "Close",
-    priority: "Priority",
-    medium: "Medium",
-    high: "High",
-    low: "Low",
-    status: "Status",
-    pending: "Pending",
-    inProgress: "In Progress",
-    completed: "Completed",
-    statusPending: "Pending",
-    statusInProgress: "In Progress",
-    statusCompleted: "Completed",
-    dueDate: "Due Date"
-  };
+  const [newStatus, setNewStatus] = useState<string | null>(null);
 
   // Reset comment field when dialog opens or closes
   useEffect(() => {
     if (isOpen) {
       setNewComment("");
+      setNewStatus(null);
     }
   }, [isOpen]);
 
@@ -114,6 +85,13 @@ const AssignmentDetailDialog: React.FC<AssignmentDetailDialogProps> = ({ assignm
     },
     enabled: !!assignmentId && isOpen,
   });
+
+  // Set initial status from assignment when data is loaded
+  useEffect(() => {
+    if (assignment && assignment.status) {
+      setNewStatus(assignment.status);
+    }
+  }, [assignment]);
 
   // Fetch assignment comments
   const {
@@ -184,14 +162,67 @@ const AssignmentDetailDialog: React.FC<AssignmentDetailDialogProps> = ({ assignm
       refetchComments();
       queryClient.invalidateQueries({ queryKey: ["notifications"] });
       toast({
-        title: t.commentAdded,
-        description: t.commentAddedDescription,
+        title: "Comment Added",
+        description: "Your comment has been posted successfully",
       });
     },
     onError: () => {
       toast({
-        title: t.error,
-        description: t.commentAddError,
+        title: "Error",
+        description: "Failed to add comment. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Update assignment status mutation
+  const updateAssignmentMutation = useMutation({
+    mutationFn: async (status: string) => {
+      if (!assignmentId) throw new Error("Assignment ID is required");
+      const response = await fetch(`/api/assignments/${assignmentId}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ status }),
+      });
+      
+      if (!response.ok) {
+        throw new Error("Failed to update assignment status");
+      }
+      
+      return response.json();
+    },
+    onSuccess: (updatedAssignment) => {
+      queryClient.invalidateQueries({ queryKey: ["assignments"] });
+      queryClient.setQueryData(["assignments", assignmentId], updatedAssignment);
+      toast({
+        title: "Assignment Updated",
+        description: "Status has been updated successfully",
+      });
+      
+      // Add a comment automatically when status changes
+      if (newStatus && assignment && newStatus !== assignment.status) {
+        // Convert status to readable format for the comment
+        const getReadableStatus = (status: string): string => {
+          switch(status) {
+            case "Todo": return "To Do";
+            case "InProgress": return "In Progress";
+            case "Review": return "Review";
+            case "Completed": return "Completed";
+            case "OnHold": return "On Hold";
+            default: return status;
+          }
+        };
+        
+        const statusChangeComment = `Status changed from ${getReadableStatus(assignment.status)} to ${getReadableStatus(newStatus)}`;
+        addCommentMutation.mutate(statusChangeComment);
+      }
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to update assignment status",
         variant: "destructive",
       });
     },
@@ -203,7 +234,37 @@ const AssignmentDetailDialog: React.FC<AssignmentDetailDialogProps> = ({ assignm
     addCommentMutation.mutate(newComment);
   };
 
+  // Handle status update
+  const handleStatusUpdate = () => {
+    if (!newStatus || newStatus === assignment?.status) return;
+    updateAssignmentMutation.mutate(newStatus);
+  };
+  
+  // Check if current user is the assignee
+  const isAssignee = user && assignment?.assignedToUserId === user.id;
+  
+  // Check if current user has permission to update (assignee, assigner, or admin)
+  const canUpdateAssignment = user && (
+    isAssignee || 
+    assignment?.assignedByUserId === user.id || 
+    ["Administrator", "MainPMO"].includes(user.role || "")
+  );
+
   if (!isOpen) return null;
+
+  // Convert status to readable format for display
+  const getReadableStatus = (status: string | undefined | null): string => {
+    if (!status) return "";
+    
+    switch(status) {
+      case "Todo": return "To Do";
+      case "InProgress": return "In Progress";
+      case "Review": return "Review";
+      case "Completed": return "Completed";
+      case "OnHold": return "On Hold";
+      default: return status;
+    }
+  };
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
@@ -213,19 +274,19 @@ const AssignmentDetailDialog: React.FC<AssignmentDetailDialogProps> = ({ assignm
             <Spinner size="lg" />
           </div>
         ) : !assignment ? (
-          <div className="text-center p-4">{t.assignmentNotFound}</div>
+          <div className="text-center p-4">Assignment not found</div>
         ) : (
           <>
             <DialogHeader>
               <DialogTitle className="text-xl">{assignment.title}</DialogTitle>
               <div className="flex flex-wrap gap-2 mt-2">
                 <Badge>
-                  {t.status}: {t[`status${assignment.status}`] || assignment.status}
+                  Status: {getReadableStatus(assignment.status)}
                 </Badge>
-                {assignment.dueDate && (
-                  <Badge variant={new Date(assignment.dueDate) < new Date() ? "destructive" : "outline"} className="flex gap-1 items-center">
+                {assignment.deadline && (
+                  <Badge variant={new Date(assignment.deadline) < new Date() ? "destructive" : "outline"} className="flex gap-1 items-center">
                     <CalendarDays className="w-3 h-3" />
-                    {format(new Date(assignment.dueDate), "MMM d, yyyy")}
+                    {format(new Date(assignment.deadline), "MMM d, yyyy")}
                   </Badge>
                 )}
               </div>
@@ -234,40 +295,88 @@ const AssignmentDetailDialog: React.FC<AssignmentDetailDialogProps> = ({ assignm
             <div className="grid gap-4 py-4 overflow-y-auto">
               {/* Assignment details */}
               <div className="space-y-2">
-                <h3 className="font-medium text-lg">{t.details}</h3>
-                <p className="text-sm">{assignment.description || t.noDescription}</p>
+                <h3 className="font-medium text-lg">Details</h3>
+                <p className="text-sm">{assignment.description || "No description provided"}</p>
               </div>
 
               {/* Assigned To & Assigned By */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <h3 className="font-medium">{t.assignedTo}</h3>
+                  <h3 className="font-medium">Assigned To</h3>
                   <div className="flex items-center gap-2">
                     <Avatar>
                       <AvatarFallback>
                         {assignedToUser?.name?.charAt(0) || "?"}
                       </AvatarFallback>
                     </Avatar>
-                    <span>{assignedToUser?.name || t.loading}</span>
+                    <span>{assignedToUser?.name || "Loading..."}</span>
                   </div>
                 </div>
 
                 <div className="space-y-2">
-                  <h3 className="font-medium">{t.assignedBy}</h3>
+                  <h3 className="font-medium">Assigned By</h3>
                   <div className="flex items-center gap-2">
                     <Avatar>
                       <AvatarFallback>
                         {assignedByUser?.name?.charAt(0) || "?"}
                       </AvatarFallback>
                     </Avatar>
-                    <span>{assignedByUser?.name || t.loading}</span>
+                    <span>{assignedByUser?.name || "Loading..."}</span>
                   </div>
                 </div>
               </div>
+              
+              {/* Status Update Section (only visible to assignee or creator) */}
+              {canUpdateAssignment && (
+                <div className="mt-2 border rounded-md p-4 bg-muted/50">
+                  <h3 className="font-medium text-lg mb-3">Update Progress</h3>
+                  <div className="flex flex-col sm:flex-row gap-4">
+                    <div className="flex-1">
+                      <label htmlFor="status" className="text-sm font-medium mb-2 block">
+                        Status
+                      </label>
+                      <Select
+                        value={newStatus || undefined}
+                        onValueChange={setNewStatus}
+                      >
+                        <SelectTrigger id="status">
+                          <SelectValue placeholder="Select Status" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Todo">To Do</SelectItem>
+                          <SelectItem value="InProgress">In Progress</SelectItem>
+                          <SelectItem value="Review">Review</SelectItem>
+                          <SelectItem value="Completed">Completed</SelectItem>
+                          <SelectItem value="OnHold">On Hold</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="self-end">
+                      <Button 
+                        onClick={handleStatusUpdate}
+                        disabled={!newStatus || newStatus === assignment.status || updateAssignmentMutation.isPending}
+                        className="mt-4 sm:mt-0"
+                      >
+                        {updateAssignmentMutation.isPending ? (
+                          <>
+                            <Spinner className="mr-2 h-4 w-4" />
+                            Updating...
+                          </>
+                        ) : (
+                          <>
+                            <CheckCircle className="mr-2 h-4 w-4" />
+                            Update Status
+                          </>
+                        )}
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               {/* Comments section */}
               <div className="mt-6 space-y-4">
-                <h3 className="font-medium text-lg">{t.comments}</h3>
+                <h3 className="font-medium text-lg">Comments</h3>
                 
                 <div className="space-y-4 max-h-[200px] overflow-y-auto p-1">
                   {isCommentsLoading ? (
@@ -276,7 +385,7 @@ const AssignmentDetailDialog: React.FC<AssignmentDetailDialogProps> = ({ assignm
                     </div>
                   ) : comments.length === 0 ? (
                     <p className="text-sm text-muted-foreground text-center py-4">
-                      {t.noComments}
+                      No comments yet
                     </p>
                   ) : (
                     comments.map((comment: AssignmentComment) => (
@@ -289,7 +398,7 @@ const AssignmentDetailDialog: React.FC<AssignmentDetailDialogProps> = ({ assignm
                               </AvatarFallback>
                             </Avatar>
                             <span className="font-medium text-sm">
-                              {comment.user?.name || t.unknownUser}
+                              {comment.user?.name || "Unknown User"}
                             </span>
                           </div>
                           <div className="text-xs text-muted-foreground flex items-center">
@@ -306,7 +415,7 @@ const AssignmentDetailDialog: React.FC<AssignmentDetailDialogProps> = ({ assignm
                 {/* Add comment */}
                 <div className="space-y-2">
                   <Textarea
-                    placeholder={t.writeComment}
+                    placeholder="Write a comment..."
                     value={newComment}
                     onChange={(e) => setNewComment(e.target.value)}
                     className="min-h-[80px]"
@@ -319,10 +428,10 @@ const AssignmentDetailDialog: React.FC<AssignmentDetailDialogProps> = ({ assignm
                       {addCommentMutation.isPending ? (
                         <>
                           <Spinner className="mr-2 h-4 w-4" />
-                          {t.posting}
+                          Posting...
                         </>
                       ) : (
-                        t.postComment
+                        "Post Comment"
                       )}
                     </Button>
                   </div>
@@ -332,7 +441,7 @@ const AssignmentDetailDialog: React.FC<AssignmentDetailDialogProps> = ({ assignm
             
             <DialogFooter>
               <Button variant="outline" onClick={onClose}>
-                {t.close}
+                Close
               </Button>
             </DialogFooter>
           </>

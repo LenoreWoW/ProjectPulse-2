@@ -1,4 +1,4 @@
-import { useI18n } from "@/hooks/use-i18n";
+import { useI18n } from "@/hooks/use-i18n-new";
 import qatarLogoPath from "@assets/Finallogo.jpg";
 
 interface QatarLogoProps {

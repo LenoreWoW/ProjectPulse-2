@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useI18n } from "@/hooks/use-i18n";
+import { useI18n } from "@/hooks/use-i18n-new";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -90,7 +90,12 @@ export default function BudgetReportPage() {
   const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'ascending' | 'descending' } | null>(null);
 
   // Get budget summary from API
-  const { data: budgetSummary = { totalBudget: 0, actualCost: 0, remainingBudget: 0, variance: 0 } } = useQuery({
+  const { data: budgetSummary = { totalBudget: 0, actualCost: 0, remainingBudget: 0, variance: 0 } } = useQuery<{
+    totalBudget: number;
+    actualCost: number;
+    remainingBudget: number;
+    variance: number;
+  }>({
     queryKey: ["/api/budget-summary"],
   });
   

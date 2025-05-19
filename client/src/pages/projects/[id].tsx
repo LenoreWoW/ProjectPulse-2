@@ -35,7 +35,8 @@ import {
   PlusCircle,
   X,
   Trello,
-  List
+  List,
+  InfoIcon
 } from "lucide-react";
 import { useI18n } from "@/hooks/use-i18n-new";
 import { useAuth } from "@/hooks/use-auth";
@@ -756,6 +757,14 @@ export default function ProjectDetailsPage() {
                             <SelectItem value="RemoveMember">{t("removeTeamMember")}</SelectItem>
                           </SelectContent>
                         </Select>
+                      </div>
+                      
+                      {/* Info about SubPMO approval */}
+                      <div className="col-span-4 rounded-md p-3 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 text-sm flex items-start">
+                        <InfoIcon className="h-5 w-5 mr-2 shrink-0 mt-0.5" />
+                        <div>
+                          {t("facultyChangeApprovalNote")}
+                        </div>
                       </div>
                       
                       {/* Delegate to another manager */}

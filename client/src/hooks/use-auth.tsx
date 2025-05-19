@@ -7,6 +7,7 @@ import {
 import { User, LoginData, InsertUser } from "@shared/schema";
 import { getQueryFn, apiRequest, queryClient } from "../lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { useI18n } from "@/hooks/use-i18n-new";
 
 type AuthContextType = {
   user: User | null;
@@ -21,6 +22,7 @@ export const AuthContext = createContext<AuthContextType | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const { toast } = useToast();
+  const { setLanguage } = useI18n();
   const {
     data: user,
     error,
@@ -60,6 +62,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       queryClient.setQueryData(["/api/user"], user);
       // Invalidate query to force a refresh
       queryClient.invalidateQueries({ queryKey: ["/api/user"] });
+      
+      // Note: We're removing the Arabic language toast here
+      // because we now show the popup dialog in the LoginReminder component
+      // The LoginReminder component will set the language to Arabic
       
       toast({
         title: "Login successful",

@@ -1,9 +1,10 @@
 import passport from "passport";
 import { Strategy as LocalStrategy } from "passport-local";
-import { Express } from "express";
+import { Express, Request, Response, NextFunction } from "express";
 import session from "express-session";
 import { scrypt, randomBytes, timingSafeEqual } from "crypto";
 import { promisify } from "util";
+import jwt from "jsonwebtoken";
 import { storage } from "./storage";
 import { User as SelectUser, insertUserSchema } from "@shared/schema";
 import { z } from "zod";
@@ -15,7 +16,55 @@ declare global {
   }
 }
 
+const JWT_SECRET = process.env.JWT_SECRET || "pmo-jwt-secret-key";
 const scryptAsync = promisify(scrypt);
+
+// Define JWT payload interface
+interface JwtPayload {
+  id: number;
+  role: string | null;
+  iat?: number;
+  exp?: number;
+}
+
+// Generate JWT token for authentication
+export function generateAuthToken(userId: number, role: string | null): string {
+  return jwt.sign(
+    { id: userId, role },
+    JWT_SECRET,
+    { expiresIn: '24h' }
+  );
+}
+
+// JWT token middleware
+export function authenticateToken(req: Request, res: Response, next: NextFunction) {
+  const authHeader = req.headers.authorization;
+  const token = authHeader && authHeader.split(' ')[1];
+
+  if (!token) {
+    return res.status(401).json({ message: "Unauthorized: No token provided" });
+  }
+
+  jwt.verify(token, JWT_SECRET, async (err: jwt.VerifyErrors | null, decoded: object | undefined) => {
+    if (err) {
+      return res.status(403).json({ message: "Forbidden: Invalid token" });
+    }
+
+    try {
+      const payload = decoded as JwtPayload;
+      const user = await storage.getUser(payload.id);
+      if (!user) {
+        return res.status(403).json({ message: "Forbidden: User not found" });
+      }
+
+      // Add user to request object
+      (req as any).user = user;
+      next();
+    } catch (error) {
+      return res.status(500).json({ message: "Internal server error" });
+    }
+  });
+}
 
 async function hashPassword(password: string) {
   const salt = randomBytes(16).toString("hex");
