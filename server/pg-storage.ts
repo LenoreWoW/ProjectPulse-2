@@ -6,8 +6,9 @@ import {
   Assignment, InsertAssignment, ActionItem, InsertActionItem,
   WeeklyUpdate, InsertWeeklyUpdate, ProjectCostHistory, InsertProjectCostHistory,
   InsertProjectGoal, InsertGoalRelationship, InsertTaskComment, InsertAssignmentComment,
-  InsertProjectDependency, InsertMilestone, InsertTaskMilestone,
-  ProjectGoal, GoalRelationship, TaskComment, AssignmentComment, Milestone, TaskMilestone
+  InsertProjectDependency, InsertMilestone,
+  ProjectGoal, GoalRelationship, TaskComment, AssignmentComment, Milestone, TaskMilestone,
+  AuditLog, InsertAuditLog
 } from '@shared/schema';
 import { IStorage } from './storage';
 import { Store } from 'express-session';
@@ -22,6 +23,13 @@ interface ProjectDependency {
   dependsOnProjectId: number;
   createdAt: Date;
   updatedAt: Date;
+}
+
+// Define an interface for TaskMilestone insertion since it's not in the shared schema
+interface InsertTaskMilestone {
+  taskId: number;
+  milestoneId: number;
+  weight?: number;
 }
 
 // Helper function to format JSON dates
@@ -627,12 +635,14 @@ export class PgStorage implements IStorage {
         let taskCompletion = 0;
         if (task.status === 'Completed') {
           taskCompletion = 100;
-        } else if (task.status === 'InProgress') {
-          taskCompletion = 50;
         } else if (task.status === 'Review') {
           taskCompletion = 90;
-        } else if (task.completionPercentage !== undefined && task.completionPercentage !== null) {
-          taskCompletion = task.completionPercentage;
+        } else if (task.status === 'InProgress') {
+          taskCompletion = 50;
+        } else if (task.status === 'OnHold') {
+          taskCompletion = 25;
+        } else if (task.status === 'Todo') {
+          taskCompletion = 0;
         }
         
         // Add weighted task completion to milestone completion
@@ -678,5 +688,88 @@ export class PgStorage implements IStorage {
     } else {
       return "InProgress";
     }
+  }
+
+  // ------------------------------------------------------------------------
+  // Audit Log methods
+  // ------------------------------------------------------------------------
+  async createAuditLog(auditLog: InsertAuditLog): Promise<AuditLog> {
+    return this.createEntity<InsertAuditLog, AuditLog>('audit_logs', auditLog);
+  }
+
+  async getAuditLog(id: number): Promise<AuditLog | undefined> {
+    return this.getEntityById<AuditLog>('audit_logs', id);
+  }
+
+  async getAuditLogs(options: {
+    limit?: number;
+    offset?: number;
+    userId?: number;
+    entityType?: string;
+    entityId?: number;
+    action?: string;
+    startDate?: Date;
+    endDate?: Date;
+    departmentId?: number;
+  }): Promise<AuditLog[]> {
+    const params: any[] = [];
+    let query = 'SELECT * FROM audit_logs WHERE 1=1';
+    
+    if (options.userId !== undefined) {
+      params.push(options.userId);
+      query += ` AND user_id = $${params.length}`;
+    }
+    
+    if (options.entityType !== undefined) {
+      params.push(options.entityType);
+      query += ` AND entity_type = $${params.length}`;
+    }
+    
+    if (options.entityId !== undefined) {
+      params.push(options.entityId);
+      query += ` AND entity_id = $${params.length}`;
+    }
+    
+    if (options.action !== undefined) {
+      params.push(options.action);
+      query += ` AND action = $${params.length}`;
+    }
+    
+    if (options.startDate !== undefined) {
+      params.push(options.startDate);
+      query += ` AND created_at >= $${params.length}`;
+    }
+    
+    if (options.endDate !== undefined) {
+      params.push(options.endDate);
+      query += ` AND created_at <= $${params.length}`;
+    }
+    
+    if (options.departmentId !== undefined) {
+      params.push(options.departmentId);
+      query += ` AND department_id = $${params.length}`;
+    }
+    
+    // Add ordering
+    query += ' ORDER BY created_at DESC';
+    
+    // Add pagination
+    if (options.limit !== undefined) {
+      params.push(options.limit);
+      query += ` LIMIT $${params.length}`;
+    } else {
+      query += ' LIMIT 100'; // Default limit
+    }
+    
+    if (options.offset !== undefined) {
+      params.push(options.offset);
+      query += ` OFFSET $${params.length}`;
+    }
+    
+    return this.query<AuditLog>(query, params);
+  }
+
+  async getAuditLogsByUser(userId: number, limit?: number, offset?: number): Promise<AuditLog[]> {
+    return this.getAuditLogs({ userId, limit, offset });
   }
 } 

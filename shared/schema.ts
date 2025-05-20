@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, boolean, timestamp, doublePrecision, pgEnum, varchar } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, timestamp, doublePrecision, pgEnum, varchar, jsonb } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -275,6 +275,20 @@ export const taskMilestones = pgTable('task_milestones', {
   weight: doublePrecision('weight').default(1), // Weight for milestone completion calculation
 });
 
+// Audit Logs
+export const auditLogs = pgTable('audit_logs', {
+  id: serial('id').primaryKey(),
+  userId: integer('user_id').references(() => users.id, { onDelete: 'set null' }),
+  action: text('action').notNull(),
+  entityType: text('entity_type').notNull(),
+  entityId: integer('entity_id'),
+  details: jsonb('details'),
+  ipAddress: text('ip_address'),
+  userAgent: text('user_agent'),
+  departmentId: integer('department_id').references(() => departments.id, { onDelete: 'set null' }),
+  createdAt: timestamp('created_at').defaultNow(),
+});
+
 // ===== Insert Schemas =====
 
 export const insertUserSchema = createInsertSchema(users).omit({ id: true });
@@ -370,6 +384,17 @@ export const insertMilestoneSchema = createInsertSchema(milestones)
 
 export const insertTaskMilestoneSchema = createInsertSchema(taskMilestones).omit({ id: true });
 
+export const insertAuditLogSchema = createInsertSchema(auditLogs).omit({ 
+  id: true,
+  createdAt: true 
+}).extend({
+  details: z.record(z.any()).optional(),
+  ipAddress: z.string().optional(),
+  userAgent: z.string().optional(),
+  departmentId: z.number().optional(),
+  userId: z.number().optional(),
+});
+
 // Login schema (subset of user)
 export const loginSchema = z.object({
   username: z.string().min(1, "Username is required"),
@@ -397,7 +422,7 @@ export type InsertTaskComment = z.infer<typeof insertTaskCommentSchema>;
 export type InsertAssignmentComment = z.infer<typeof insertAssignmentCommentSchema>;
 export type InsertProjectDependency = z.infer<typeof insertProjectDependencySchema>;
 export type InsertMilestone = z.infer<typeof insertMilestoneSchema>;
-export type InsertTaskMilestone = z.infer<typeof insertTaskMilestoneSchema>;
+export type InsertAuditLog = z.infer<typeof insertAuditLogSchema>;
 
 // Select Types
 export type User = typeof users.$inferSelect;
@@ -418,6 +443,7 @@ export type TaskComment = typeof taskComments.$inferSelect;
 export type AssignmentComment = typeof assignmentComments.$inferSelect;
 export type Milestone = typeof milestones.$inferSelect;
 export type TaskMilestone = typeof taskMilestones.$inferSelect;
+export type AuditLog = typeof auditLogs.$inferSelect;
 
 // Login Type
 export type LoginData = z.infer<typeof loginSchema>;

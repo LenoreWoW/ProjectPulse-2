@@ -42,6 +42,7 @@ import RepositoryPage from "@/pages/repository-page";
 import DependenciesPage from "@/pages/dependencies-page";
 import AnalyticsDashboardPage from "@/pages/analytics-dashboard";
 import UserPermissionsPage from "@/pages/user-permissions-page";
+import AuditLogsPage from "@/pages/audit-logs-page";
 import { ThemeProvider } from "@/providers/theme-provider";
 import { I18nProvider } from "@/hooks/use-i18n-new";
 import LoginHelper from "@/login-helper";
@@ -103,6 +104,11 @@ function Router() {
         path="/departments" 
         component={DepartmentsPage} 
         requiredPermissions={["canManageDepartments", "canViewAllDepartments"]}
+      />
+      <ProtectedRoute 
+        path="/audit-logs" 
+        component={AuditLogsPage} 
+        requiredRoles={["Administrator", "MainPMO", "SubPMO", "DepartmentDirector"]}
       />
       <ProtectedRoute 
         path="/reports" 

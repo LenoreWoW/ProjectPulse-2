@@ -21,6 +21,7 @@ import passport from "passport";
 import { fileURLToPath } from "url";
 import { dirname, join } from "path";
 import { registerAnalyticsRoutes } from "./analytics-routes";
+import { registerAuditLogRoutes } from "./audit-log-routes";
 import express from "express";
 import { sendEmail, sendPasswordResetEmail, sendApprovalNotificationEmail } from "./email";
 
@@ -2184,7 +2185,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   const analyticsRouter = express.Router();
   registerAnalyticsRoutes(analyticsRouter);
   app.use(analyticsRouter);
-
+  
+  // Register audit log routes 
+  const auditLogRouter = express.Router();
+  registerAuditLogRoutes(auditLogRouter, storage);
+  app.use(auditLogRouter);
+  
   const httpServer = createServer(app);
   return httpServer;
 }

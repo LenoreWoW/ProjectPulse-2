@@ -26,6 +26,7 @@ import {
   Moon,
   Sun,
   LogOut,
+  ClipboardList,
 } from "lucide-react";
 import { 
   DropdownMenu, 
@@ -122,6 +123,12 @@ export function Sidebar() {
           {/* Permission-based items */}
           <PermissionGate permission="canApproveProject">
             {renderNavItem({ icon: MessageSquare, label: t("approvals"), path: "/approvals" })}
+          </PermissionGate>
+          
+          <PermissionGate
+            roles={["Administrator", "MainPMO", "SubPMO", "DepartmentDirector"]}
+          >
+            {renderNavItem({ icon: ClipboardList, label: t("auditLogs"), path: "/audit-logs" })}
           </PermissionGate>
           
           <PermissionGate permission="canViewReports">

@@ -187,18 +187,35 @@ export function useProjectOwnership(projectId?: number, managerId?: number | nul
  */
 export function PermissionGate({ 
   children, 
-  permission 
+  permission,
+  roles
 }: { 
   children: React.ReactNode, 
-  permission: keyof Permission 
+  permission?: keyof Permission,
+  roles?: string[]
 }) {
   const permissions = usePermissions();
+  const { user } = useAuth();
   
-  if (!permissions[permission]) {
+  // Check role-based access if roles are provided
+  if (roles && user?.role) {
+    if (roles.includes(user.role)) {
+      return <>{children}</>;
+    }
+    // If roles check fails, and no permission is provided, return null
+    if (!permission) {
+      return null;
+    }
+  }
+  
+  // If permission is provided, check it
+  if (permission && !permissions[permission]) {
     return null;
   }
   
-  return <>{children}</>;
+  // If we're here, either no permission and roles were provided, 
+  // or the permission check passed
+  return permission ? <>{children}</> : null;
 }
 
 /**

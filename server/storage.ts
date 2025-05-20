@@ -5,7 +5,8 @@ import {
   Assignment, InsertAssignment, ActionItem, InsertActionItem,
   WeeklyUpdate, InsertWeeklyUpdate, ProjectCostHistory, InsertProjectCostHistory,
   projectStatusEnum, roleEnum, userStatusEnum, ProjectGoal, InsertProjectGoal,
-  Milestone, InsertMilestone, TaskMilestone, InsertTaskMilestone
+  Milestone, InsertMilestone, TaskMilestone,
+  AuditLog, InsertAuditLog
 } from "@shared/schema";
 import createMemoryStore from "memorystore";
 import session from "express-session";
@@ -20,6 +21,13 @@ interface ProjectDependency {
 interface InsertProjectDependency {
   projectId: number;
   dependsOnProjectId: number;
+}
+
+// Define an interface for TaskMilestone insertion since it's not in the shared schema
+interface InsertTaskMilestone {
+  taskId: number;
+  milestoneId: number;
+  weight?: number;
 }
 
 const MemoryStore = createMemoryStore(session);
@@ -136,6 +144,22 @@ export interface IStorage {
   updateTaskMilestone(id: number, taskMilestone: Partial<TaskMilestone>): Promise<TaskMilestone | undefined>;
   deleteTaskMilestone(id: number): Promise<boolean>;
   recalculateMilestoneProgress(milestoneId: number): Promise<void>;
+
+  // Audit Logs
+  createAuditLog(auditLog: InsertAuditLog): Promise<AuditLog>;
+  getAuditLog(id: number): Promise<AuditLog | undefined>;
+  getAuditLogs(options: {
+    limit?: number;
+    offset?: number;
+    userId?: number;
+    entityType?: string;
+    entityId?: number;
+    action?: string;
+    startDate?: Date;
+    endDate?: Date;
+    departmentId?: number;
+  }): Promise<AuditLog[]>;
+  getAuditLogsByUser(userId: number, limit?: number, offset?: number): Promise<AuditLog[]>;
 }
 
 export class MemStorage implements IStorage {
@@ -155,6 +179,7 @@ export class MemStorage implements IStorage {
   private projectDependencies: Map<number, ProjectDependency>;
   private milestones: Map<number, Milestone>;
   private taskMilestones: Map<number, TaskMilestone>;
+  private auditLogs: Map<number, AuditLog>;
   
   // Counters for IDs
   private userIdCounter: number;
@@ -173,6 +198,7 @@ export class MemStorage implements IStorage {
   private projectDependencyIdCounter: number;
   private milestoneIdCounter: number;
   private taskMilestoneIdCounter: number;
+  private auditLogIdCounter: number;
   
   sessionStore: session.Store;
 
@@ -193,6 +219,7 @@ export class MemStorage implements IStorage {
     this.projectDependencies = new Map();
     this.milestones = new Map();
     this.taskMilestones = new Map();
+    this.auditLogs = new Map();
     
     this.userIdCounter = 1;
     this.departmentIdCounter = 1;
@@ -210,6 +237,7 @@ export class MemStorage implements IStorage {
     this.projectDependencyIdCounter = 1;
     this.milestoneIdCounter = 1;
     this.taskMilestoneIdCounter = 1;
+    this.auditLogIdCounter = 1;
     
     this.sessionStore = new MemoryStore({
       checkPeriod: 86400000 // 24 hours
@@ -1097,6 +1125,97 @@ export class MemStorage implements IStorage {
     }
     
     return "InProgress";
+  }
+
+  // Audit Logs
+  async createAuditLog(auditLog: InsertAuditLog): Promise<AuditLog> {
+    const id = this.auditLogIdCounter++;
+    const now = new Date();
+    const newAuditLog: AuditLog = {
+      id,
+      userId: auditLog.userId || null,
+      action: auditLog.action,
+      entityType: auditLog.entityType,
+      entityId: auditLog.entityId || null,
+      details: auditLog.details || null,
+      ipAddress: auditLog.ipAddress || null,
+      userAgent: auditLog.userAgent || null,
+      departmentId: auditLog.departmentId || null,
+      createdAt: now
+    };
+    this.auditLogs.set(id, newAuditLog);
+    return newAuditLog;
+  }
+
+  async getAuditLog(id: number): Promise<AuditLog | undefined> {
+    return this.auditLogs.get(id);
+  }
+
+  async getAuditLogs(options: {
+    limit?: number;
+    offset?: number;
+    userId?: number;
+    entityType?: string;
+    entityId?: number;
+    action?: string;
+    startDate?: Date;
+    endDate?: Date;
+    departmentId?: number;
+  }): Promise<AuditLog[]> {
+    let logs = Array.from(this.auditLogs.values());
+    
+    // Apply filters
+    if (options.userId !== undefined) {
+      logs = logs.filter(log => log.userId === options.userId);
+    }
+    
+    if (options.entityType !== undefined) {
+      logs = logs.filter(log => log.entityType === options.entityType);
+    }
+    
+    if (options.entityId !== undefined) {
+      logs = logs.filter(log => log.entityId === options.entityId);
+    }
+    
+    if (options.action !== undefined) {
+      logs = logs.filter(log => log.action === options.action);
+    }
+    
+    if (options.startDate) {
+      logs = logs.filter(log => {
+        if (!log.createdAt) return false;
+        const logDate = new Date(log.createdAt);
+        return logDate >= options.startDate!;
+      });
+    }
+    
+    if (options.endDate) {
+      logs = logs.filter(log => {
+        if (!log.createdAt) return false;
+        const logDate = new Date(log.createdAt);
+        return logDate <= options.endDate!;
+      });
+    }
+    
+    if (options.departmentId !== undefined) {
+      logs = logs.filter(log => log.departmentId === options.departmentId);
+    }
+    
+    // Sort by most recent first
+    logs.sort((a, b) => {
+      if (!a.createdAt || !b.createdAt) return 0;
+      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+    });
+    
+    // Apply pagination
+    const offset = options.offset || 0;
+    const limit = options.limit || 20;
+    
+    return logs.slice(offset, offset + limit);
+  }
+
+  async getAuditLogsByUser(userId: number, limit?: number, offset?: number): Promise<AuditLog[]> {
+    return this.getAuditLogs({ userId, limit, offset });
   }
 }
 
