@@ -64,17 +64,19 @@ type PermissionEditDialogProps = {
 
 function PermissionEditDialog({ user, onSave, open, onOpenChange }: PermissionEditDialogProps) {
   const { t } = useI18n();
-  const [role, setRole] = useState<string>(user.role || "User");
+  const [role, setRole] = useState<string>(user?.role || "User");
   const [customEnabled, setCustomEnabled] = useState<boolean>(false);
   const [customPermissions, setCustomPermissions] = useState<{ [key: string]: boolean }>({});
   const permissions = usePermissions();
   
-  // Reset state when user changes
+  // Reset state when user or open state changes
   useEffect(() => {
-    setRole(user.role || "User");
-    setCustomEnabled(false);
-    setCustomPermissions({});
-  }, [user]);
+    if (user && open) {
+      setRole(user.role || "User");
+      setCustomEnabled(false);
+      setCustomPermissions({});
+    }
+  }, [user, open]);
   
   const permissionsList = Object.keys(permissions).map(key => ({
     id: key,
@@ -89,6 +91,11 @@ function PermissionEditDialog({ user, onSave, open, onOpenChange }: PermissionEd
     );
     onOpenChange(false);
   };
+  
+  // Only render the dialog content when it's open to avoid DOM issues
+  if (!open || !user) {
+    return null;
+  }
   
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -135,7 +142,7 @@ function PermissionEditDialog({ user, onSave, open, onOpenChange }: PermissionEd
                 {permissionsList.map((permission) => (
                   <div key={permission.id} className="flex items-center space-x-2">
                     <Checkbox 
-                      id={permission.id}
+                      id={`perm-${permission.id}`}
                       checked={customPermissions[permission.id] || false}
                       onCheckedChange={(checked) => {
                         setCustomPermissions({
@@ -144,7 +151,7 @@ function PermissionEditDialog({ user, onSave, open, onOpenChange }: PermissionEd
                         });
                       }}
                     />
-                    <Label htmlFor={permission.id}>{permission.name}</Label>
+                    <Label htmlFor={`perm-${permission.id}`}>{permission.name}</Label>
                   </div>
                 ))}
               </div>
@@ -228,6 +235,15 @@ export default function UserPermissionsPage() {
       )
     : users;
     
+  // Add this handler to properly handle dialog closing
+  const handleDialogOpenChange = (open: boolean) => {
+    setDialogOpen(open);
+    if (!open) {
+      // Reset selectedUser when dialog is closed
+      setTimeout(() => setSelectedUser(null), 300); // Small delay to prevent DOM issues
+    }
+  };
+  
   const handleEditPermissions = (user: User) => {
     setSelectedUser(user);
     setDialogOpen(true);
@@ -352,7 +368,7 @@ export default function UserPermissionsPage() {
           user={selectedUser}
           onSave={handleSavePermissions}
           open={dialogOpen}
-          onOpenChange={setDialogOpen}
+          onOpenChange={handleDialogOpenChange}
         />
       )}
     </div>

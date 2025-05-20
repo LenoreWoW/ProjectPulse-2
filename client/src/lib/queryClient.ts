@@ -50,12 +50,20 @@ export async function apiRequest(method: string, url: string, data?: any) {
     // Check response without trying to parse JSON first
     if (!response.ok) {
       const contentType = response.headers.get('content-type');
+      console.error(`API Error: ${response.status} ${response.statusText}`);
+      
+      // Log headers in a simpler way to avoid Iterator compatibility issues
+      const headers: Record<string, string> = {};
+      response.headers.forEach((value, key) => {
+        headers[key] = value;
+      });
+      console.error(`Response headers:`, headers);
       
       // Only try to parse as JSON if the content type is application/json
       if (contentType && contentType.includes('application/json')) {
         try {
           const errorData = await response.json();
-          console.error("API Error:", errorData);
+          console.error("API Error details:", errorData);
           
           // Enhanced error handling for validation errors
           if (errorData.errors && Array.isArray(errorData.errors)) {
@@ -68,14 +76,29 @@ export async function apiRequest(method: string, url: string, data?: any) {
           
           throw new Error(`${response.status}: ${errorData.message || 'Unknown error'}`);
         } catch (e) {
-          if (e instanceof Error) {
+          if (e instanceof Error && e.message.includes(':')) {
             throw e; // Rethrow the error we just created
           }
-          throw new Error(`${response.status}: Failed to parse error response`);
+          
+          // Try to get response text as fallback
+          try {
+            const text = await response.clone().text();
+            console.error("Response text:", text);
+            throw new Error(`${response.status}: ${text || response.statusText}`);
+          } catch {
+            throw new Error(`${response.status}: Failed to parse error response`);
+          }
         }
       } else {
-        // For non-JSON responses, return a generic error
-        throw new Error(`${response.status}: ${response.statusText}`);
+        // For non-JSON responses, try to get the response text
+        try {
+          const text = await response.text();
+          console.error("Non-JSON error response:", text);
+          throw new Error(`${response.status}: ${text || response.statusText}`);
+        } catch {
+          // If we can't get the text, just use statusText
+          throw new Error(`${response.status}: ${response.statusText}`);
+        }
       }
     }
     

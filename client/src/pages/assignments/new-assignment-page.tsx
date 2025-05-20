@@ -78,6 +78,11 @@ export default function NewAssignmentPage() {
   // Create assignment mutation
   const createAssignment = useMutation({
     mutationFn: async (data: FormValues) => {
+      console.log("Submitting assignment data:", {
+        ...data,
+        assignedByUserId: user!.id,
+      });
+      
       const response = await fetch("/api/assignments", {
         method: "POST",
         headers: {
@@ -90,7 +95,9 @@ export default function NewAssignmentPage() {
       });
       
       if (!response.ok) {
-        throw new Error("Failed to create assignment");
+        const errorData = await response.json().catch(() => ({}));
+        console.error("Assignment creation failed:", response.status, errorData);
+        throw new Error(errorData.message || `Failed to create assignment (${response.status})`);
       }
       
       const createdAssignment = await response.json();
@@ -126,6 +133,7 @@ export default function NewAssignmentPage() {
       setLocation("/assignments");
     },
     onError: (error) => {
+      console.error("Assignment creation error:", error);
       toast({
         title: "Error",
         description: error.message || "Something went wrong",

@@ -104,6 +104,8 @@ export default function NewTaskPage() {
         deadline: data.deadline instanceof Date ? data.deadline.toISOString() : data.deadline,
       };
 
+      console.log("Submitting task data:", taskData);
+
       const response = await fetch("/api/tasks", {
         method: "POST",
         headers: {
@@ -113,8 +115,9 @@ export default function NewTaskPage() {
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || "Failed to create task");
+        const errorData = await response.json().catch(() => ({}));
+        console.error("Task creation failed:", response.status, errorData);
+        throw new Error(errorData.message || `Failed to create task (${response.status})`);
       }
 
       return response.json();
@@ -128,6 +131,7 @@ export default function NewTaskPage() {
       navigate("/tasks");
     },
     onError: (error: Error) => {
+      console.error("Task creation error:", error);
       toast({
         title: t("error"),
         description: error.message,

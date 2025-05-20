@@ -357,9 +357,9 @@ export default function DepartmentsPage() {
                           <FormItem>
                             <FormLabel>{t("departmentHead")}</FormLabel>
                             <Select 
-                              onValueChange={(value) => field.onChange(value ? parseInt(value) : null)} 
-                              defaultValue={field.value?.toString() || ""}
-                              value={field.value?.toString() || ""}
+                              onValueChange={(value) => field.onChange(value === "none" ? null : parseInt(value))} 
+                              defaultValue={field.value?.toString() || "none"}
+                              value={field.value?.toString() || "none"}
                             >
                               <FormControl>
                                 <SelectTrigger>
@@ -392,8 +392,11 @@ export default function DepartmentsPage() {
                               <Input 
                                 type="number"
                                 {...field}
-                                value={field.value ?? undefined}
-                                onChange={(e) => field.onChange(e.target.value ? parseFloat(e.target.value) : null)}
+                                value={field.value === null || field.value === undefined ? '' : field.value}
+                                onChange={(e) => {
+                                  const value = e.target.value;
+                                  field.onChange(value === '' ? null : parseFloat(value));
+                                }}
                                 placeholder={t("enterBudget")} 
                               />
                             </FormControl>
@@ -529,9 +532,9 @@ export default function DepartmentsPage() {
                         <FormItem>
                           <FormLabel>{t("departmentHead")}</FormLabel>
                           <Select 
-                            onValueChange={(value) => field.onChange(value ? parseInt(value) : null)} 
-                            defaultValue={field.value?.toString() || ""}
-                            value={field.value?.toString() || ""}
+                            onValueChange={(value) => field.onChange(value === "none" ? null : parseInt(value))} 
+                            defaultValue={field.value?.toString() || "none"}
+                            value={field.value?.toString() || "none"}
                           >
                             <FormControl>
                               <SelectTrigger>
@@ -564,8 +567,11 @@ export default function DepartmentsPage() {
                             <Input 
                               type="number"
                               {...field}
-                              value={field.value ?? undefined}
-                              onChange={(e) => field.onChange(e.target.value ? parseFloat(e.target.value) : null)}
+                              value={field.value === null || field.value === undefined ? '' : field.value}
+                              onChange={(e) => {
+                                const value = e.target.value;
+                                field.onChange(value === '' ? null : parseFloat(value));
+                              }}
                               placeholder={t("enterBudget")} 
                             />
                           </FormControl>

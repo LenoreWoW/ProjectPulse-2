@@ -161,6 +161,12 @@ export default function TasksPage() {
       {/* Page Title */}
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{t("tasks")}</h1>
+        <Link href="/tasks/new">
+          <Button className="bg-qatar-maroon hover:bg-maroon-800 text-white">
+            <Plus className="mr-2 h-4 w-4" />
+            <span>{t("newTask")}</span>
+          </Button>
+        </Link>
       </div>
       
       {/* Tasks Content */}
@@ -275,6 +281,16 @@ export default function TasksPage() {
                 </Card>
               ))}
             </div>
+          ) : error ? (
+            <Card className="bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800">
+              <CardHeader>
+                <CardTitle className="text-red-700 dark:text-red-300">{t("error")}</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-red-600 dark:text-red-300">{t("somethingWentWrong")}</p>
+                <p className="text-red-500 dark:text-red-400">{(error as Error).message || t("tryAgain")}</p>
+              </CardContent>
+            </Card>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {(!data?.assignedByMe || data.assignedByMe.length === 0) ? (
@@ -345,6 +361,16 @@ export default function TasksPage() {
                 </Card>
               ))}
             </div>
+          ) : error ? (
+            <Card className="bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800">
+              <CardHeader>
+                <CardTitle className="text-red-700 dark:text-red-300">{t("error")}</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-red-600 dark:text-red-300">{t("somethingWentWrong")}</p>
+                <p className="text-red-500 dark:text-red-400">{(error as Error).message || t("tryAgain")}</p>
+              </CardContent>
+            </Card>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {!data || 

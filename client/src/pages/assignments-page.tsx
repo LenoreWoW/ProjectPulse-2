@@ -87,82 +87,9 @@ export default function AssignmentsPage() {
   const activeAssignedToMe = assignedToMeFiltered.filter(a => a.status !== "Completed");
   const activeAssignedByMe = assignedByMeFiltered.filter(a => a.status !== "Completed");
   
-  // Format priority badge
-  const getPriorityBadge = (priority: string | null) => {
-    if (!priority) return null;
-    switch (priority) {
-      case 'Critical':
-        return (
-          <div className="flex items-center text-red-700 dark:text-red-400">
-            <AlertOctagon className="w-4 h-4 mr-1" />
-            <span className="text-xs">{t("critical")}</span>
-          </div>
-        );
-      case 'High':
-        return (
-          <div className="flex items-center text-orange-600 dark:text-orange-400">
-            <Clock className="w-4 h-4 mr-1" />
-            <span className="text-xs">{t("high")}</span>
-          </div>
-        );
-      case 'Medium':
-        return (
-          <div className="flex items-center text-blue-600 dark:text-blue-400">
-            <AlarmCheck className="w-4 h-4 mr-1" />
-            <span className="text-xs">{t("medium")}</span>
-          </div>
-        );
-      default:
-        return (
-          <div className="flex items-center text-green-600 dark:text-green-400">
-            <CheckCircle className="w-4 h-4 mr-1" />
-            <span className="text-xs">{t("low")}</span>
-          </div>
-        );
-    }
-  };
-  
-  // Format status badge
-  const getStatusBadge = (status: string | null) => {
-    if (!status) return null;
-    switch (status) {
-      case 'Todo':
-        return (
-          <span className="px-2 py-1 bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200 text-xs rounded-full">
-            {t("todo")}
-          </span>
-        );
-      case 'InProgress':
-        return (
-          <span className="px-2 py-1 bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300 text-xs rounded-full">
-            {t("inProgress")}
-          </span>
-        );
-      case 'Review':
-        return (
-          <span className="px-2 py-1 bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300 text-xs rounded-full">
-            {t("review")}
-          </span>
-        );
-      case 'Completed':
-        return (
-          <span className="px-2 py-1 bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300 text-xs rounded-full">
-            {t("completed")}
-          </span>
-        );
-      default:
-        return (
-          <span className="px-2 py-1 bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200 text-xs rounded-full">
-            {status}
-          </span>
-        );
-    }
-  };
-  
   // Format date for display
   const formatDate = (dateString?: string | Date | null) => {
     if (!dateString) return "";
-    
     return new Intl.DateTimeFormat('en-US', { 
       year: 'numeric', 
       month: 'short', 
@@ -206,6 +133,78 @@ export default function AssignmentsPage() {
     }
   };
   
+  // Format priority badge
+  const getPriorityBadge = (priority: string | null) => {
+    if (!priority) return null;
+    switch (priority) {
+      case 'Critical':
+        return (
+          <div className="flex items-center text-red-700 dark:text-red-400">
+            <AlertOctagon className="w-4 h-4 mr-1" />
+            <span className="text-xs">{t("critical")}</span>
+          </div>
+        );
+      case 'High':
+        return (
+          <div className="flex items-center text-orange-600 dark:text-orange-400">
+            <AlertOctagon className="w-4 h-4 mr-1" />
+            <span className="text-xs">{t("high")}</span>
+          </div>
+        );
+      case 'Medium':
+        return (
+          <div className="flex items-center text-blue-600 dark:text-blue-400">
+            <Clock className="w-4 h-4 mr-1" />
+            <span className="text-xs">{t("medium")}</span>
+          </div>
+        );
+      default:
+        return (
+          <div className="flex items-center text-green-600 dark:text-green-400">
+            <AlarmCheck className="w-4 h-4 mr-1" />
+            <span className="text-xs">{t("low")}</span>
+          </div>
+        );
+    }
+  };
+  
+  // Format status badge
+  const getStatusBadge = (status: string | null) => {
+    if (!status) return null;
+    switch (status) {
+      case 'Todo':
+        return (
+          <span className="px-2 py-1 bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200 text-xs rounded-full">
+            {t("todo")}
+          </span>
+        );
+      case 'InProgress':
+        return (
+          <span className="px-2 py-1 bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300 text-xs rounded-full">
+            {t("inProgress")}
+          </span>
+        );
+      case 'Review':
+        return (
+          <span className="px-2 py-1 bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300 text-xs rounded-full">
+            {t("review")}
+          </span>
+        );
+      case 'Completed':
+        return (
+          <span className="px-2 py-1 bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300 text-xs rounded-full">
+            {t("completed")}
+          </span>
+        );
+      default:
+        return (
+          <span className="px-2 py-1 bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200 text-xs rounded-full">
+            {status}
+          </span>
+        );
+    }
+  };
+  
   return (
     <>
       {/* Page Title */}
@@ -237,13 +236,13 @@ export default function AssignmentsPage() {
             </div>
           </div>
           
-          <div className="grid gap-1.5 w-full md:w-40">
-            <label htmlFor="status" className="text-sm font-medium leading-none">{t("status")}</label>
-            <Select 
-              value={filterStatus} 
+          <div className="grid gap-1.5 w-full md:w-48">
+            <label htmlFor="status-filter" className="text-sm font-medium leading-none">{t("status")}</label>
+            <Select
+              value={filterStatus}
               onValueChange={setFilterStatus}
             >
-              <SelectTrigger id="status">
+              <SelectTrigger id="status-filter">
                 <SelectValue placeholder={t("allStatuses")} />
               </SelectTrigger>
               <SelectContent>
@@ -256,28 +255,27 @@ export default function AssignmentsPage() {
             </Select>
           </div>
           
-          <div className="grid gap-1.5 w-full md:w-40">
-            <label htmlFor="priority" className="text-sm font-medium leading-none">{t("priority")}</label>
-            <Select 
-              value={filterPriority} 
+          <div className="grid gap-1.5 w-full md:w-48">
+            <label htmlFor="priority-filter" className="text-sm font-medium leading-none">{t("priority")}</label>
+            <Select
+              value={filterPriority}
               onValueChange={setFilterPriority}
             >
-              <SelectTrigger id="priority">
+              <SelectTrigger id="priority-filter">
                 <SelectValue placeholder={t("allPriorities")} />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all-priorities">{t("allPriorities")}</SelectItem>
-                <SelectItem value="Critical">{t("critical")}</SelectItem>
-                <SelectItem value="High">{t("high")}</SelectItem>
-                <SelectItem value="Medium">{t("medium")}</SelectItem>
                 <SelectItem value="Low">{t("low")}</SelectItem>
+                <SelectItem value="Medium">{t("medium")}</SelectItem>
+                <SelectItem value="High">{t("high")}</SelectItem>
+                <SelectItem value="Critical">{t("critical")}</SelectItem>
               </SelectContent>
             </Select>
           </div>
         </div>
       </div>
       
-      {/* Assignments Content */}
       <Tabs 
         value={activeTab} 
         onValueChange={setActiveTab} 
@@ -386,6 +384,16 @@ export default function AssignmentsPage() {
                 </Card>
               ))}
             </div>
+          ) : error ? (
+            <Card className="bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800">
+              <CardHeader>
+                <CardTitle className="text-red-700 dark:text-red-300">{t("error")}</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-red-600 dark:text-red-300">{t("somethingWentWrong")}</p>
+                <p className="text-red-500 dark:text-red-400">{(error as Error).message || t("tryAgain")}</p>
+              </CardContent>
+            </Card>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {activeAssignedByMe.length === 0 ? (
@@ -447,6 +455,16 @@ export default function AssignmentsPage() {
                 </Card>
               ))}
             </div>
+          ) : error ? (
+            <Card className="bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800">
+              <CardHeader>
+                <CardTitle className="text-red-700 dark:text-red-300">{t("error")}</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-red-600 dark:text-red-300">{t("somethingWentWrong")}</p>
+                <p className="text-red-500 dark:text-red-400">{(error as Error).message || t("tryAgain")}</p>
+              </CardContent>
+            </Card>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {completedAssignments.length === 0 ? (
@@ -484,8 +502,8 @@ export default function AssignmentsPage() {
                         </div>
                       </div>
                     </CardContent>
-                    <CardFooter className="border-t pt-3 text-xs text-gray-500 dark:text-gray-400">
-                      {t("completedOn")}: {formatDate(assignment.updatedAt)}
+                    <CardFooter className="border-t pt-3">
+                      {assignment.deadline && getDaysUntilDeadline(assignment.deadline)}
                     </CardFooter>
                   </Card>
                 ))

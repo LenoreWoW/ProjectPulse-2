@@ -183,24 +183,40 @@ function validateBody<T>(schema: z.Schema<T>) {
         transformProjectDates(req, res, () => {});
       }
       
-      // Log the request body for debugging
-      console.log('Validating request body:', req.body);
+      // Log detailed information about request for debugging
+      console.log(`Validating request body for path: ${req.path}`);
+      console.log('Request body:', JSON.stringify(req.body, null, 2));
+      console.log('Schema description:', schema.description || 'No schema description available');
       
-      // Let the schema handle validation - the transformProjectDates function 
-      // should have already converted the dates properly
-      req.body = schema.parse(req.body);
+      // Parse with safe mode first to get validation errors if any
+      const result = schema.safeParse(req.body);
+      if (!result.success) {
+        console.error('Validation failed with errors:', result.error.errors);
+        console.error('Validation error format issues:', JSON.stringify(result.error.format(), null, 2));
+        
+        return res.status(400).json({ 
+          message: "Validation failed", 
+          errors: result.error.errors 
+        });
+      }
+      
+      // Assign the validated data to req.body
+      req.body = result.data;
       next();
     } catch (error) {
+      console.error('Unexpected error during validation:', error);
       if (error instanceof z.ZodError) {
-        console.log('Validating request body:', req.body);
-        console.log('Validation errors:', error.errors);
+        console.error('Zod validation errors:', error.errors);
         res.status(400).json({ 
           message: "Validation failed", 
           errors: error.errors 
         });
         return;
       }
-      next(error);
+      res.status(500).json({
+        message: "Server error during validation",
+        error: error instanceof Error ? error.message : "Unknown error"
+      });
     }
   };
 }
@@ -386,10 +402,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     validateBody(insertDepartmentSchema), 
     async (req, res) => {
       try {
+        console.log("Creating department with data:", JSON.stringify(req.body, null, 2));
         const newDepartment = await storage.createDepartment(req.body);
+        console.log("Department created successfully:", JSON.stringify(newDepartment, null, 2));
         res.status(201).json(newDepartment);
       } catch (error) {
-        res.status(500).json({ message: "Failed to create department" });
+        console.error("Failed to create department:", error);
+        if (error instanceof Error) {
+          res.status(500).json({ message: `Failed to create department: ${error.message}` });
+        } else {
+          res.status(500).json({ message: "Failed to create department: Unknown error" });
+        }
       }
     }
   );
@@ -845,17 +868,82 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   app.get("/api/tasks", hasAuth(async (req, res) => {
     try {
+      console.log(`Getting tasks for user ID: ${req.currentUser.id}`);
       const assignedToMe = await storage.getTasksByAssignee(req.currentUser.id);
       const assignedByMe = await storage.getTasksByCreator(req.currentUser.id);
+      
+      console.log(`Found ${assignedToMe.length} tasks assigned to user and ${assignedByMe.length} tasks created by user`);
       
       res.json({
         assignedToMe,
         assignedByMe
       });
     } catch (error) {
-      res.status(500).json({ message: "Failed to fetch tasks" });
+      console.error("Error fetching tasks:", error);
+      res.status(500).json({ 
+        message: "Failed to fetch tasks", 
+        error: error instanceof Error ? error.message : String(error) 
+      });
     }
   }));
+  
+  // Direct task creation endpoint
+  app.post(
+    "/api/tasks", 
+    validateBody(insertTaskSchema),
+    hasAuth(async (req, res) => {
+      try {
+        const projectId = req.body.projectId;
+        if (!projectId) {
+          return res.status(400).json({ message: "Project ID is required" });
+        }
+        
+        const project = await storage.getProject(projectId);
+        
+        if (!project) {
+          return res.status(404).json({ message: "Project not found" });
+        }
+        
+        // Check if user can create tasks in this project
+        if (
+          req.currentUser.role !== "Administrator" && 
+          req.currentUser.role !== "MainPMO" && 
+          req.currentUser.departmentId !== project.departmentId && 
+          req.currentUser.id !== project.managerUserId
+        ) {
+          return res.status(403).json({ message: "Forbidden: Cannot create tasks in different department's project" });
+        }
+        
+        const taskData = {
+          ...req.body,
+          createdByUserId: req.currentUser.id
+        };
+        
+        const newTask = await storage.createTask(taskData);
+        
+        // If task is assigned to someone, create a notification
+        if (newTask.assignedUserId && newTask.assignedUserId !== req.currentUser.id) {
+          try {
+            await storage.createNotification({
+              userId: newTask.assignedUserId,
+              message: `You have been assigned a new task: "${newTask.title}"`,
+              relatedEntity: "Task",
+              relatedEntityId: newTask.id,
+              isRead: false
+            });
+          } catch (notifyError) {
+            console.error("Failed to create notification:", notifyError);
+            // Don't fail the task creation if notification fails
+          }
+        }
+        
+        res.status(201).json(newTask);
+      } catch (error) {
+        console.error("Failed to create task:", error);
+        res.status(500).json({ message: "Failed to create task" });
+      }
+    })
+  );
   
   app.post(
     "/api/projects/:projectId/tasks", 
@@ -1471,15 +1559,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Assignments Routes
   app.get("/api/assignments", hasAuth(async (req, res) => {
     try {
+      console.log(`Getting assignments for user ID: ${req.currentUser.id}`);
       const assignedToMe = await storage.getAssignmentsByAssignee(req.currentUser.id);
       const assignedByMe = await storage.getAssignmentsByAssigner(req.currentUser.id);
+      
+      console.log(`Found ${assignedToMe.length} assignments assigned to user and ${assignedByMe.length} assignments created by user`);
       
       res.json({
         assignedToMe,
         assignedByMe
       });
     } catch (error) {
-      res.status(500).json({ message: "Failed to fetch assignments" });
+      console.error("Error fetching assignments:", error);
+      res.status(500).json({ 
+        message: "Failed to fetch assignments", 
+        error: error instanceof Error ? error.message : String(error) 
+      });
     }
   }));
   
@@ -1488,15 +1583,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
     validateBody(insertAssignmentSchema),
     hasAuth(async (req, res) => {
       try {
+        console.log("Creating new assignment:", req.body);
         const assignmentData = {
           ...req.body,
           assignedByUserId: req.currentUser.id
         };
         
         const newAssignment = await storage.createAssignment(assignmentData);
+        
+        // Create notification for assignee
+        if (newAssignment.assignedToUserId !== req.currentUser.id) {
+          try {
+            await storage.createNotification({
+              userId: newAssignment.assignedToUserId,
+              message: `You have been assigned a new assignment: "${newAssignment.title}"`,
+              relatedEntity: "Assignment",
+              relatedEntityId: newAssignment.id,
+              isRead: false
+            });
+          } catch (notifyError) {
+            console.error("Failed to create notification for assignment:", notifyError);
+            // Don't fail the assignment creation if notification fails
+          }
+        }
+        
+        console.log("Assignment created successfully:", newAssignment);
         res.status(201).json(newAssignment);
       } catch (error) {
-        res.status(500).json({ message: "Failed to create assignment" });
+        console.error("Error creating assignment:", error);
+        res.status(500).json({ 
+          message: "Failed to create assignment", 
+          error: error instanceof Error ? error.message : String(error) 
+        });
       }
     })
   );
