@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useI18n } from "@/hooks/use-i18n-new";
 import { useQuery } from "@tanstack/react-query";
-import { Project } from "@shared/schema";
+import { Project } from "@/lib/schema-types";
 import { useAuth } from "@/hooks/use-auth";
 import { usePermissions, PermissionGate } from "@/hooks/use-permissions";
 import { Button } from "@/components/ui/button";

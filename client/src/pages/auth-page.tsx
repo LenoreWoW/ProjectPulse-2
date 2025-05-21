@@ -18,13 +18,13 @@ import landmark4 from "../assets/landmarks/hd/image_1747300899310.png"; // Katar
 import landmark5 from "../assets/landmarks/hd/image_1747300922286.png"; // Souq Waqif
 import landmark6 from "../assets/landmarks/hd/image_1747300962058.png"; // State Grand Mosque
 import {
-  Form,
+  FormRoot,
   FormControl,
   FormField,
   FormItem,
   FormLabel,
   FormMessage,
-} from "@/components/ui/form";
+} from "@/components/ui/form-wrapper";
 import {
   Card,
   CardContent,
@@ -212,23 +212,23 @@ export default function AuthPage() {
               </TabsList>
               
               {/* Login Form */}
-              <TabsContent value="login">
-                <Form {...loginForm}>
+              <TabsContent value="login" className="pt-2">
+                <FormRoot form={loginForm}>
                   <form onSubmit={loginForm.handleSubmit(onLoginSubmit)} className="space-y-4">
                     <FormField
                       control={loginForm.control}
                       name="username"
                       render={({ field }) => (
-                        <FormItem className="mb-4">
+                        <FormItem>
+                          <FormLabel className="text-qatar-white">{t("username")}</FormLabel>
                           <FormControl>
-                            <Input 
-                              placeholder={t("username")} 
-                              {...field} 
-                              className="auth-input text-white"
-                              style={{ color: 'white' }}
+                            <Input
+                              {...field}
+                              placeholder={t("enterUsername")}
+                              className="bg-white/10 border-white/20 text-white"
                             />
                           </FormControl>
-                          <FormMessage className="text-red-300 text-sm ml-2" />
+                          <FormMessage />
                         </FormItem>
                       )}
                     />
@@ -261,12 +261,12 @@ export default function AuthPage() {
                       {t("login")}
                     </Button>
                   </form>
-                </Form>
+                </FormRoot>
               </TabsContent>
               
               {/* Registration Form */}
-              <TabsContent value="register">
-                <Form {...registerForm}>
+              <TabsContent value="register" className="pt-2">
+                <FormRoot form={registerForm}>
                   <form onSubmit={registerForm.handleSubmit(onRegisterSubmit)} className="space-y-4">
                     <FormField
                       control={registerForm.control}
@@ -441,7 +441,7 @@ export default function AuthPage() {
                       {t("register")}
                     </Button>
                   </form>
-                </Form>
+                </FormRoot>
               </TabsContent>
             </Tabs>
           </CardContent>

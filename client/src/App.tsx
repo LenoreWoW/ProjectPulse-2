@@ -1,221 +1,192 @@
-import { Switch, Route } from "wouter";
+import { useState } from "react";
+import { Route, Switch, useRoute, useLocation } from "wouter";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { useState } from "react";
-import NotFound from "@/pages/not-found";
+import { ThemeProvider } from "@/providers/theme-provider";
 import { useAuth } from "@/hooks/use-auth";
-import { ProtectedRoute } from "@/lib/protected-route";
-import { Sidebar } from "@/components/layout/sidebar";
-import { Header } from "@/components/layout/header";
-import { MobileMenu } from "@/components/layout/mobile-menu";
-import AuthPage from "@/pages/auth-page";
+import { I18nProvider } from "@/hooks/use-i18n-new";
+
+// Pages
 import Dashboard from "@/pages/dashboard";
+import GoalsPage from "@/pages/goals-page";
+import GoalDetailsPage from "@/pages/goals/goal-details-page";
+import NewGoalPage from "@/pages/goals/new-goal-page";
 import ProjectsPage from "@/pages/projects-page";
-import NewProjectPage from "@/pages/projects/new-project-page";
 import ProjectDetailsPage from "@/pages/projects/[id]";
-import CalendarPage from "@/pages/calendar-page";
+import NewProjectPage from "@/pages/projects/new-project-page";
 import TasksPage from "@/pages/tasks-page";
 import NewTaskPage from "@/pages/tasks/new-task-page";
-import GoalsPage from "@/pages/goals-page";
-import NewGoalPage from "@/pages/goals/new-goal-page";
-import GoalDetailsPage from "@/pages/goals/goal-details-page";
-import GoalsDependenciesPage from "@/pages/goals-dependencies-page";
 import RisksIssuesPage from "@/pages/risks-issues-page";
 import NewRiskIssuePage from "@/pages/risks-issues/new-risk-issue-page";
-import AssignmentsPage from "@/pages/assignments-page";
-import NewAssignmentPage from "@/pages/assignments/new-assignment-page";
-import ApprovalsPage from "@/pages/approvals-page";
-import SettingsPage from "@/pages/settings-page";
 import DepartmentsPage from "@/pages/departments-page";
+import UsersManagementPage from "@/pages/users-management-page";
+import AuthPage from "@/pages/auth-page";
 import ReportsPage from "@/pages/reports-page";
-import BudgetReportPage from "@/pages/reports/budget-page";
-import CostReportPage from "@/pages/reports/cost-page";
-import ForecastReportPage from "@/pages/reports/forecast-page";
-import ProjectStatusReportPage from "@/pages/reports/project-status-page";
-import ProjectTimelineReportPage from "@/pages/reports/project-timeline-page";
-import ResourceAllocationReportPage from "@/pages/reports/resource-allocation-page";
-import ResourceUtilizationReportPage from "@/pages/reports/resource-utilization-page";
-import RiskAssessmentReportPage from "@/pages/reports/risk-assessment-page";
-import IssueTrackingReportPage from "@/pages/reports/issue-tracking-page";
-import CustomAnalyticsPage from "@/pages/reports/custom-analytics-page";
-import RepositoryPage from "@/pages/repository-page";
 import DependenciesPage from "@/pages/dependencies-page";
-import AnalyticsDashboardPage from "@/pages/analytics-dashboard";
-import UserPermissionsPage from "@/pages/user-permissions-page";
-import AuditLogsPage from "@/pages/audit-logs-page";
-import { ThemeProvider } from "@/providers/theme-provider";
-import { I18nProvider } from "@/hooks/use-i18n-new";
-import LoginHelper from "@/login-helper";
-import LoginReminder from "@/components/login-reminder";
+import GoalsDependenciesPage from "@/pages/goals-dependencies-page";
+import SettingsPage from "@/pages/settings-page";
+import NotFound from "@/pages/not-found";
 
-function Router() {
-  return (
-    <Switch>
-      <ProtectedRoute path="/" component={Dashboard} />
-      <ProtectedRoute path="/projects" component={ProjectsPage} />
-      <ProtectedRoute path="/projects/new" component={NewProjectPage} />
-      <ProtectedRoute path="/projects/:id" component={ProjectDetailsPage} />
-      <ProtectedRoute path="/calendar" component={CalendarPage} />
-      <ProtectedRoute path="/tasks" component={TasksPage} />
-      <ProtectedRoute path="/tasks/new" component={NewTaskPage} />
-      <ProtectedRoute 
-        path="/goals" 
-        component={GoalsPage} 
-        requiredRoles={["Administrator", "MainPMO", "SubPMO", "DepartmentDirector", "Executive", "ProjectManager"]} 
-      />
-      <ProtectedRoute 
-        path="/goals/new" 
-        component={NewGoalPage} 
-        requiredRoles={["Administrator", "MainPMO", "SubPMO", "DepartmentDirector", "Executive"]} 
-      />
-      <ProtectedRoute 
-        path="/goals/dependencies" 
-        component={GoalsDependenciesPage} 
-        requiredPermissions={["canViewReports"]}
-      />
-      <ProtectedRoute 
-        path="/goals/:id" 
-        component={GoalDetailsPage} 
-        requiredPermissions={["canViewReports"]}
-      />
-      <ProtectedRoute 
-        path="/risks-issues" 
-        component={RisksIssuesPage} 
-        requiredPermissions={["canCreateProject", "canEditProject"]}
-      />
-      <ProtectedRoute 
-        path="/risks-issues/new" 
-        component={NewRiskIssuePage} 
-        requiredPermissions={["canCreateProject", "canEditProject"]}
-      />
-      <ProtectedRoute path="/assignments" component={AssignmentsPage} />
-      <ProtectedRoute path="/assignments/new" component={NewAssignmentPage} />
-      <ProtectedRoute 
-        path="/approvals" 
-        component={ApprovalsPage}
-        requiredPermissions={["canApproveProject", "canApproveChangeRequest"]}
-      />
-      <ProtectedRoute 
-        path="/settings" 
-        component={SettingsPage} 
-        requiredPermissions={["canAccessAdminSettings"]}
-      />
-      <ProtectedRoute 
-        path="/departments" 
-        component={DepartmentsPage} 
-        requiredPermissions={["canManageDepartments", "canViewAllDepartments"]}
-      />
-      <ProtectedRoute 
-        path="/audit-logs" 
-        component={AuditLogsPage} 
-        requiredRoles={["Administrator", "MainPMO", "SubPMO", "DepartmentDirector"]}
-      />
-      <ProtectedRoute 
-        path="/reports" 
-        component={ReportsPage} 
-        requiredPermissions={["canViewReports"]}
-      />
-      <ProtectedRoute 
-        path="/reports/budget" 
-        component={BudgetReportPage} 
-        requiredPermissions={["canViewReports"]}
-      />
-      <ProtectedRoute 
-        path="/reports/costs" 
-        component={CostReportPage} 
-        requiredPermissions={["canViewReports"]}
-      />
-      <ProtectedRoute 
-        path="/reports/forecast" 
-        component={ForecastReportPage} 
-        requiredPermissions={["canViewReports"]}
-      />
-      <ProtectedRoute 
-        path="/reports/projects/status" 
-        component={ProjectStatusReportPage} 
-        requiredPermissions={["canViewReports"]}
-      />
-      <ProtectedRoute 
-        path="/reports/projects/timeline" 
-        component={ProjectTimelineReportPage} 
-        requiredPermissions={["canViewReports"]}
-      />
-      <ProtectedRoute 
-        path="/reports/resources/allocation" 
-        component={ResourceAllocationReportPage} 
-        requiredPermissions={["canViewReports"]}
-      />
-      <ProtectedRoute 
-        path="/reports/resources/utilization" 
-        component={ResourceUtilizationReportPage} 
-        requiredPermissions={["canViewReports"]}
-      />
-      <ProtectedRoute 
-        path="/reports/risks/assessment" 
-        component={RiskAssessmentReportPage} 
-        requiredPermissions={["canViewReports"]}
-      />
-      <ProtectedRoute 
-        path="/reports/risks/issues" 
-        component={IssueTrackingReportPage} 
-        requiredPermissions={["canViewReports"]}
-      />
-      <ProtectedRoute 
-        path="/reports/custom-analytics" 
-        component={CustomAnalyticsPage} 
-        requiredPermissions={["canViewReports"]}
-      />
-      <ProtectedRoute 
-        path="/reports/analytics" 
-        component={AnalyticsDashboardPage} 
-        requiredPermissions={["canViewAnalytics"]}
-      />
-      <ProtectedRoute 
-        path="/repository" 
-        component={RepositoryPage}
-        requiredPermissions={["canViewReports"]} 
-      />
-      <ProtectedRoute 
-        path="/dependencies" 
-        component={DependenciesPage} 
-        requiredPermissions={["canViewReports"]}
-      />
-      <ProtectedRoute 
-        path="/user-permissions" 
-        component={UserPermissionsPage} 
-        requiredPermissions={["canManageUsers"]}
-      />
-      <Route path="/auth" component={AuthPage} />
-      <Route component={NotFound} />
-    </Switch>
-  );
+// Components
+import { Header } from "@/components/layout/header";
+import { Sidebar } from "@/components/layout/sidebar";
+import { MobileMenu } from "@/components/layout/mobile-menu";
+
+// Protected Route Component
+interface ProtectedRouteProps {
+  path: string;
+  children: React.ReactNode;
+  requiredRoles?: string[];
 }
 
+const ProtectedRoute = ({ path, children, requiredRoles = [] }: ProtectedRouteProps) => {
+  const { user, isLoading } = useAuth();
+  const [isMatch] = useRoute(path);
+  const [, navigate] = useLocation();
+
+  // Redirect to login if not authenticated
+  if (!isLoading && !user && isMatch) {
+    navigate("/auth");
+    return null;
+  }
+
+  // Check role-based access if requiredRoles is provided and not empty
+  if (
+    !isLoading &&
+    user &&
+    requiredRoles.length > 0 &&
+    !requiredRoles.includes(user.role || "")
+  ) {
+    // Redirect to dashboard if user doesn't have required role
+    navigate("/");
+    return null;
+  }
+
+  // Render the protected route
+  return <Route path={path}>{children}</Route>;
+};
+
+// App Layout Component
 function AppLayout({ children }: { children: React.ReactNode }) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { user, isLoading } = useAuth();
 
-  // If user is not authenticated or loading, don't show the layout
-  if (!user || isLoading) {
+  // Don't show layout if not authenticated or still loading
+  if (isLoading) {
+    return <div className="flex items-center justify-center h-screen">
+      <div className="animate-spin rounded-full h-32 w-32 border-t-2 border-b-2 border-qatar-maroon"></div>
+    </div>;
+  }
+
+  if (!user) {
     return <>{children}</>;
   }
 
   return (
-    <div className="flex h-screen overflow-hidden">
+    <div className="flex h-screen bg-background">
       <Sidebar />
       <MobileMenu isOpen={mobileMenuOpen} onClose={() => setMobileMenuOpen(false)} />
-      
-      <div className="flex-1 flex flex-col overflow-hidden">
+      <div className="flex flex-col flex-1 overflow-hidden">
         <Header onMobileMenuToggle={() => setMobileMenuOpen(true)} />
-        <main className="flex-1 overflow-y-auto bg-gray-100 dark:bg-gray-900 p-6">
-          {children}
-        </main>
+        <main className="flex-1 overflow-auto p-4 md:p-6">{children}</main>
       </div>
     </div>
   );
 }
 
-function App() {
+// Main Router Component
+function Router() {
+  const { isLoading } = useAuth();
+
+  if (isLoading) {
+    return <div className="flex items-center justify-center h-screen">
+      <div className="animate-spin rounded-full h-32 w-32 border-t-2 border-b-2 border-qatar-maroon"></div>
+    </div>;
+  }
+
+  return (
+    <Switch>
+      <Route path="/auth">
+        <AuthPage />
+      </Route>
+
+      <ProtectedRoute path="/">
+        <Dashboard />
+      </ProtectedRoute>
+
+      <ProtectedRoute path="/goals">
+        <GoalsPage />
+      </ProtectedRoute>
+
+      <ProtectedRoute path="/goals/new">
+        <NewGoalPage />
+      </ProtectedRoute>
+
+      <ProtectedRoute path="/goals/:id">
+        <GoalDetailsPage />
+      </ProtectedRoute>
+
+      <ProtectedRoute path="/projects">
+        <ProjectsPage />
+      </ProtectedRoute>
+
+      <ProtectedRoute path="/projects/new">
+        <NewProjectPage />
+      </ProtectedRoute>
+
+      <ProtectedRoute path="/projects/:id">
+        <ProjectDetailsPage />
+      </ProtectedRoute>
+
+      <ProtectedRoute path="/tasks">
+        <TasksPage />
+      </ProtectedRoute>
+
+      <ProtectedRoute path="/tasks/new">
+        <NewTaskPage />
+      </ProtectedRoute>
+
+      <ProtectedRoute path="/risks-issues">
+        <RisksIssuesPage />
+      </ProtectedRoute>
+
+      <ProtectedRoute path="/risks-issues/new">
+        <NewRiskIssuePage />
+      </ProtectedRoute>
+
+      <ProtectedRoute path="/departments" requiredRoles={["Administrator", "MainPMO", "Executive", "SubPMO"]}>
+        <DepartmentsPage />
+      </ProtectedRoute>
+
+      <ProtectedRoute path="/users" requiredRoles={["Administrator", "MainPMO"]}>
+        <UsersManagementPage />
+      </ProtectedRoute>
+
+      <ProtectedRoute path="/reports" requiredRoles={["Administrator", "MainPMO", "Executive", "SubPMO", "DepartmentDirector"]}>
+        <ReportsPage />
+      </ProtectedRoute>
+
+      <ProtectedRoute path="/dependencies">
+        <DependenciesPage />
+      </ProtectedRoute>
+
+      <ProtectedRoute path="/goals-dependencies">
+        <GoalsDependenciesPage />
+      </ProtectedRoute>
+
+      <ProtectedRoute path="/settings" requiredRoles={["Administrator", "MainPMO"]}>
+        <SettingsPage />
+      </ProtectedRoute>
+
+      <Route path="*">
+        <NotFound />
+      </Route>
+    </Switch>
+  );
+}
+
+// Main App Component
+export default function App() {
   return (
     <ThemeProvider defaultTheme="dark" forcedTheme="dark">
       <I18nProvider>
@@ -224,12 +195,8 @@ function App() {
             <Router />
           </AppLayout>
           <Toaster />
-          <LoginHelper />
-          <LoginReminder />
         </TooltipProvider>
       </I18nProvider>
     </ThemeProvider>
   );
 }
-
-export default App;

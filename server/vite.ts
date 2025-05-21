@@ -1,7 +1,7 @@
-import express, { type Express } from "express";
+import express, { type Express, Request, Response, NextFunction } from "express";
 import fs from "fs";
 import path from "path";
-import { createServer as createViteServer, createLogger } from "vite";
+import { createServer as createViteServer, createLogger, ViteDevServer } from "vite";
 import { type Server } from "http";
 import { nanoid } from "nanoid";
 // Import the vite config directly as before
@@ -13,83 +13,76 @@ const projectRoot = process.cwd();
 const viteLogger = createLogger();
 
 export function log(message: string, source = "express") {
-  const formattedTime = new Date().toLocaleTimeString("en-US", {
-    hour: "numeric",
-    minute: "2-digit",
-    second: "2-digit",
-    hour12: true,
-  });
-
-  console.log(`${formattedTime} [${source}] ${message}`);
+  const id = nanoid(6);
+  const timestamp = new Date().toISOString().slice(11, 19);
+  console.log(`[${timestamp}] [${source}:${id}] ${message}`);
 }
 
-export async function setupVite(app: Express, server: Server) {
-  const serverOptions = {
-    middlewareMode: true as const,
-    hmr: { server },
-    allowedHosts: true as true, // Correctly type as 'true' for TypeScript
-  };
-
+/**
+ * Set up Vite middleware for development
+ */
+export async function setupVite(app: Express, server: Server): Promise<void> {
   try {
-    // Create the Vite server with the direct config import
+    log("Creating Vite dev server...");
     const vite = await createViteServer({
-      ...viteConfig,
-      configFile: false, // Don't load the config file again since we imported it
+      configFile: path.resolve(projectRoot, 'vite.config.ts'),
+      server: {
+        middlewareMode: true,
+        hmr: {
+          server: server
+        }
+      },
       customLogger: {
         ...viteLogger,
-        error: (msg, options) => {
+        error: (msg: string, options?: any) => {
           viteLogger.error(msg, options);
           // Don't exit the process on error, just log it
           console.error('Vite server error:', msg);
-        },
-      },
-      server: serverOptions,
-      appType: "custom",
+        }
+      }
     });
 
     app.use(vite.middlewares);
-    app.use("*", async (req, res, next) => {
+    app.use("*", async (req: Request, res: Response, next: NextFunction) => {
       const url = req.originalUrl;
 
       try {
-        const clientTemplate = path.resolve(
-          projectRoot,
-          "client",
-          "index.html",
+        // Always read fresh index.html in dev
+        let template = fs.readFileSync(
+          path.resolve(projectRoot, 'index.html'),
+          'utf-8'
         );
 
-        // always reload the index.html file from disk incase it changes
-        let template = await fs.promises.readFile(clientTemplate, "utf-8");
-        template = template.replace(
-          `src="/src/main.tsx"`,
-          `src="/src/main.tsx?v=${nanoid()}"`,
-        );
-        const page = await vite.transformIndexHtml(url, template);
-        res.status(200).set({ "Content-Type": "text/html" }).end(page);
+        // Apply Vite HTML transforms
+        template = await vite.transformIndexHtml(url, template);
+        
+        res.status(200).set({ 'Content-Type': 'text/html' }).end(template);
       } catch (e) {
-        vite.ssrFixStacktrace(e as Error);
+        console.error(`Error processing ${url}:`, e);
         next(e);
       }
     });
+
+    log("Vite development server set up successfully");
   } catch (error) {
-    console.error("Failed to initialize Vite server:", error);
-    throw error; // Propagate the error but don't terminate the process
+    console.error("Failed to set up Vite:", error);
+    throw error;
   }
 }
 
-export function serveStatic(app: Express) {
-  const distPath = path.resolve(projectRoot, "dist", "public");
-
-  if (!fs.existsSync(distPath)) {
-    throw new Error(
-      `Could not find the build directory: ${distPath}, make sure to build the client first`,
-    );
+/**
+ * Serve static files from the dist directory in production
+ */
+export function serveStatic(app: Express): void {
+  const distPath = path.resolve(projectRoot, 'dist/client');
+  
+  // serve static assets
+  if (fs.existsSync(distPath)) {
+    app.use(express.static(distPath, { index: false }));
   }
-
-  app.use(express.static(distPath));
-
+  
   // fall through to index.html if the file doesn't exist
-  app.use("*", (_req, res) => {
+  app.use("*", (_req: Request, res: Response) => {
     res.sendFile(path.resolve(distPath, "index.html"));
   });
 }

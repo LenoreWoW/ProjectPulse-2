@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useI18n } from "@/hooks/use-i18n-new";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "wouter";
-import { Task } from "@shared/schema";
+import { Task } from "@/lib/schema-types";
 import { useAuth } from "@/hooks/use-auth";
 import { 
   Card, 

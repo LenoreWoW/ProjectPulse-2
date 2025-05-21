@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useI18n } from "@/hooks/use-i18n-new";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { Department, User } from "@shared/schema";
+import { Department, User } from "@/lib/schema-types";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -17,14 +17,14 @@ import {
   CardTitle 
 } from "@/components/ui/card";
 import {
-  Form,
+  FormRoot,
   FormControl,
   FormDescription,
   FormField,
   FormItem,
   FormLabel,
   FormMessage,
-} from "@/components/ui/form";
+} from "@/components/ui/form-wrapper";
 import { 
   Dialog, 
   DialogContent, 
@@ -89,7 +89,7 @@ export default function DepartmentsPage() {
   const [editingDepartment, setEditingDepartment] = useState<Department | null>(null);
   
   // Check if current user has permission to manage departments
-  const canManageDepartments = ["Administrator", "MainPMO"].includes(user?.role || "");
+  const canManageDepartments = user?.roles?.some(role => ["Administrator", "MainPMO"].includes(role)) || false;
   
   // Fetch departments
   const { 
@@ -305,7 +305,7 @@ export default function DepartmentsPage() {
                     {t("addDepartmentDescription")}
                   </DialogDescription>
                 </DialogHeader>
-                <Form {...form}>
+                <FormRoot form={form}>
                   <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
                     <FormField
                       control={form.control}
@@ -369,7 +369,7 @@ export default function DepartmentsPage() {
                               <SelectContent>
                                 <SelectItem value="none">{t("notAssigned")}</SelectItem>
                                 {users
-                                  .filter((u) => u.role === "DepartmentDirector" || u.role === "Executive")
+                                  .filter((u) => u.roles?.includes("DepartmentDirector") || u.roles?.includes("Executive"))
                                   .map((user) => (
                                     <SelectItem key={user.id} value={user.id.toString()}>
                                       {user.name}
@@ -466,7 +466,7 @@ export default function DepartmentsPage() {
                       </Button>
                     </DialogFooter>
                   </form>
-                </Form>
+                </FormRoot>
               </DialogContent>
             </Dialog>
           )}
@@ -480,7 +480,7 @@ export default function DepartmentsPage() {
                   {t("editDepartmentDescription")}
                 </DialogDescription>
               </DialogHeader>
-              <Form {...form}>
+              <FormRoot form={form}>
                 <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
                   <FormField
                     control={form.control}
@@ -544,7 +544,7 @@ export default function DepartmentsPage() {
                             <SelectContent>
                               <SelectItem value="none">{t("notAssigned")}</SelectItem>
                               {users
-                                .filter((u) => u.role === "DepartmentDirector" || u.role === "Executive")
+                                .filter((u) => u.roles?.includes("DepartmentDirector") || u.roles?.includes("Executive"))
                                 .map((user) => (
                                   <SelectItem key={user.id} value={user.id.toString()}>
                                     {user.name}
@@ -642,7 +642,7 @@ export default function DepartmentsPage() {
                     </Button>
                   </DialogFooter>
                 </form>
-              </Form>
+              </FormRoot>
             </DialogContent>
           </Dialog>
         </div>

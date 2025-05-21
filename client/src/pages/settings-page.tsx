@@ -1,3 +1,4 @@
+import React from "react";
 import { useState } from "react";
 import { useI18n } from "@/hooks/use-i18n-new";
 import { useAuth } from "@/hooks/use-auth";
@@ -16,14 +17,13 @@ import {
   TabsTrigger 
 } from "@/components/ui/tabs";
 import { 
-  Form,
   FormControl,
   FormDescription,
-  FormField,
   FormItem,
   FormLabel,
   FormMessage
 } from "@/components/ui/form";
+import { FormRoot, FormField } from "@/components/ui/form-wrapper";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -213,276 +213,280 @@ export default function SettingsPage() {
         {/* Right content area */}
         <div className="flex-1">
           <Card>
-            {activeTab === "profile" && (
-              <>
-              <CardHeader>
-                <CardTitle>{t("profileSettings")}</CardTitle>
-                <CardDescription>
-                  {t("profileSettingsDescription")}
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Form {...profileForm}>
-                  <form onSubmit={profileForm.handleSubmit(onProfileSubmit)} className="space-y-6">
-                    <FormField
-                      control={profileForm.control}
-                      name="name"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>{t("name")}</FormLabel>
-                          <FormControl>
-                            <Input placeholder={t("yourName")} {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={profileForm.control}
-                      name="email"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>{t("emailAddress")}</FormLabel>
-                          <FormControl>
-                            <Input placeholder={t("yourEmail")} {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={profileForm.control}
-                      name="bio"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>{t("bio")}</FormLabel>
-                          <FormControl>
-                            <Textarea 
-                              placeholder={t("aboutYourself")} 
-                              {...field} 
-                            />
-                          </FormControl>
-                          <FormDescription>
-                            {t("bioDescription")}
-                          </FormDescription>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <Button type="submit" className="bg-qatar-maroon hover:bg-maroon-800 text-white">
-                      {t("saveChanges")}
-                    </Button>
-                  </form>
-                </Form>
-              </CardContent>
-              </>
-            )}
+            <Tabs type="full" value={activeTab} defaultValue="profile">
+              <TabsList className="grid w-full grid-cols-5">
+                <TabsTrigger value="profile">Profile</TabsTrigger>
+                <TabsTrigger value="appearance">Appearance</TabsTrigger>
+                <TabsTrigger value="notifications">Notifications</TabsTrigger>
+                <TabsTrigger value="language">Language</TabsTrigger>
+                <TabsTrigger value="security">Security</TabsTrigger>
+              </TabsList>
 
-            {activeTab === "appearance" && (
-              <>
-              <CardHeader>
-                <CardTitle>{t("appearanceSettings")}</CardTitle>
-                <CardDescription>
-                  {t("appearanceSettingsDescription")}
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <Label htmlFor="dark-mode" className="font-medium">{t("darkMode")}</Label>
-                    <Switch 
-                      id="dark-mode" 
-                      checked={theme === "dark"}
-                      onCheckedChange={(checked) => setTheme(checked ? "dark" : "light")}
-                    />
-                  </div>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">
-                    {t("darkModeDescription")}
-                  </p>
-                </div>
-              </CardContent>
-              </>
-            )}
+              {/* Profile Settings */}
+              <TabsContent value="profile" className="space-y-6">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>{t("profileSettings")}</CardTitle>
+                    <CardDescription>{t("profileSettingsDescription")}</CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-6">
+                    <FormRoot form={profileForm}>
+                      <form onSubmit={profileForm.handleSubmit(onProfileSubmit)} className="space-y-4">
+                        <FormField
+                          control={profileForm.control}
+                          name="name"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>{t("name")}</FormLabel>
+                              <FormControl>
+                                <Input placeholder={t("nameLabel")} {...field} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={profileForm.control}
+                          name="email"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>{t("email")}</FormLabel>
+                              <FormControl>
+                                <Input placeholder={t("emailLabel")} {...field} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={profileForm.control}
+                          name="bio"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>{t("bio")}</FormLabel>
+                              <FormControl>
+                                <Textarea placeholder={t("bioPlaceholder")} {...field} />
+                              </FormControl>
+                              <FormDescription>{t("bioDescription")}</FormDescription>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <Button type="submit">{t("saveChanges")}</Button>
+                      </form>
+                    </FormRoot>
+                  </CardContent>
+                </Card>
+              </TabsContent>
 
-            {activeTab === "notifications" && (
-              <>
-              <CardHeader>
-                <CardTitle>{t("notificationSettings")}</CardTitle>
-                <CardDescription>
-                  {t("notificationSettingsDescription")}
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Form {...notificationForm}>
-                  <form onSubmit={notificationForm.handleSubmit(onNotificationsSubmit)} className="space-y-6">
-                    <FormField
-                      control={notificationForm.control}
-                      name="emailNotifications"
-                      render={({ field }) => (
-                        <FormItem className="flex items-center justify-between rounded-lg border p-4">
-                          <div className="space-y-0.5">
-                            <FormLabel className="text-base flex items-center">
-                              <Mail className="w-4 h-4 mr-2" />
-                              {t("emailNotifications")}
-                            </FormLabel>
-                            <FormDescription>
-                              {t("emailNotificationsDescription")}
-                            </FormDescription>
-                          </div>
-                          <FormControl>
-                            <Switch 
-                              checked={field.value}
-                              onCheckedChange={field.onChange}
-                            />
-                          </FormControl>
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={notificationForm.control}
-                      name="projectUpdates"
-                      render={({ field }) => (
-                        <FormItem className="flex items-center justify-between rounded-lg border p-4">
-                          <div className="space-y-0.5">
-                            <FormLabel className="text-base">
-                              {t("projectUpdates")}
-                            </FormLabel>
-                            <FormDescription>
-                              {t("projectUpdatesDescription")}
-                            </FormDescription>
-                          </div>
-                          <FormControl>
-                            <Switch 
-                              checked={field.value}
-                              onCheckedChange={field.onChange}
-                            />
-                          </FormControl>
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={notificationForm.control}
-                      name="taskAssignments"
-                      render={({ field }) => (
-                        <FormItem className="flex items-center justify-between rounded-lg border p-4">
-                          <div className="space-y-0.5">
-                            <FormLabel className="text-base">
-                              {t("taskAssignments")}
-                            </FormLabel>
-                            <FormDescription>
-                              {t("taskAssignmentsDescription")}
-                            </FormDescription>
-                          </div>
-                          <FormControl>
-                            <Switch 
-                              checked={field.value}
-                              onCheckedChange={field.onChange}
-                            />
-                          </FormControl>
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={notificationForm.control}
-                      name="systemAnnouncements"
-                      render={({ field }) => (
-                        <FormItem className="flex items-center justify-between rounded-lg border p-4">
-                          <div className="space-y-0.5">
-                            <FormLabel className="text-base">
-                              {t("systemAnnouncements")}
-                            </FormLabel>
-                            <FormDescription>
-                              {t("systemAnnouncementsDescription")}
-                            </FormDescription>
-                          </div>
-                          <FormControl>
-                            <Switch 
-                              checked={field.value}
-                              onCheckedChange={field.onChange}
-                            />
-                          </FormControl>
-                        </FormItem>
-                      )}
-                    />
-                    <Button type="submit" className="bg-qatar-maroon hover:bg-maroon-800 text-white">
-                      {t("saveChanges")}
-                    </Button>
-                  </form>
-                </Form>
-              </CardContent>
-              </>
-            )}
-
-            {activeTab === "language" && (
-              <>
-              <CardHeader>
-                <CardTitle>{t("languageSettings")}</CardTitle>
-                <CardDescription>
-                  {t("languageSettingsDescription")}
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div 
-                    className={`border rounded-lg p-4 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors ${language === 'en' ? 'border-qatar-maroon bg-maroon-50 dark:bg-maroon-900/20' : ''}`}
-                    onClick={() => handleLanguageChange('en')}
-                  >
-                    <div className="font-medium">English</div>
-                    <div className="text-sm text-gray-500 dark:text-gray-400">English (United States)</div>
-                  </div>
-                  <div 
-                    className={`border rounded-lg p-4 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors ${language === 'ar' ? 'border-qatar-maroon bg-maroon-50 dark:bg-maroon-900/20' : ''}`}
-                    onClick={() => handleLanguageChange('ar')}
-                  >
-                    <div className="font-medium">العربية</div>
-                    <div className="text-sm text-gray-500 dark:text-gray-400">Arabic</div>
-                  </div>
-                </div>
-              </CardContent>
-              </>
-            )}
-
-            {activeTab === "security" && (
-              <>
-              <CardHeader>
-                <CardTitle>{t("securitySettings")}</CardTitle>
-                <CardDescription>
-                  {t("securitySettingsDescription")}
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="space-y-4">
-                  <div className="space-y-2">
-                    <h3 className="font-medium flex items-center">
-                      <Lock className="w-4 h-4 mr-2" />
-                      {t("changePassword")}
-                    </h3>
-                    <div className="rounded-lg border p-4 space-y-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="current-password">{t("currentPassword")}</Label>
-                        <Input id="current-password" type="password" placeholder="••••••••" />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="new-password">{t("newPassword")}</Label>
-                        <Input id="new-password" type="password" placeholder="••••••••" />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="confirm-password">{t("confirmPassword")}</Label>
-                        <Input id="confirm-password" type="password" placeholder="••••••••" />
+              {/* Appearance Settings */}
+              <TabsContent value="appearance" className="space-y-6">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>{t("appearance")}</CardTitle>
+                    <CardDescription>{t("appearanceDescription")}</CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-6">
+                    <div className="space-y-2">
+                      <Label htmlFor="theme">{t("theme")}</Label>
+                      <div className="flex items-center space-x-2">
+                        <Button 
+                          variant={theme === "light" ? "default" : "outline"} 
+                          className="gap-1" 
+                          onClick={() => setTheme("light")}
+                        >
+                          <Sun className="h-4 w-4" />
+                          {t("light")}
+                        </Button>
+                        <Button 
+                          variant={theme === "dark" ? "default" : "outline"} 
+                          className="gap-1" 
+                          onClick={() => setTheme("dark")}
+                        >
+                          <Moon className="h-4 w-4" />
+                          {t("dark")}
+                        </Button>
+                        <Button 
+                          variant={theme === "system" ? "default" : "outline"} 
+                          className="gap-1" 
+                          onClick={() => setTheme("system")}
+                        >
+                          <Settings className="h-4 w-4" />
+                          {t("system")}
+                        </Button>
                       </div>
                     </div>
-                  </div>
-                  <Button className="bg-qatar-maroon hover:bg-maroon-800 text-white">
-                    {t("updatePassword")}
-                  </Button>
-                </div>
-              </CardContent>
-              </>
-            )}
-            
-            {activeTab === "faculty" && (
-              <UsersManagementPage />
-            )}
+                  </CardContent>
+                </Card>
+              </TabsContent>
+
+              {/* Notification Settings */}
+              <TabsContent value="notifications" className="space-y-6">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>{t("notifications")}</CardTitle>
+                    <CardDescription>{t("notificationSettingsDescription")}</CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-6">
+                    <FormRoot form={notificationForm}>
+                      <form onSubmit={notificationForm.handleSubmit(onNotificationsSubmit)} className="space-y-4">
+                        <FormField
+                          control={notificationForm.control}
+                          name="emailNotifications"
+                          render={({ field }) => (
+                            <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3">
+                              <div className="space-y-0.5">
+                                <FormLabel>{t("emailNotifications")}</FormLabel>
+                                <FormDescription>
+                                  {t("emailNotificationsDescription")}
+                                </FormDescription>
+                              </div>
+                              <FormControl>
+                                <Switch
+                                  checked={field.value}
+                                  onCheckedChange={field.onChange}
+                                />
+                              </FormControl>
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={notificationForm.control}
+                          name="projectUpdates"
+                          render={({ field }) => (
+                            <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3">
+                              <div className="space-y-0.5">
+                                <FormLabel>{t("projectUpdates")}</FormLabel>
+                                <FormDescription>
+                                  {t("projectUpdatesDescription")}
+                                </FormDescription>
+                              </div>
+                              <FormControl>
+                                <Switch
+                                  checked={field.value}
+                                  onCheckedChange={field.onChange}
+                                />
+                              </FormControl>
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={notificationForm.control}
+                          name="taskAssignments"
+                          render={({ field }) => (
+                            <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3">
+                              <div className="space-y-0.5">
+                                <FormLabel>{t("taskAssignments")}</FormLabel>
+                                <FormDescription>
+                                  {t("taskAssignmentsDescription")}
+                                </FormDescription>
+                              </div>
+                              <FormControl>
+                                <Switch
+                                  checked={field.value}
+                                  onCheckedChange={field.onChange}
+                                />
+                              </FormControl>
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={notificationForm.control}
+                          name="systemAnnouncements"
+                          render={({ field }) => (
+                            <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3">
+                              <div className="space-y-0.5">
+                                <FormLabel>{t("systemAnnouncements")}</FormLabel>
+                                <FormDescription>
+                                  {t("systemAnnouncementsDescription")}
+                                </FormDescription>
+                              </div>
+                              <FormControl>
+                                <Switch
+                                  checked={field.value}
+                                  onCheckedChange={field.onChange}
+                                />
+                              </FormControl>
+                            </FormItem>
+                          )}
+                        />
+                        <Button type="submit">{t("saveChanges")}</Button>
+                      </form>
+                    </FormRoot>
+                  </CardContent>
+                </Card>
+              </TabsContent>
+
+              {/* Language Settings */}
+              <TabsContent value="language" className="space-y-6">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>{t("languageSettings")}</CardTitle>
+                    <CardDescription>{t("languageSettingsDescription")}</CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div 
+                        className={`border rounded-lg p-4 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors ${language === 'en' ? 'border-qatar-maroon bg-maroon-50 dark:bg-maroon-900/20' : ''}`}
+                        onClick={() => handleLanguageChange('en')}
+                      >
+                        <div className="font-medium">English</div>
+                        <div className="text-sm text-gray-500 dark:text-gray-400">English (United States)</div>
+                      </div>
+                      <div 
+                        className={`border rounded-lg p-4 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors ${language === 'ar' ? 'border-qatar-maroon bg-maroon-50 dark:bg-maroon-900/20' : ''}`}
+                        onClick={() => handleLanguageChange('ar')}
+                      >
+                        <div className="font-medium">العربية</div>
+                        <div className="text-sm text-gray-500 dark:text-gray-400">Arabic</div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </TabsContent>
+
+              {/* Security Settings */}
+              <TabsContent value="security" className="space-y-6">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>{t("securitySettings")}</CardTitle>
+                    <CardDescription>{t("securitySettingsDescription")}</CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-6">
+                    <div className="space-y-4">
+                      <div className="space-y-2">
+                        <h3 className="font-medium flex items-center">
+                          <Lock className="w-4 h-4 mr-2" />
+                          {t("changePassword")}
+                        </h3>
+                        <div className="rounded-lg border p-4 space-y-4">
+                          <div className="space-y-2">
+                            <Label htmlFor="current-password">{t("currentPassword")}</Label>
+                            <Input id="current-password" type="password" placeholder="••••••••" />
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="new-password">{t("newPassword")}</Label>
+                            <Input id="new-password" type="password" placeholder="••••••••" />
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="confirm-password">{t("confirmPassword")}</Label>
+                            <Input id="confirm-password" type="password" placeholder="••••••••" />
+                          </div>
+                        </div>
+                      </div>
+                      <Button className="bg-qatar-maroon hover:bg-maroon-800 text-white">
+                        {t("updatePassword")}
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              </TabsContent>
+
+              {/* Faculty Management */}
+              <TabsContent value="faculty">
+                <UsersManagementPage />
+              </TabsContent>
+            </Tabs>
           </Card>
         </div>
       </div>

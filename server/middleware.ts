@@ -1,18 +1,19 @@
 import { NextFunction, Request, Response } from "express";
 import { AnyZodObject, ZodError, ZodType } from "zod";
+import { ValidateBodyMiddleware, HasAuthMiddleware, HasRoleMiddleware } from './express';
 
 /**
  * Middleware to validate request body against a Zod schema
  * Returns detailed error messages on validation failure
  */
-export function validateBody(schema: ZodType<any, any, any>) {
-  return async (req: Request, res: Response, next: NextFunction) => {
+export const validateBody: ValidateBodyMiddleware = (schema) => {
+  return (req, res, next) => {
     try {
       // Log the incoming request body for debugging
       console.log("Validating request body:", JSON.stringify(req.body, null, 2));
       
       // Perform the validation
-      const validatedData = await schema.parseAsync(req.body);
+      const validatedData = schema.parse(req.body);
       
       // Replace the request body with the validated data
       req.body = validatedData;
@@ -40,7 +41,7 @@ export function validateBody(schema: ZodType<any, any, any>) {
       next(error);
     }
   };
-}
+};
 
 /**
  * Error handling middleware that provides consistent error responses
@@ -99,4 +100,54 @@ export class AppError extends Error {
     // Maintain proper stack trace
     Error.captureStackTrace(this, this.constructor);
   }
-} 
+}
+
+/**
+ * Middleware to check if the user is authenticated
+ */
+export const isAuthenticated = (req: Request, res: Response, next: NextFunction) => {
+  if (req.isAuthenticated && req.isAuthenticated()) {
+    return next();
+  }
+  return res.status(401).json({ message: 'Unauthorized' });
+};
+
+/**
+ * Middleware to check if the user has the required role
+ */
+export const hasRole: HasRoleMiddleware = (roles) => {
+  return (req, res, next) => {
+    if (!req.isAuthenticated || !req.isAuthenticated()) {
+      return res.status(401).json({ message: 'Unauthorized' });
+    }
+
+    const userRoles = req.user?.roles || [];
+
+    // Check if the user has any of the required roles
+    const hasRequiredRole = roles.some(role => userRoles.includes(role));
+
+    if (hasRequiredRole) {
+      return next();
+    }
+
+    return res.status(403).json({ message: 'Forbidden: Insufficient permissions' });
+  };
+};
+
+/**
+ * Middleware to check if the user is authorized for specific actions
+ */
+export const hasAuth: HasAuthMiddleware = (handler) => {
+  return async (req, res, next) => {
+    if (!req.isAuthenticated || !req.isAuthenticated()) {
+      return res.status(401).json({ message: 'Unauthorized' });
+    }
+
+    try {
+      return await handler(req, res, next);
+    } catch (error) {
+      console.error('Error in hasAuth middleware:', error);
+      return res.status(500).json({ message: 'Internal server error' });
+    }
+  };
+}; 

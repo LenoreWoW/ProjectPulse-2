@@ -1,8 +1,9 @@
+import React from "react";
 import { useState } from "react";
 import { useI18n } from "@/hooks/use-i18n-new";
 import { Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
-import { RiskIssue } from "@shared/schema";
+import { RiskIssue } from "@/lib/schema-types";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { 

@@ -3,27 +3,27 @@ import { useLocation } from "wouter";
 import { format } from "date-fns";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm, useFieldArray, SubmitHandler, UseFormReturn } from "react-hook-form";
+import { useForm, useFieldArray, SubmitHandler } from "react-hook-form";
 import { z } from "zod";
 import { CalendarIcon, Loader2, Plus, Trash2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import {
-  Form,
+  FormRoot,
   FormControl,
   FormField,
   FormItem,
   FormLabel,
   FormMessage,
   FormDescription,
-} from "@/components/ui/form";
+} from "@/components/ui/form-wrapper";
 import { Input } from "@/components/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useToast } from "@/hooks/use-toast";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { insertGoalSchema, Goal, Project } from "@shared/schema";
+import { Goal, Project } from "@/lib/schema-types";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useI18n } from "@/hooks/use-i18n-new";
 import { cn } from "@/lib/utils";
@@ -31,6 +31,19 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/hooks/use-auth";
+
+// Define types for the field arrays
+type ProjectFieldType = {
+  id: string;
+  projectId: number;
+  weight: number;
+};
+
+type GoalFieldType = {
+  id: string;
+  goalId: number;
+  weight: number;
+};
 
 // Extended schema for the form that includes related projects and goals
 const formSchema = z.object({
@@ -140,7 +153,7 @@ export default function NewGoalPage() {
     fields: projectFields, 
     append: appendProject, 
     remove: removeProject 
-  } = useFieldArray({
+  } = useFieldArray<FormValues, "relatedProjects", "id">({
     control: form.control,
     name: "relatedProjects",
   });
@@ -149,7 +162,7 @@ export default function NewGoalPage() {
     fields: goalFields, 
     append: appendGoal, 
     remove: removeGoal 
-  } = useFieldArray({
+  } = useFieldArray<FormValues, "relatedGoals", "id">({
     control: form.control,
     name: "relatedGoals",
   });
@@ -202,13 +215,13 @@ export default function NewGoalPage() {
 
   // Filter projects for selection dropdown (exclude already selected)
   const getAvailableProjects = () => {
-    const selectedIds = projectFields.map(field => field.projectId);
+    const selectedIds = (projectFields as ProjectFieldType[]).map(field => field.projectId);
     return projects.filter(project => !selectedIds.includes(project.id));
   };
 
   // Filter goals for selection dropdown (exclude already selected and self-references)
   const getAvailableGoals = () => {
-    const selectedIds = goalFields.map(field => field.goalId);
+    const selectedIds = (goalFields as GoalFieldType[]).map(field => field.goalId);
     return goals.filter(goal => !selectedIds.includes(goal.id));
   };
 
@@ -232,7 +245,7 @@ export default function NewGoalPage() {
           <CardDescription>{t("createGoalDescription")}</CardDescription>
         </CardHeader>
         <CardContent>
-          <Form {...form}>
+          <FormRoot form={form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
               {/* Basic Goal Information */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -426,7 +439,7 @@ export default function NewGoalPage() {
                       <div key={field.id} className="flex items-center space-x-3 rounded-md border p-3">
                         <div className="flex-1">
                           <Select
-                            value={field.projectId.toString()}
+                            value={(field as ProjectFieldType).projectId.toString()}
                             onValueChange={(value) => {
                               const updatedProjects = [...form.getValues().relatedProjects || []];
                               updatedProjects[index] = {
@@ -438,7 +451,7 @@ export default function NewGoalPage() {
                           >
                             <SelectTrigger>
                               <SelectValue>
-                                {field.projectId ? getProjectName(field.projectId) : t("selectProject")}
+                                {(field as ProjectFieldType).projectId ? getProjectName((field as ProjectFieldType).projectId) : t("selectProject")}
                               </SelectValue>
                             </SelectTrigger>
                             <SelectContent>
@@ -448,9 +461,9 @@ export default function NewGoalPage() {
                                 </SelectItem>
                               ))}
                               {/* Keep the current selection even if not in available projects */}
-                              {field.projectId && !getAvailableProjects().some(p => p.id === field.projectId) && (
-                                <SelectItem value={field.projectId.toString()}>
-                                  {getProjectName(field.projectId)}
+                              {(field as ProjectFieldType).projectId && !getAvailableProjects().some(p => p.id === (field as ProjectFieldType).projectId) && (
+                                <SelectItem value={(field as ProjectFieldType).projectId.toString()}>
+                                  {getProjectName((field as ProjectFieldType).projectId)}
                                 </SelectItem>
                               )}
                             </SelectContent>
@@ -463,7 +476,7 @@ export default function NewGoalPage() {
                               type="number"
                               min="1"
                               max="10"
-                              value={field.weight}
+                              value={(field as ProjectFieldType).weight}
                               onChange={(e) => {
                                 const updatedProjects = [...form.getValues().relatedProjects || []];
                                 updatedProjects[index] = {
@@ -515,7 +528,7 @@ export default function NewGoalPage() {
                       <div key={field.id} className="flex items-center space-x-3 rounded-md border p-3">
                         <div className="flex-1">
                           <Select
-                            value={field.goalId.toString()}
+                            value={(field as GoalFieldType).goalId.toString()}
                             onValueChange={(value) => {
                               const updatedGoals = [...form.getValues().relatedGoals || []];
                               updatedGoals[index] = {
@@ -527,7 +540,7 @@ export default function NewGoalPage() {
                           >
                             <SelectTrigger>
                               <SelectValue>
-                                {field.goalId ? getGoalTitle(field.goalId) : t("selectGoal")}
+                                {(field as GoalFieldType).goalId ? getGoalTitle((field as GoalFieldType).goalId) : t("selectGoal")}
                               </SelectValue>
                             </SelectTrigger>
                             <SelectContent>
@@ -537,9 +550,9 @@ export default function NewGoalPage() {
                                 </SelectItem>
                               ))}
                               {/* Keep the current selection even if not in available goals */}
-                              {field.goalId && !getAvailableGoals().some(g => g.id === field.goalId) && (
-                                <SelectItem value={field.goalId.toString()}>
-                                  {getGoalTitle(field.goalId)}
+                              {(field as GoalFieldType).goalId && !getAvailableGoals().some(g => g.id === (field as GoalFieldType).goalId) && (
+                                <SelectItem value={(field as GoalFieldType).goalId.toString()}>
+                                  {getGoalTitle((field as GoalFieldType).goalId)}
                                 </SelectItem>
                               )}
                             </SelectContent>
@@ -552,7 +565,7 @@ export default function NewGoalPage() {
                               type="number"
                               min="1"
                               max="10"
-                              value={field.weight}
+                              value={(field as GoalFieldType).weight}
                               onChange={(e) => {
                                 const updatedGoals = [...form.getValues().relatedGoals || []];
                                 updatedGoals[index] = {
@@ -596,7 +609,7 @@ export default function NewGoalPage() {
                 </Button>
               </div>
             </form>
-          </Form>
+          </FormRoot>
         </CardContent>
       </Card>
     </div>

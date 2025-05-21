@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { DragDropContext, Droppable, Draggable, DropResult } from 'react-beautiful-dnd';
-import { Task } from '@shared/schema';
+import { Task } from '@/lib/schema-types';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
@@ -192,7 +192,7 @@ export function KanbanBoard({ tasks, projectId, users }: KanbanBoardProps) {
       // Update the task in the backend
       updateTaskMutation.mutate({ 
         taskId: task.id, 
-        status: updatedTask.status 
+        status: updatedTask.status as TaskStatus 
       });
     }
 

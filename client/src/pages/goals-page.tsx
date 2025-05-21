@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useI18n } from "@/hooks/use-i18n-new";
 import { useQuery } from "@tanstack/react-query";
-import { Goal } from "@shared/schema";
+import { Goal } from "@/lib/schema-types";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { 
@@ -27,6 +27,9 @@ import { Link } from "wouter";
 
 interface GoalWithProgress extends Goal {
   progress: number;
+  createdByUserId?: number | null;
+  status?: string | null;
+  deadline?: Date | null;
 }
 
 export default function GoalsPage() {

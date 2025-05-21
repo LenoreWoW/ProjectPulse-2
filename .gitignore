@@ -54,3 +54,8 @@ temp/
 
 # Debug
 .debug
+
+# Data files
+project.csv
+# CSV files
+Projects.csv

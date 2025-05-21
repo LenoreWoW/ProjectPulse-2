@@ -294,12 +294,12 @@ export const auditLogs = pgTable('audit_logs', {
 export const insertUserSchema = createInsertSchema(users).omit({ id: true });
 export const insertProjectSchema = createInsertSchema(projects)
   .omit({ id: true, createdAt: true, updatedAt: true })
-  .transform((data) => {
+  .transform((data: InsertProject) => {
     // Convert date strings to Date objects
     return {
       ...data,
       startDate: data.startDate ? new Date(data.startDate) : data.startDate,
-      deadline: data.deadline ? new Date(data.deadline) : data.deadline,
+      endDate: data.endDate ? new Date(data.endDate) : data.endDate,
     };
   });
 
@@ -316,7 +316,7 @@ export const updateProjectSchema = z.object({
   budget: z.number().optional().nullable(),
   priority: z.enum(['Low', 'Medium', 'High', 'Critical']).optional(),
   startDate: z.date().optional().nullable(),
-  deadline: z.date().optional().nullable(),
+  endDate: z.date().optional().nullable(),
   status: z.enum(['Pending', 'Planning', 'InProgress', 'OnHold', 'Completed', 'Cancelled']).optional(),
   actualCost: z.number().optional().nullable(),
   createdAt: z.date().optional(),
@@ -326,7 +326,7 @@ export const updateProjectSchema = z.object({
   return {
     ...data,
     startDate: data.startDate ? new Date(data.startDate) : data.startDate,
-    deadline: data.deadline ? new Date(data.deadline) : data.deadline,
+    endDate: data.endDate ? new Date(data.endDate) : data.endDate,
   };
 });
 
@@ -336,7 +336,7 @@ export const insertGoalSchema = createInsertSchema(goals).omit({ id: true, creat
 
 export const insertTaskSchema = createInsertSchema(tasks)
   .omit({ id: true, createdAt: true, updatedAt: true })
-  .transform((data) => {
+  .transform((data: InsertTask) => {
     // Convert date strings to Date objects
     return {
       ...data,
@@ -350,7 +350,7 @@ export const insertNotificationSchema = createInsertSchema(notifications).omit({
 
 export const insertAssignmentSchema = createInsertSchema(assignments)
   .omit({ id: true, createdAt: true, updatedAt: true })
-  .transform((data) => {
+  .transform((data: InsertAssignment) => {
     // Convert date strings to Date objects
     return {
       ...data,
@@ -374,7 +374,7 @@ export const insertProjectDependencySchema = createInsertSchema(projectDependenc
 
 export const insertMilestoneSchema = createInsertSchema(milestones)
   .omit({ id: true, createdAt: true, updatedAt: true, completionPercentage: true })
-  .transform((data) => {
+  .transform((data: InsertMilestone) => {
     // Convert date strings to Date objects
     return {
       ...data,
@@ -404,46 +404,202 @@ export const loginSchema = z.object({
 // ===== Types =====
 
 // Insert Types
-export type InsertUser = z.infer<typeof insertUserSchema>;
-export type InsertDepartment = z.infer<typeof insertDepartmentSchema>;
-export type InsertProject = z.infer<typeof insertProjectSchema>;
-export type InsertTask = z.infer<typeof insertTaskSchema>;
-export type InsertChangeRequest = z.infer<typeof insertChangeRequestSchema>;
-export type InsertGoal = z.infer<typeof insertGoalSchema>;
-export type InsertRiskIssue = z.infer<typeof insertRiskIssueSchema>;
-export type InsertNotification = z.infer<typeof insertNotificationSchema>;
-export type InsertAssignment = z.infer<typeof insertAssignmentSchema>;
-export type InsertActionItem = z.infer<typeof insertActionItemSchema>;
-export type InsertWeeklyUpdate = z.infer<typeof insertWeeklyUpdateSchema>;
-export type InsertProjectCostHistory = z.infer<typeof insertProjectCostHistorySchema>;
-export type InsertProjectGoal = z.infer<typeof insertProjectGoalSchema>;
-export type InsertGoalRelationship = z.infer<typeof insertGoalRelationshipSchema>;
-export type InsertTaskComment = z.infer<typeof insertTaskCommentSchema>;
-export type InsertAssignmentComment = z.infer<typeof insertAssignmentCommentSchema>;
-export type InsertProjectDependency = z.infer<typeof insertProjectDependencySchema>;
-export type InsertMilestone = z.infer<typeof insertMilestoneSchema>;
-export type InsertAuditLog = z.infer<typeof insertAuditLogSchema>;
+export type InsertUser = {
+  name: string;
+  email: string;
+  phone?: string | null;
+  username: string;
+  password: string;
+  roles: string[];
+  departmentId?: number | null;
+  isActive: boolean;
+  position?: string | null;
+  avatarUrl?: string | null;
+  preferredLanguage?: string | null;
+};
 
-// Select Types
-export type User = typeof users.$inferSelect;
-export type Department = typeof departments.$inferSelect;
-export type Project = typeof projects.$inferSelect;
-export type Task = typeof tasks.$inferSelect;
-export type ChangeRequest = typeof changeRequests.$inferSelect;
-export type Goal = typeof goals.$inferSelect;
-export type RiskIssue = typeof risksIssues.$inferSelect;
-export type Notification = typeof notifications.$inferSelect;
-export type Assignment = typeof assignments.$inferSelect;
-export type ActionItem = typeof actionItems.$inferSelect;
-export type WeeklyUpdate = typeof weeklyUpdates.$inferSelect;
-export type ProjectCostHistory = typeof projectCostHistory.$inferSelect;
-export type ProjectGoal = typeof projectGoals.$inferSelect;
-export type GoalRelationship = typeof goalRelationships.$inferSelect;
-export type TaskComment = typeof taskComments.$inferSelect;
-export type AssignmentComment = typeof assignmentComments.$inferSelect;
-export type Milestone = typeof milestones.$inferSelect;
-export type TaskMilestone = typeof taskMilestones.$inferSelect;
-export type AuditLog = typeof auditLogs.$inferSelect;
+export type InsertDepartment = {
+  location?: string | null;
+  name: string;
+  email?: string | null;
+  phone?: string | null;
+  fax?: string | null;
+  description?: string | null;
+  descriptionAr?: string | null;
+  isActive?: boolean;
+  parentDepartmentId?: number | null;
+  headUserId?: number | null;
+};
+
+export type InsertProject = {
+  status?: "Pending" | "Planning" | "InProgress" | "OnHold" | "Completed" | null;
+  title: string;
+  titleAr?: string | null;
+  managerUserId: number;
+  description?: string | null;
+  descriptionAr?: string | null;
+  startDate: Date;
+  endDate?: Date | null;
+  departmentId: number;
+  priority?: "Low" | "Medium" | "High" | "Critical" | null;
+  budget?: number | null;
+  actualCost?: number | null;
+};
+
+export type InsertTask = {
+  status?: "Todo" | "InProgress" | "Review" | "Completed" | "OnHold" | null;
+  title: string;
+  titleAr?: string | null;
+  description?: string | null;
+  descriptionAr?: string | null;
+  deadline?: Date | null;
+  projectId: number;
+  assignedUserId?: number | null;
+  priority?: "Low" | "Medium" | "High" | "Critical" | null;
+  createdByUserId: number;
+  priorityOrder?: number | null;
+};
+
+export type InsertChangeRequest = {
+  projectId: number;
+  type: 'Schedule' | 'Budget' | 'Scope' | 'Delegation' | 'Status' | 'Closure' | 'AdjustTeam' | 'Faculty';
+  details: string;
+  detailsAr?: string | null;
+  requestedByUserId: number;
+  status?: 'Pending' | 'PendingMainPMO' | 'Approved' | 'Rejected' | 'ReturnedToProjectManager' | 'ReturnedToSubPMO' | null;
+  reviewedByUserId?: number | null;
+  reviewedAt?: Date | null;
+  rejectionReason?: string | null;
+  returnTo?: string | null;
+  comments?: string | null;
+};
+
+export type InsertGoal = {
+  departmentId?: number | null;
+  title: string;
+  titleAr?: string | null;
+  description?: string | null;
+  descriptionAr?: string | null;
+  targetDate?: Date | null;
+  priority?: 'Low' | 'Medium' | 'High' | 'Critical' | null;
+  isStrategic?: boolean;
+  isAnnual?: boolean;
+};
+
+export type InsertRiskIssue = {
+  status?: 'InProgress' | 'Resolved' | 'Open' | 'Closed' | null;
+  type: 'Risk' | 'Issue';
+  title: string;
+  description: string;
+  impact?: string | null;
+  mitigation?: string | null;
+  priority?: 'Low' | 'Medium' | 'High' | 'Critical' | null;
+  projectId: number;
+  createdByUserId: number;
+};
+
+export type InsertNotification = {
+  message: string;
+  userId: number;
+  relatedEntity?: string | null;
+  relatedEntityId?: number | null;
+  messageAr?: string | null;
+  isRead?: boolean;
+  requiresApproval?: boolean;
+  lastReminderSent?: Date | null;
+};
+
+export type InsertAssignment = {
+  status?: 'Todo' | 'InProgress' | 'Review' | 'Completed' | 'OnHold' | null;
+  title: string;
+  titleAr?: string | null;
+  description?: string | null;
+  descriptionAr?: string | null;
+  assignedByUserId: number;
+  assignedToUserId: number;
+  deadline?: Date | null;
+  priority?: 'Low' | 'Medium' | 'High' | 'Critical' | null;
+};
+
+export type InsertActionItem = {
+  status?: 'Todo' | 'InProgress' | 'Review' | 'Completed' | 'OnHold' | null;
+  title: string;
+  titleAr?: string | null;
+  description?: string | null;
+  descriptionAr?: string | null;
+  meetingId?: number | null;
+  deadline?: Date | null;
+  priority?: 'Low' | 'Medium' | 'High' | 'Critical' | null;
+  userId: number;
+};
+
+export type InsertWeeklyUpdate = {
+  week: string;
+  projectId: number;
+  comments: string;
+  commentsAr?: string | null;
+  createdByUserId: number;
+};
+
+export type InsertProjectCostHistory = {
+  projectId: number;
+  amount: number;
+  updatedByUserId: number;
+  notes?: string | null;
+};
+
+export type InsertProjectGoal = {
+  projectId: number;
+  goalId: number;
+  weight?: number | null;
+};
+
+export type InsertGoalRelationship = {
+  parentGoalId: number;
+  childGoalId: number;
+  weight?: number | null;
+};
+
+export type InsertTaskComment = {
+  content: string;
+  taskId: number;
+  userId: number;
+};
+
+export type InsertAssignmentComment = {
+  content: string;
+  assignmentId: number;
+  userId: number;
+};
+
+export type InsertProjectDependency = {
+  projectId: number;
+  dependsOnProjectId: number;
+};
+
+export type InsertMilestone = {
+  status?: 'NotStarted' | 'InProgress' | 'Completed' | 'Delayed' | 'AtRisk' | null;
+  title: string;
+  titleAr?: string | null;
+  description?: string | null;
+  descriptionAr?: string | null;
+  projectId: number;
+  deadline?: Date | null;
+  completionPercentage?: number;
+  createdByUserId: number;
+};
+
+export type InsertAuditLog = {
+  action: string;
+  entityType: string;
+  entityId?: number | null;
+  details?: Record<string, any> | null;
+  ipAddress?: string | null;
+  userAgent?: string | null;
+  departmentId?: number | null;
+  userId?: number | null;
+  createdAt: Date;
+};
 
 // Login Type
 export type LoginData = z.infer<typeof loginSchema>;
@@ -575,3 +731,257 @@ export type UpdateActionItem = z.infer<typeof updateActionItemSchema>;
 export type UpdateProject = z.infer<typeof updateProjectSchema>;
 export type UpdateWeeklyUpdate = z.infer<typeof updateWeeklyUpdateSchema>;
 export type UpdateMilestone = z.infer<typeof updateMilestoneSchema>;
+
+// Select Types
+export type User = {
+  id: number;
+  name: string;
+  email: string;
+  phone?: string | null;
+  username: string;
+  password: string;
+  roles: string[];
+  departmentId?: number | null;
+  isActive: boolean;
+  position?: string | null;
+  avatarUrl?: string | null;
+  preferredLanguage?: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+};
+
+export type Department = {
+  id: number;
+  location?: string | null;
+  name: string;
+  email?: string | null;
+  phone?: string | null;
+  fax?: string | null;
+  description?: string | null;
+  descriptionAr?: string | null;
+  isActive: boolean;
+  parentDepartmentId?: number | null;
+  headUserId?: number | null;
+  createdAt: Date;
+  updatedAt: Date;
+};
+
+export type Project = {
+  id: number;
+  status?: string | null;
+  title: string;
+  titleAr?: string | null;
+  managerUserId: number;
+  description?: string | null;
+  descriptionAr?: string | null;
+  startDate: Date;
+  endDate?: Date | null;
+  departmentId: number;
+  priority?: string | null;
+  budget?: number | null;
+  actualCost?: number | null;
+  createdAt: Date;
+  updatedAt: Date;
+};
+
+export type Task = {
+  id: number;
+  status?: string | null;
+  title: string;
+  titleAr?: string | null;
+  description?: string | null;
+  descriptionAr?: string | null;
+  deadline?: Date | null;
+  projectId: number;
+  assignedUserId?: number | null;
+  priority?: string | null;
+  createdByUserId: number;
+  priorityOrder?: number | null;
+  createdAt: Date;
+  updatedAt: Date;
+};
+
+export type ChangeRequest = {
+  id: number;
+  projectId: number;
+  type: string;
+  details: string;
+  detailsAr?: string | null;
+  requestedByUserId: number;
+  requestedAt: Date;
+  status?: string | null;
+  reviewedByUserId?: number | null;
+  reviewedAt?: Date | null;
+  rejectionReason?: string | null;
+  returnTo?: string | null;
+  comments?: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+};
+
+export type Goal = {
+  id: number;
+  departmentId?: number | null;
+  title: string;
+  titleAr?: string | null;
+  description?: string | null;
+  descriptionAr?: string | null;
+  targetDate?: Date | null;
+  priority?: string | null;
+  isStrategic: boolean;
+  isAnnual: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+};
+
+export type RiskIssue = {
+  id: number;
+  status?: string | null;
+  type: string;
+  title: string;
+  description: string;
+  impact?: string | null;
+  mitigation?: string | null;
+  priority?: string | null;
+  projectId: number;
+  createdByUserId: number;
+  createdAt: Date;
+  updatedAt: Date;
+};
+
+export type Notification = {
+  id: number;
+  message: string;
+  userId: number;
+  relatedEntity?: string | null;
+  relatedEntityId?: number | null;
+  messageAr?: string | null;
+  isRead: boolean;
+  requiresApproval: boolean;
+  lastReminderSent?: Date | null;
+  createdAt: Date;
+  updatedAt: Date;
+};
+
+export type Assignment = {
+  id: number;
+  status?: string | null;
+  title: string;
+  titleAr?: string | null;
+  description?: string | null;
+  descriptionAr?: string | null;
+  assignedByUserId: number;
+  assignedToUserId: number;
+  deadline?: Date | null;
+  priority?: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+};
+
+export type ActionItem = {
+  id: number;
+  status?: string | null;
+  title: string;
+  titleAr?: string | null;
+  description?: string | null;
+  descriptionAr?: string | null;
+  meetingId?: number | null;
+  deadline?: Date | null;
+  priority?: string | null;
+  userId: number;
+  createdAt: Date;
+  updatedAt: Date;
+};
+
+export type WeeklyUpdate = {
+  id: number;
+  week: string;
+  projectId: number;
+  comments: string;
+  commentsAr?: string | null;
+  createdByUserId: number;
+  createdAt: Date;
+  updatedAt: Date;
+};
+
+export type ProjectCostHistory = {
+  id: number;
+  projectId: number;
+  amount: number;
+  updatedByUserId: number;
+  notes?: string | null;
+  createdAt: Date;
+};
+
+export type ProjectGoal = {
+  id: number;
+  projectId: number;
+  goalId: number;
+  weight?: number | null;
+  createdAt: Date;
+  updatedAt: Date;
+};
+
+export type GoalRelationship = {
+  id: number;
+  parentGoalId: number;
+  childGoalId: number;
+  weight?: number | null;
+  createdAt: Date;
+  updatedAt: Date;
+};
+
+export type TaskComment = {
+  id: number;
+  content: string;
+  taskId: number;
+  userId: number;
+  createdAt: Date;
+  updatedAt: Date;
+};
+
+export type AssignmentComment = {
+  id: number;
+  content: string;
+  assignmentId: number;
+  userId: number;
+  createdAt: Date;
+  updatedAt: Date;
+};
+
+export type Milestone = {
+  id: number;
+  status?: string | null;
+  title: string;
+  titleAr?: string | null;
+  description?: string | null;
+  descriptionAr?: string | null;
+  projectId: number;
+  deadline?: Date | null;
+  completionPercentage: number;
+  createdByUserId: number;
+  createdAt: Date;
+  updatedAt: Date;
+};
+
+export type TaskMilestone = {
+  id: number;
+  taskId: number;
+  milestoneId: number;
+  weight?: number | null;
+  createdAt: Date;
+  updatedAt: Date;
+};
+
+export type AuditLog = {
+  id: number;
+  action: string;
+  entityType: string;
+  entityId?: number | null;
+  details?: Record<string, any> | null;
+  ipAddress?: string | null;
+  userAgent?: string | null;
+  departmentId?: number | null;
+  userId?: number | null;
+  createdAt: Date;
+};

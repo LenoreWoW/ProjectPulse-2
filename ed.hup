@@ -7,25 +7,22 @@ import {
   projectStatusEnum, roleEnum, userStatusEnum, ProjectGoal, InsertProjectGoal, updateProjectSchema,
   InsertProjectDependency, UpdateTask, UpdateAssignment, UpdateActionItem,
   insertDepartmentSchema, updateTaskSchema, updateAssignmentSchema, updateActionItemSchema,
-  insertProjectSchema, insertTaskSchema, insertChangeRequestSchema,
+  insertProjectSchema, insertTaskSchema, insertChangeRequestSchema, 
   insertProjectCostHistorySchema, insertGoalSchema, insertRiskIssueSchema,
   insertAssignmentSchema, insertActionItemSchema, insertWeeklyUpdateSchema,
   insertMilestoneSchema, updateMilestoneSchema, insertTaskMilestoneSchema
 } from "@shared/schema";
 import { z } from "zod";
 import { Express, Request, Response, NextFunction } from "express";
-import { Server } from "http";
+import { createServer, Server } from "http";
 import { PgStorage } from "./pg-storage";
 import { setupAuth } from "./auth";
 import passport from "passport";
 import { fileURLToPath } from "url";
 import { dirname, join } from "path";
 import { registerAnalyticsRoutes } from "./analytics-routes";
-import { registerAuditLogRoutes } from "./audit-log-routes";
 import express from "express";
 import { sendEmail, sendPasswordResetEmail, sendApprovalNotificationEmail } from "./email";
-import path from "path";
-import http from 'http';
 
 // Create a new instance of the PostgreSQL storage
 export const storage = new PgStorage();
@@ -235,10 +232,15 @@ function isAuthenticated(req: Request, res: Response, next: NextFunction) {
 // Advanced authenticated function with typed user object
 function hasAuth(handler: (req: Request & { currentUser: Express.User }, res: Response, next: NextFunction) => void) {
   return (req: Request, res: Response, next: NextFunction) => {
-    if (!req.isAuthenticated || !req.isAuthenticated()) {
+    if (!req.isAuthenticated() || !req.user) {
       return res.status(401).json({ message: "Unauthorized" });
     }
-    handler(req as Request & { currentUser: Express.User }, res, next);
+    
+    // Create a typed version of the request with guaranteed user
+    const typedReq = req as Request & { currentUser: Express.User };
+    typedReq.currentUser = req.user;
+    
+    return handler(typedReq, res, next);
   };
 }
 
@@ -326,7 +328,7 @@ function hasDepartmentAccess() {
 
 // Helper function to combine validation and auth
 function validateAuthBody<T>(schema: z.Schema<T>) {
-  return (req: Request, res: Response, next: NextFunction) => {
+  return hasAuth((req: Request & { currentUser: Express.User }, res: Response, next: NextFunction) => {
     try {
       // Pre-process dates before schema validation
       if (req.path.includes('/api/projects')) {
@@ -337,11 +339,9 @@ function validateAuthBody<T>(schema: z.Schema<T>) {
       console.log('Validating request body:', req.body);
       
       // Let the schema handle validation
-      const result = schema.parse(req.body);
-      req.body = result;
+      req.body = schema.parse(req.body);
       next();
     } catch (error) {
-      console.error('Auth validation error:', error);
       if (error instanceof z.ZodError) {
         console.log('Validating request body:', req.body);
         console.log('Validation errors:', error.errors);
@@ -353,7 +353,7 @@ function validateAuthBody<T>(schema: z.Schema<T>) {
       }
       next(error);
     }
-  };
+  });
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -371,16 +371,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   // Departments Routes
-  app.get("/api/departments", isAuthenticated, async (req: Request, res: Response) => {
+  app.get("/api/departments", isAuthenticated, async (_req, res) => {
     try {
       const departments = await storage.getDepartments();
       res.json(departments);
     } catch (error) {
-      next(error);
+      res.status(500).json({ message: "Failed to fetch departments" });
     }
   });
   
-  app.get("/api/departments/:id", isAuthenticated, async (req: Request, res: Response) => {
+  app.get("/api/departments/:id", isAuthenticated, async (req, res) => {
     try {
       const departmentId = parseInt(req.params.id);
       const department = await storage.getDepartment(departmentId);
@@ -391,7 +391,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       res.json(department);
     } catch (error) {
-      next(error);
+      res.status(500).json({ message: "Failed to fetch department" });
     }
   });
   
@@ -509,19 +509,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let filteredProjects = projects;
       
       if (req.currentUser.role === "DepartmentDirector") {
-          // Department directors can only see projects in their department
+        // Department directors can only see projects in their department
         filteredProjects = projects.filter(project => project.departmentId === req.currentUser.departmentId);
       } else if (req.currentUser.role === "SubPMO") {
-          // Sub-PMO can only see projects in their department
+        // Sub-PMO can only see projects in their department
         filteredProjects = projects.filter(project => project.departmentId === req.currentUser.departmentId);
       } else if (req.currentUser.role === "ProjectManager") {
-          // Project managers can only see projects they manage or in their department
-          filteredProjects = projects.filter(project => 
+        // Project managers can only see projects they manage or in their department
+        filteredProjects = projects.filter(project => 
           project.managerUserId === req.currentUser.id || 
           project.departmentId === req.currentUser.departmentId
-          );
+        );
       } else if (req.currentUser.role === "User") {
-          // Regular users can only see projects in their department
+        // Regular users can only see projects in their department
         filteredProjects = projects.filter(project => project.departmentId === req.currentUser.departmentId);
       }
       
@@ -561,7 +561,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     "/api/projects", 
     isAuthenticated, 
     hasRole(["Administrator", "MainPMO", "SubPMO", "ProjectManager", "DepartmentDirector"]), 
-    validateBody(insertProjectSchema), 
+    validateBody(insertProjectSchema),
     hasAuth(async (req, res) => {
       try {
         // Project Managers can only create projects in their department
@@ -890,7 +890,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Direct task creation endpoint
   app.post(
     "/api/tasks", 
-    validateBody(insertTaskSchema), 
+    validateBody(insertTaskSchema),
     hasAuth(async (req, res) => {
       try {
         const projectId = req.body.projectId;
@@ -1073,7 +1073,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   app.post(
     "/api/projects/:projectId/change-requests", 
-    validateBody(insertChangeRequestSchema), 
+    validateBody(insertChangeRequestSchema),
     hasAuth(async (req, res) => {
       try {
         const projectId = parseInt(req.params.projectId);
@@ -1212,14 +1212,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
             case "Status":
               // Update project status
               if (req.body.newStatus) {
-          await storage.updateProject(project.id, { status: req.body.newStatus });
-        }
+                await storage.updateProject(project.id, { status: req.body.newStatus });
+              }
               break;
               
             case "Budget":
               // Update project budget
               if (req.body.newBudget) {
-          await storage.updateProject(project.id, { budget: req.body.newBudget });
+                await storage.updateProject(project.id, { budget: req.body.newBudget });
               }
               break;
               
@@ -1297,7 +1297,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Cost History Routes
   app.post(
     "/api/projects/:projectId/cost-history", 
-    validateBody(insertProjectCostHistorySchema), 
+    validateBody(insertProjectCostHistorySchema),
     hasAuth(async (req, res) => {
       try {
         const projectId = parseInt(req.params.projectId);
@@ -1469,7 +1469,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   app.post(
     "/api/goals", 
-    validateBody(insertGoalSchema), 
+    validateBody(insertGoalSchema),
     hasRole(["Administrator", "MainPMO", "DepartmentDirector", "Executive"]),
     hasAuth(async (req, res) => {
       try {
@@ -1521,7 +1521,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   app.post(
     "/api/projects/:projectId/risks-issues", 
-    validateBody(insertRiskIssueSchema), 
+    validateBody(insertRiskIssueSchema),
     hasAuth(async (req, res) => {
       try {
         const projectId = parseInt(req.params.projectId);
@@ -1559,62 +1559,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Assignments Routes
   app.get("/api/assignments", hasAuth(async (req, res) => {
     try {
-      console.log(`Getting assignments for user ID: ${req.currentUser.id}`);
       const assignedToMe = await storage.getAssignmentsByAssignee(req.currentUser.id);
       const assignedByMe = await storage.getAssignmentsByAssigner(req.currentUser.id);
-      
-      console.log(`Found ${assignedToMe.length} assignments assigned to user and ${assignedByMe.length} assignments created by user`);
       
       res.json({
         assignedToMe,
         assignedByMe
       });
     } catch (error) {
-      console.error("Error fetching assignments:", error);
-      res.status(500).json({ 
-        message: "Failed to fetch assignments", 
-        error: error instanceof Error ? error.message : String(error) 
-      });
+      res.status(500).json({ message: "Failed to fetch assignments" });
     }
   }));
   
   app.post(
     "/api/assignments", 
-    validateBody(insertAssignmentSchema), 
+    validateBody(insertAssignmentSchema),
     hasAuth(async (req, res) => {
       try {
-        console.log("Creating new assignment:", req.body);
         const assignmentData = {
           ...req.body,
           assignedByUserId: req.currentUser.id
         };
         
         const newAssignment = await storage.createAssignment(assignmentData);
-        
-        // Create notification for assignee
-        if (newAssignment.assignedToUserId !== req.currentUser.id) {
-          try {
-            await storage.createNotification({
-              userId: newAssignment.assignedToUserId,
-              message: `You have been assigned a new assignment: "${newAssignment.title}"`,
-              relatedEntity: "Assignment",
-              relatedEntityId: newAssignment.id,
-              isRead: false
-            });
-          } catch (notifyError) {
-            console.error("Failed to create notification for assignment:", notifyError);
-            // Don't fail the assignment creation if notification fails
-          }
-        }
-        
-        console.log("Assignment created successfully:", newAssignment);
         res.status(201).json(newAssignment);
       } catch (error) {
-        console.error("Error creating assignment:", error);
-        res.status(500).json({ 
-          message: "Failed to create assignment", 
-          error: error instanceof Error ? error.message : String(error) 
-        });
+        res.status(500).json({ message: "Failed to create assignment" });
       }
     })
   );
@@ -1662,7 +1632,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   app.post(
     "/api/action-items", 
-    validateBody(insertActionItemSchema), 
+    validateBody(insertActionItemSchema),
     hasAuth(async (req, res) => {
       try {
         const actionItemData = {
@@ -1735,7 +1705,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   app.post(
     "/api/projects/:projectId/weekly-updates", 
-    validateBody(insertWeeklyUpdateSchema), 
+    validateBody(insertWeeklyUpdateSchema),
     hasAuth(async (req, res) => {
       try {
         const projectId = parseInt(req.params.projectId);
@@ -1833,14 +1803,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     "/api/projects/:projectId/milestones", 
     validateBody(insertMilestoneSchema),
     hasAuth(async (req, res) => {
-    try {
-      const projectId = parseInt(req.params.projectId);
-      const project = await storage.getProject(projectId);
-      
-      if (!project) {
-        return res.status(404).json({ message: "Project not found" });
-      }
-      
+      try {
+        const projectId = parseInt(req.params.projectId);
+        const project = await storage.getProject(projectId);
+        
+        if (!project) {
+          return res.status(404).json({ message: "Project not found" });
+        }
+        
         // Only project manager or higher roles can create milestones
         if (
           req.currentUser.role !== "Administrator" && 
@@ -1893,7 +1863,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         const updatedMilestone = await storage.updateMilestone(milestoneId, req.body);
         res.json(updatedMilestone);
-    } catch (error) {
+      } catch (error) {
         res.status(500).json({ message: "Failed to update milestone" });
       }
     })
@@ -2184,14 +2154,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   const analyticsRouter = express.Router();
   registerAnalyticsRoutes(analyticsRouter);
   app.use(analyticsRouter);
-  
-  // Register audit log routes 
-  const auditLogRouter = express.Router();
-  registerAuditLogRoutes(auditLogRouter, storage);
-  app.use(auditLogRouter);
-  
-  // Create the HTTP server from the Express app
-  // Note: The server will be started in server/index.ts with the proper port
-  const httpServer = http.createServer(app);
+
+  const httpServer = createServer(app);
   return httpServer;
 }

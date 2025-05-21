@@ -1,7 +1,8 @@
-import { useState, useEffect } from "react";
+import React from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useI18n } from "@/hooks/use-i18n-new";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { User, Department } from "@shared/schema";
+import { User, Department } from "@/lib/schema-types";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -16,14 +17,14 @@ import {
   CardDescription 
 } from "@/components/ui/card";
 import { 
-  Form, 
+  FormRoot, 
   FormControl, 
   FormDescription, 
   FormField, 
   FormItem, 
   FormLabel, 
   FormMessage 
-} from "@/components/ui/form";
+} from "@/components/ui/form-wrapper";
 import { 
   Dialog, 
   DialogContent, 
@@ -311,7 +312,7 @@ export default function UsersManagementPage() {
                     {t("addUserDescription")}
                   </DialogDescription>
                 </DialogHeader>
-                <Form {...form}>
+                <FormRoot form={form}>
                   <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
                     <FormField
                       control={form.control}
@@ -527,7 +528,7 @@ export default function UsersManagementPage() {
                       </Button>
                     </DialogFooter>
                   </form>
-                </Form>
+                </FormRoot>
               </DialogContent>
             </Dialog>
           )}
@@ -541,7 +542,7 @@ export default function UsersManagementPage() {
                   {t("editUserDescription")}
                 </DialogDescription>
               </DialogHeader>
-              <Form {...form}>
+              <FormRoot form={form}>
                 <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
                   <FormField
                     control={form.control}
@@ -753,7 +754,7 @@ export default function UsersManagementPage() {
                     </Button>
                   </DialogFooter>
                 </form>
-              </Form>
+              </FormRoot>
             </DialogContent>
           </Dialog>
         </div>

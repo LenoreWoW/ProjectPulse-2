@@ -1,0 +1,16 @@
+{
+  "name": "project-pulse-csv-import",
+  "version": "1.0.0",
+  "description": "CSV import tool for ProjectPulse",
+  "main": "import-projects.js",
+  "type": "module",
+  "scripts": {
+    "import": "node import-projects.js"
+  },
+  "dependencies": {
+    "bcrypt": "^5.1.1",
+    "csv-parser": "^3.0.0",
+    "dotenv": "^16.3.1",
+    "pg": "^8.11.3"
+  }
+} 

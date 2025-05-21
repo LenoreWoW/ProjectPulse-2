@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useI18n } from "@/hooks/use-i18n-new";
 import { useLocation } from "wouter";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
-import { Assignment, priorityEnum, User } from "@shared/schema";
+import { User } from "@/lib/schema-types";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -17,14 +17,14 @@ import {
   SelectValue 
 } from "@/components/ui/select";
 import { 
-  Form,
+  FormRoot,
   FormControl,
   FormDescription,
   FormField,
   FormItem,
   FormLabel,
   FormMessage
-} from "@/components/ui/form";
+} from "@/components/ui/form-wrapper";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -159,7 +159,7 @@ export default function NewAssignmentPage() {
           <CardDescription>{t("fillDetailsBelow")}</CardDescription>
         </CardHeader>
         <CardContent>
-          <Form {...form}>
+          <FormRoot form={form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
               {/* Assignment Name */}
               <FormField
@@ -316,7 +316,7 @@ export default function NewAssignmentPage() {
                 </Button>
               </div>
             </form>
-          </Form>
+          </FormRoot>
         </CardContent>
       </Card>
     </>

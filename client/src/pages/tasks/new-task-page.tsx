@@ -11,19 +11,19 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Calendar } from "@/components/ui/calendar";
 import {
-  Form,
+  FormRoot,
   FormControl,
   FormField,
   FormItem,
   FormLabel,
   FormMessage,
-} from "@/components/ui/form";
+} from "@/components/ui/form-wrapper";
 import { Input } from "@/components/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useToast } from "@/hooks/use-toast";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Project, User } from "@shared/schema";
+import { Project, User } from "@/lib/schema-types";
 import { useI18n } from "@/hooks/use-i18n-new";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/use-auth";
@@ -154,7 +154,7 @@ export default function NewTaskPage() {
           <CardDescription>{t("createTaskDescription")}</CardDescription>
         </CardHeader>
         <CardContent>
-          <Form {...form}>
+          <FormRoot form={form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <FormField
@@ -230,12 +230,12 @@ export default function NewTaskPage() {
                                   </SelectItem>
                                 ))
                               ) : (
-                                <SelectItem value="" disabled>
+                                <SelectItem value="no-team-members" disabled>
                                   {t("noTeamMembers")}
                                 </SelectItem>
                               )
                             ) : (
-                              <SelectItem value="" disabled>
+                              <SelectItem value="select-project-first" disabled>
                                 {t("selectProjectFirst")}
                               </SelectItem>
                             )}
@@ -378,7 +378,7 @@ export default function NewTaskPage() {
                 </Button>
               </div>
             </form>
-          </Form>
+          </FormRoot>
         </CardContent>
       </Card>
     </div>

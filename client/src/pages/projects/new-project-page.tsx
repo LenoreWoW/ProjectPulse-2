@@ -1,185 +1,212 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useLocation } from "wouter";
 import { format } from "date-fns";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm } from "react-hook-form";
+import { useFieldArray, useForm, Control, SubmitHandler, FieldPath, ControllerRenderProps } from "react-hook-form";
 import { z } from "zod";
-import { CalendarIcon, Loader2, PlusCircle, X } from "lucide-react";
-
-import { Button } from "@/components/ui/button";
-import { Calendar } from "@/components/ui/calendar";
+import { CalendarIcon, Loader2, Plus, Trash2 } from "lucide-react";
 import {
-  Form,
-  FormControl,
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "@/components/ui/tabs";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  FormRoot,
   FormField,
   FormItem,
   FormLabel,
+  FormControl,
   FormMessage,
-} from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { useToast } from "@/hooks/use-toast";
-import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { insertProjectSchema, type Project } from "@shared/schema";
-import { apiRequest, queryClient } from "@/lib/queryClient";
+} from "@/components/ui/form-wrapper";
 import { useI18n } from "@/hooks/use-i18n-new";
 import { cn } from "@/lib/utils";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { useAuth } from "@/hooks/use-auth";
-import { MultiSelect } from "@/components/ui";
-import { Badge } from "@/components/ui/badge";
+import { Department, Goal, Project, User } from "@/lib/schema-types";
+import { apiRequest } from "@/lib/queryClient";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { useToast } from "@/hooks/use-toast";
+import React from "react";
+
+// Define interfaces
+interface ProjectGoal {
+  goalId: number;
+  weight: number;
+}
+
+interface RelatedProject {
+  projectId: number;
+}
+
+interface RelatedToProject {
+  dependsOnProjectId: number;
+}
+
+interface FormField {
+  id: string;
+}
+
+// Define the form schema
+const formSchema = z.object({
+  title: z.string().min(1, {
+    message: "Project name is required",
+  }),
+  status: z.string().default("Draft"),
+  priority: z.string().default("Medium"),
+  departmentId: z.string(),
+  managerUserId: z.string(),
+  budget: z.coerce.number().optional(),
+  actualCost: z.coerce.number().optional(),
+  startDate: z.date(),
+  endDate: z.date(),
+  description: z.string().optional(),
+  projectGoals: z.array(
+    z.object({
+      goalId: z.number(),
+      weight: z.number().min(1).max(10),
+    })
+  ).default([{ goalId: 0, weight: 1 }]),
+  relatedProjects: z.array(
+    z.object({
+      projectId: z.number(),
+    })
+  ).default([]),
+  relatedToProjects: z.array(
+    z.object({
+      dependsOnProjectId: z.number(),
+    })
+  ).default([]),
+}).refine((data) => data.endDate >= data.startDate, {
+  message: "End date must be after start date",
+  path: ["endDate"],
+});
+
+// Use z.infer to extract the type from the schema
+type FormValues = z.infer<typeof formSchema>;
+
+// A type for rendering form field components
+type FormControl = Control<FormValues, any>;
+type FieldProps = {
+  value: any;
+  onChange: (...event: any[]) => void;
+  onBlur: () => void;
+  name: string;
+  ref: React.RefObject<any>;
+};
 
 export default function NewProjectPage() {
-  const [location, navigate] = useLocation();
+  const [, navigate] = useLocation();
+  const { t } = useI18n();
   const { toast } = useToast();
-  const { t, language } = useI18n();
-  const { user } = useAuth();
-  const [selectedTeamMembers, setSelectedTeamMembers] = useState<string[]>([]);
-  const [departmentUsers, setDepartmentUsers] = useState<any[]>([]);
+  const queryClient = useQueryClient();
   
-  // Fetch departments for reference
-  const { data: departments = [], isLoading: isLoadingDepartments } = useQuery({
+  // Load departments, users, projects, and goals for selection dropdowns
+  const { data: departments = [], isLoading: isLoadingDepartments } = useQuery<Department[]>({
     queryKey: ["/api/departments"],
-    staleTime: 60000, // 1 minute
   });
-
-  // Fetch users for the manager select dropdown
-  const { data: users = [], isLoading: isLoadingUsers } = useQuery<any[]>({
+  
+  const { data: users = [], isLoading: isLoadingUsers } = useQuery<User[]>({
     queryKey: ["/api/users"],
-    staleTime: 60000, // 1 minute
   });
-
-  // Create a form schema based on the insertProjectSchema
-  const formSchema = z.object({
-    title: z.string().min(1, t("titleRequired")),
-    description: z.string().min(1, t("descriptionRequired")),
-    departmentId: z.string().min(1, t("departmentRequired")),
-    managerUserId: z.string().min(1, t("projectManagerRequired")),
-    client: z.string().min(1, t("clientRequired")),
-    budget: z.number({
-      required_error: t("budgetRequired"),
-      invalid_type_error: t("budgetMustBeNumber"),
-    }),
-    priority: z.string().min(1, t("priorityRequired")),
-    startDate: z.date({
-      required_error: t("startDateRequired"),
-    }),
-    deadline: z.date({
-      required_error: t("deadlineRequired"),
-    }),
-    status: z.string().min(1, t("statusRequired")),
-    actualCost: z.number({
-      required_error: t("actualCostRequired"),
-      invalid_type_error: t("costMustBeNumber"),
-    }),
-    teamMembers: z.array(z.string()).optional(),
-  }).refine((data) => data.deadline >= data.startDate, {
-    message: t("deadlineMustBeAfterStartDate"),
-    path: ["deadline"],
+  
+  const { data: projects = [], isLoading: isLoadingProjects } = useQuery<Project[]>({
+    queryKey: ["/api/projects"],
   });
-
-  type FormValues = z.infer<typeof formSchema>;
-
-  // Default values for the form
-  const defaultValues: Partial<FormValues> = {
-    title: "",
-    description: "",
-    departmentId: user?.departmentId?.toString() || "",
-    managerUserId: user?.role === "ProjectManager" ? user.id.toString() : "",
-    client: "",
-    budget: 0,
-    priority: "Medium",
-    status: "Planning",
-    actualCost: 0,
-    teamMembers: [],
-  };
-
+  
+  const { data: goals = [], isLoading: isLoadingGoals } = useQuery<Goal[]>({
+    queryKey: ["/api/goals"],
+  });
+  
+  // Form state
   const form = useForm<FormValues>({
-    resolver: zodResolver(formSchema),
-    defaultValues,
+    resolver: zodResolver(formSchema) as any,
+    defaultValues: {
+      title: "",
+      status: "Draft",
+      priority: "Medium",
+      departmentId: "",
+      managerUserId: "",
+      budget: undefined,
+      actualCost: undefined,
+      startDate: new Date(),
+      endDate: new Date(),
+      description: "",
+      projectGoals: [{ goalId: 0, weight: 1 }],
+      relatedProjects: [],
+      relatedToProjects: [],
+    },
   });
 
-  // Handle user/department changes
-  const handleManagerChange = (managerId: string) => {
-    if (!managerId || !users) return;
-    
-    const manager = users.find(u => u.id.toString() === managerId);
-    if (manager && manager.departmentId) {
-      form.setValue("departmentId", manager.departmentId.toString());
-      
-      // Update team members select options
-      const deptUsers = users.filter(u => u.departmentId === manager.departmentId);
-      setDepartmentUsers(deptUsers);
-    }
-  };
-
-  // Watch for manager changes to update department
-  const managerId = form.watch("managerUserId");
-  useEffect(() => {
-    if (managerId) {
-      handleManagerChange(managerId);
-    }
-  }, [managerId]);
-
-  // Handle team member selection
-  const handleTeamMemberChange = (selectedValues: string[]) => {
-    setSelectedTeamMembers(selectedValues);
-    form.setValue("teamMembers", selectedValues);
-  };
-
+  // Field arrays for dynamic form elements
+  const { fields: projectGoalFields, append: appendProjectGoal, remove: removeProjectGoal } = 
+    useFieldArray({
+      control: form.control as FormControl,
+      name: "projectGoals",
+    });
+  
+  const { fields: relatedProjectFields, append: appendRelatedProject, remove: removeRelatedProject } = 
+    useFieldArray({
+      control: form.control as FormControl,
+      name: "relatedProjects",
+    });
+  
+  const { fields: relatedToProjectFields, append: appendRelatedToProject, remove: removeRelatedToProject } = 
+    useFieldArray({
+      control: form.control as FormControl,
+      name: "relatedToProjects",
+    });
+  
+  // Mutation for creating a new project
   const createProjectMutation = useMutation({
-    mutationFn: async (formData: FormValues) => {
-      // Find the manager to get their department if not already set
-      let departmentId = formData.departmentId;
-      if (!departmentId && formData.managerUserId && users) {
-        const manager = users.find((user) => user.id.toString() === formData.managerUserId);
-        if (manager && manager.departmentId) {
-          departmentId = manager.departmentId.toString();
-        }
-      }
-
-      if (!departmentId) {
-        throw new Error(t("noDepartmentFound"));
+    mutationFn: async (values: FormValues) => {
+      const response = await fetch("/api/projects", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          ...values,
+          departmentId: parseInt(values.departmentId),
+          managerUserId: parseInt(values.managerUserId),
+          startDate: values.startDate.toISOString(),
+          endDate: values.endDate.toISOString(),
+        }),
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || "Failed to create project");
       }
       
-      // Convert form data to match API expectations - ensure proper typing
-      const projectData = {
-        title: formData.title,
-        description: formData.description,
-        departmentId: parseInt(departmentId),
-        managerUserId: parseInt(formData.managerUserId),
-        client: formData.client,
-        budget: formData.budget,
-        priority: formData.priority,
-        startDate: formData.startDate instanceof Date ? formData.startDate.toISOString() : formData.startDate,
-        deadline: formData.deadline instanceof Date ? formData.deadline.toISOString() : formData.deadline,
-        status: formData.status,
-        actualCost: formData.actualCost,
-        teamMembers: formData.teamMembers?.map(id => parseInt(id)) || []
-      };
-      
-      try {
-        console.log("Sending project data:", JSON.stringify(projectData, null, 2));
-        const response = await apiRequest("POST", "/api/projects", projectData);
-        const data = await response.json();
-        return data;
-      } catch (error) {
-        console.error("Project creation error:", error);
-        throw error;
-      }
+      return response.json();
     },
     onSuccess: () => {
-      toast({
-        title: t("projectCreated"),
-        description: t("projectCreatedDescription"),
-      });
       queryClient.invalidateQueries({ queryKey: ["/api/projects"] });
+      toast({
+        title: t("success"),
+        description: t("projectCreatedSuccess"),
+      });
       navigate("/projects");
     },
     onError: (error: Error) => {
-      console.error("Mutation error:", error);
       toast({
         title: t("error"),
         description: error.message,
@@ -187,12 +214,23 @@ export default function NewProjectPage() {
       });
     },
   });
-
-  const onSubmit = (values: FormValues) => {
+  
+  const onSubmit: SubmitHandler<FormValues> = (values) => {
     createProjectMutation.mutate(values);
   };
+  
+  // Filter projects for selection dropdown (exclude already selected)
+  const getAvailableRelatedProjects = () => {
+    const selectedIds = form.watch("relatedProjects").map(item => item.projectId);
+    return projects.filter((project: Project) => !selectedIds.includes(project.id));
+  };
+  
+  const getAvailableRelatedToProjects = () => {
+    const selectedIds = form.watch("relatedToProjects").map(item => item.dependsOnProjectId);
+    return projects.filter((project: Project) => !selectedIds.includes(project.id));
+  };
 
-  const isLoading = isLoadingDepartments || isLoadingUsers || createProjectMutation.isPending;
+  const isLoading = isLoadingDepartments || isLoadingUsers || isLoadingProjects || isLoadingGoals || createProjectMutation.isPending;
 
   return (
     <div className="container mx-auto">
@@ -202,40 +240,41 @@ export default function NewProjectPage() {
           <CardDescription>{t("createProjectDescription")}</CardDescription>
         </CardHeader>
         <CardContent>
-          <Form {...form}>
+          <FormRoot form={form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <FormField
-                  control={form.control}
+                  control={form.control as FormControl}
                   name="title"
-                  render={({ field }) => (
+                  render={({ field }: { field: FieldProps }) => (
                     <FormItem>
                       <FormLabel>{t("projectName")}</FormLabel>
                       <FormControl>
-                        <Input id="project-title" placeholder={t("enterProjectName")} {...field} />
+                        <Input placeholder={t("enterProjectName")} {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
-
+                
                 <FormField
-                  control={form.control}
+                  control={form.control as FormControl}
                   name="status"
-                  render={({ field }) => (
+                  render={({ field }: { field: FieldProps }) => (
                     <FormItem>
                       <FormLabel>{t("status")}</FormLabel>
                       <FormControl>
                         <Select
                           value={field.value}
                           onValueChange={field.onChange}
-                          name="status"
                         >
-                          <SelectTrigger id="project-status">
+                          <SelectTrigger>
                             <SelectValue placeholder={t("selectStatus")} />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="Planning">{t("planning")}</SelectItem>
+                            <SelectItem value="Draft">{t("draft")}</SelectItem>
+                            <SelectItem value="Pending">{t("pending")}</SelectItem>
+                            <SelectItem value="Approved">{t("approved")}</SelectItem>
                             <SelectItem value="InProgress">{t("inProgress")}</SelectItem>
                             <SelectItem value="OnHold">{t("onHold")}</SelectItem>
                             <SelectItem value="Completed">{t("completed")}</SelectItem>
@@ -247,20 +286,19 @@ export default function NewProjectPage() {
                     </FormItem>
                   )}
                 />
-
+                
                 <FormField
-                  control={form.control}
+                  control={form.control as FormControl}
                   name="priority"
-                  render={({ field }) => (
+                  render={({ field }: { field: FieldProps }) => (
                     <FormItem>
                       <FormLabel>{t("priority")}</FormLabel>
                       <FormControl>
                         <Select
                           value={field.value}
                           onValueChange={field.onChange}
-                          name="priority"
                         >
-                          <SelectTrigger id="project-priority">
+                          <SelectTrigger>
                             <SelectValue placeholder={t("selectPriority")} />
                           </SelectTrigger>
                           <SelectContent>
@@ -275,25 +313,43 @@ export default function NewProjectPage() {
                     </FormItem>
                   )}
                 />
-
+                
                 <FormField
-                  control={form.control}
-                  name="client"
-                  render={({ field }) => (
+                  control={form.control as FormControl}
+                  name="departmentId"
+                  render={({ field }: { field: FieldProps }) => (
                     <FormItem>
-                      <FormLabel>{t("client")}</FormLabel>
+                      <FormLabel>{t("department")}</FormLabel>
                       <FormControl>
-                        <Input id="project-client" placeholder={t("enterClientName")} {...field} />
+                        <Select
+                          value={field.value}
+                          onValueChange={field.onChange}
+                          disabled={isLoadingDepartments}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder={t("selectDepartment")} />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {departments.map((department: Department) => (
+                              <SelectItem
+                                key={department.id}
+                                value={department.id.toString()}
+                              >
+                                {department.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
                       </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
-
+                
                 <FormField
-                  control={form.control}
+                  control={form.control as FormControl}
                   name="managerUserId"
-                  render={({ field }) => (
+                  render={({ field }: { field: FieldProps }) => (
                     <FormItem>
                       <FormLabel>{t("projectManager")}</FormLabel>
                       <FormControl>
@@ -301,18 +357,17 @@ export default function NewProjectPage() {
                           value={field.value}
                           onValueChange={field.onChange}
                           disabled={isLoadingUsers}
-                          name="managerUserId"
                         >
-                          <SelectTrigger id="project-manager">
+                          <SelectTrigger>
                             <SelectValue placeholder={t("selectProjectManager")} />
                           </SelectTrigger>
                           <SelectContent>
                             {users
-                              .filter((user: any) => 
-                                user.role === "ProjectManager" || 
-                                user.role === "SubPMO" || 
-                                user.role === "MainPMO")
-                              .map((user: any) => (
+                              .filter((user) => 
+                                (user.roles && user.roles.includes("ProjectManager")) || 
+                                (user.roles && user.roles.includes("SubPMO")) || 
+                                (user.roles && user.roles.includes("MainPMO")))
+                              .map((user) => (
                                 <SelectItem
                                   key={user.id}
                                   value={user.id.toString()}
@@ -327,39 +382,55 @@ export default function NewProjectPage() {
                     </FormItem>
                   )}
                 />
-
+                
                 <FormField
-                  control={form.control}
+                  control={form.control as FormControl}
                   name="budget"
-                  render={({ field }) => (
+                  render={({ field }: { field: FieldProps }) => (
                     <FormItem>
                       <FormLabel>{t("budget")}</FormLabel>
                       <FormControl>
                         <Input
-                          id="project-budget"
                           type="number"
                           placeholder="0"
-                          {...field}
-                          onChange={e => field.onChange(Number(e.target.value))}
+                          value={field.value || ""}
+                          onChange={(e: React.ChangeEvent<HTMLInputElement>) => field.onChange(e.target.value === "" ? undefined : Number(e.target.value))}
                         />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
-
+                
                 <FormField
-                  control={form.control}
+                  control={form.control as FormControl}
+                  name="actualCost"
+                  render={({ field }: { field: FieldProps }) => (
+                    <FormItem>
+                      <FormLabel>{t("actualCost")}</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="number"
+                          placeholder="0"
+                          value={field.value || ""}
+                          onChange={(e: React.ChangeEvent<HTMLInputElement>) => field.onChange(e.target.value === "" ? undefined : Number(e.target.value))}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={form.control as FormControl}
                   name="startDate"
-                  render={({ field }) => (
+                  render={({ field }: { field: FieldProps }) => (
                     <FormItem className="flex flex-col">
                       <FormLabel>{t("startDate")}</FormLabel>
                       <Popover>
                         <PopoverTrigger asChild>
                           <FormControl>
                             <Button
-                              type="button"
-                              id="project-start-date"
                               variant="outline"
                               className={cn(
                                 "pl-3 text-left font-normal",
@@ -388,19 +459,17 @@ export default function NewProjectPage() {
                     </FormItem>
                   )}
                 />
-
+                
                 <FormField
-                  control={form.control}
-                  name="deadline"
-                  render={({ field }) => (
+                  control={form.control as FormControl}
+                  name="endDate"
+                  render={({ field }: { field: FieldProps }) => (
                     <FormItem className="flex flex-col">
-                      <FormLabel>{t("deadline")}</FormLabel>
+                      <FormLabel>{t("endDate")}</FormLabel>
                       <Popover>
                         <PopoverTrigger asChild>
                           <FormControl>
                             <Button
-                              type="button"
-                              id="project-deadline"
                               variant="outline"
                               className={cn(
                                 "pl-3 text-left font-normal",
@@ -429,54 +498,245 @@ export default function NewProjectPage() {
                     </FormItem>
                   )}
                 />
-
-                {/* Team Members Multi-Select */}
-                {form.watch("departmentId") && (
-                  <FormField
-                    control={form.control}
-                    name="teamMembers"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel id="project-team-members-label">{t("teamMembers")}</FormLabel>
-                        <FormControl>
-                          <div>
-                            <MultiSelect
-                              options={departmentUsers.map(user => ({
-                                label: user.name,
-                                value: user.id.toString()
-                              }))}
-                              selected={selectedTeamMembers}
-                              onChange={handleTeamMemberChange}
-                              placeholder={t("selectTeamMembers")}
-                              id="project-team-members"
-                            />
-                          </div>
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                )}
               </div>
 
               <FormField
-                control={form.control}
+                control={form.control as FormControl}
                 name="description"
-                render={({ field }) => (
+                render={({ field }: { field: FieldProps }) => (
                   <FormItem>
                     <FormLabel>{t("description")}</FormLabel>
                     <FormControl>
-                      <Textarea
-                        id="project-description"
+                      <Textarea 
                         placeholder={t("enterProjectDescription")}
-                        className="resize-y"
+                        className="min-h-32"
                         {...field}
+                        value={field.value || ""}
                       />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
+
+              {/* Project Goals Section */}
+              <div className="space-y-4">
+                <div>
+                  <h3 className="text-lg font-medium">{t("projectGoals")}</h3>
+                  <p className="text-sm text-gray-500">{t("linkProjectToGoals")}</p>
+                </div>
+                
+                {isLoadingGoals ? (
+                  <div className="flex items-center justify-center p-4">
+                    <Loader2 className="mr-2 h-4 w-4" />
+                    <span>{t("loadingGoals")}</span>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {projectGoalFields.length === 0 ? (
+                      <div className="text-center py-4 text-gray-500">
+                        {t("noGoalsSelected")}
+                      </div>
+                    ) : (
+                      projectGoalFields.map((field, index) => (
+                        <div key={field.id} className="flex items-end gap-4">
+                          <FormField
+                            control={form.control as FormControl}
+                            name={`projectGoals.${index}.goalId` as FieldPath<FormValues>}
+                            render={({ field }: { field: FieldProps }) => (
+                              <FormItem className="flex-1">
+                                <FormLabel className="sr-only">{t("goal")}</FormLabel>
+                                <Select
+                                  value={field.value?.toString()}
+                                  onValueChange={field.onChange}
+                                >
+                                  <SelectTrigger>
+                                    <SelectValue placeholder={t("selectGoal")} />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    {goals.map((goal: Goal) => (
+                                      <SelectItem
+                                        key={goal.id}
+                                        value={goal.id.toString()}
+                                      >
+                                        {goal.title}
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                              </FormItem>
+                            )}
+                          />
+                          <FormField
+                            control={form.control as FormControl}
+                            name={`projectGoals.${index}.weight` as FieldPath<FormValues>}
+                            render={({ field }: { field: FieldProps }) => (
+                              <FormItem className="w-24">
+                                <FormLabel className="sr-only">{t("weight")}</FormLabel>
+                                <Input
+                                  type="number"
+                                  placeholder={t("weight")}
+                                  min="1"
+                                  max="100"
+                                  value={field.value || ""}
+                                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => field.onChange(e.target.value === "" ? undefined : Number(e.target.value))}
+                                />
+                              </FormItem>
+                            )}
+                          />
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="icon"
+                            onClick={() => removeProjectGoal(index)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      ))
+                    )}
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => appendProjectGoal({ goalId: 0, weight: 50 })}
+                    >
+                      <Plus className="h-4 w-4 mr-2" />
+                      {t("addGoal")}
+                    </Button>
+                  </div>
+                )}
+              </div>
+              
+              {/* Related Projects Section */}
+              <div className="space-y-4">
+                <div>
+                  <h3 className="text-lg font-medium">{t("relatedProjects")}</h3>
+                  <p className="text-sm text-gray-500">{t("linkToExistingProjects")}</p>
+                </div>
+                
+                {relatedProjectFields.map((field, index) => (
+                  <div key={field.id} className="flex items-end gap-4">
+                    <FormField
+                      control={form.control as FormControl}
+                      name={`relatedProjects.${index}.projectId` as FieldPath<FormValues>}
+                      render={({ field }: { field: FieldProps }) => (
+                        <FormItem className="flex-1">
+                          <FormLabel>{index === 0 && t("thisProjectDependsOn")}</FormLabel>
+                          <Select
+                            value={(field.value ?? 0).toString()}
+                            onValueChange={(value: string) => field.onChange(Number(value))}
+                            disabled={isLoadingProjects}
+                          >
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder={t("selectProject")} />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              {getAvailableRelatedProjects().map((project) => (
+                                <SelectItem key={project.id} value={project.id.toString()}>
+                                  {project.title}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="icon"
+                      className="self-end"
+                      onClick={() => removeRelatedProject(index)}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ))}
+                
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="mt-2"
+                  onClick={() => appendRelatedProject({ projectId: 0 })}
+                  disabled={
+                    getAvailableRelatedProjects().length === 0 || 
+                    relatedProjectFields.length >= projects.length
+                  }
+                >
+                  <Plus className="mr-2 h-4 w-4" />
+                  {t("addRelatedProject")}
+                </Button>
+              </div>
+              
+              {/* Reverse Related Projects Section */}
+              <div className="space-y-4">
+                <div>
+                  <h3 className="text-lg font-medium">{t("projectsRelatedToThis")}</h3>
+                  <p className="text-sm text-gray-500">{t("projectsThatDependOnThis")}</p>
+                </div>
+                
+                {relatedToProjectFields.map((field, index) => (
+                  <div key={field.id} className="flex items-end gap-4">
+                    <FormField
+                      control={form.control as FormControl}
+                      name={`relatedToProjects.${index}.dependsOnProjectId` as FieldPath<FormValues>}
+                      render={({ field }: { field: FieldProps }) => (
+                        <FormItem className="flex-1">
+                          <FormLabel>{index === 0 && t("projectThatDependsOnThis")}</FormLabel>
+                          <Select
+                            value={(field.value ?? 0).toString()}
+                            onValueChange={(value: string) => field.onChange(Number(value))}
+                            disabled={isLoadingProjects}
+                          >
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder={t("selectProject")} />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              {getAvailableRelatedToProjects().map((project) => (
+                                <SelectItem key={project.id} value={project.id.toString()}>
+                                  {project.title}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="icon"
+                      className="self-end"
+                      onClick={() => removeRelatedToProject(index)}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ))}
+                
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="mt-2"
+                  onClick={() => appendRelatedToProject({ dependsOnProjectId: 0 })}
+                  disabled={
+                    getAvailableRelatedToProjects().length === 0 || 
+                    relatedToProjectFields.length >= projects.length
+                  }
+                >
+                  <Plus className="mr-2 h-4 w-4" />
+                  {t("addRelatedToProject")}
+                </Button>
+              </div>
 
               <div className="flex justify-end space-x-4">
                 <Button
@@ -486,17 +746,17 @@ export default function NewProjectPage() {
                 >
                   {t("cancel")}
                 </Button>
-                <Button
+                <Button 
                   type="submit"
-                  className="bg-qatar-maroon hover:bg-maroon-800 text-white"
                   disabled={isLoading}
+                  className="bg-qatar-maroon hover:bg-maroon-800 text-white"
                 >
-                  {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  {isLoading && <Loader2 className="mr-2 h-4 w-4" />}
                   {t("createProject")}
                 </Button>
               </div>
             </form>
-          </Form>
+          </FormRoot>
         </CardContent>
       </Card>
     </div>

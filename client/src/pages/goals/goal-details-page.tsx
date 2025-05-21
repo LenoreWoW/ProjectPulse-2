@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useParams } from "wouter";
+import { useRoute, useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { 
   Card, 
@@ -12,7 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Goal, Project } from "@shared/schema";
+import { Goal, Project, GoalWithRelationships } from "@/lib/schema-types";
 import { useI18n } from "@/hooks/use-i18n-new";
 import { 
   Calendar, 
@@ -25,14 +25,10 @@ import {
   User 
 } from "lucide-react";
 
-interface GoalWithRelationships extends Goal {
-  relatedProjects: { project: Project, weight: number }[];
-  childGoals: { goal: Goal, weight: number }[];
-  parentGoals: { goal: Goal, weight: number }[];
-}
-
 export default function GoalDetailsPage() {
-  const { id } = useParams<{ id: string }>();
+  // Extract the goal ID from the URL using wouter's useRoute
+  const [match, params] = useRoute("/goals/:id");
+  const id = params?.id;
   const { t } = useI18n();
   const [activeTab, setActiveTab] = useState<string>("details");
   

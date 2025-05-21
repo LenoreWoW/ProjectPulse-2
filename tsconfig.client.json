@@ -1,0 +1,9 @@
+{
+  "extends": "./tsconfig.json",
+  "include": ["client/src/**/*"],
+  "exclude": ["node_modules", "build", "dist", "**/*.test.ts", "server/**/*", "shared/**/*"],
+  "compilerOptions": {
+    "skipLibCheck": true,
+    "noEmit": true
+  }
+} 

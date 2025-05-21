@@ -652,7 +652,7 @@ export function I18nProvider({ children }: { children: ReactNode }) {
     const savedLanguage = localStorage.getItem('language') || 'en';
     changeLanguage(savedLanguage);
   }, []);
-  
+
   return (
     <I18nContext.Provider 
       value={{ 
