@@ -240,6 +240,11 @@ export class PgStorage implements IStorage {
     return this.query<Department>('SELECT * FROM departments');
   }
 
+  async getDepartmentByName(name: string): Promise<Department | undefined> {
+    const result = await this.query<Department>('SELECT * FROM departments WHERE name = $1', [name]);
+    return result.length > 0 ? result[0] : undefined;
+  }
+
   async createDepartment(department: InsertDepartment): Promise<Department> {
     return this.createEntity<InsertDepartment, Department>('departments', department);
   }

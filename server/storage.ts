@@ -46,6 +46,7 @@ export interface IStorage {
   // Departments
   getDepartment(id: number): Promise<Department | undefined>;
   getDepartments(): Promise<Department[]>;
+  getDepartmentByName(name: string): Promise<Department | undefined>;
   createDepartment(department: InsertDepartment): Promise<Department>;
   updateDepartment(id: number, department: Partial<Department>): Promise<Department | undefined>;
   
@@ -391,6 +392,12 @@ export class MemStorage implements IStorage {
 
   async getDepartments(): Promise<Department[]> {
     return Array.from(this.departments.values());
+  }
+
+  async getDepartmentByName(name: string): Promise<Department | undefined> {
+    return Array.from(this.departments.values()).find(
+      department => department.name.toLowerCase() === name.toLowerCase()
+    );
   }
 
   async createDepartment(department: InsertDepartment): Promise<Department> {

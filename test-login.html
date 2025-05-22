@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ProjectPulse Login Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .container {
+            border: 1px solid #ccc;
+            padding: 20px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        h1 {
+            color: #333;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+        }
+        input {
+            width: 100%;
+            padding: 8px;
+            margin-bottom: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        pre {
+            background-color: #f5f5f5;
+            padding: 10px;
+            border-radius: 4px;
+            overflow-x: auto;
+        }
+        .info-box {
+            background-color: #e8f4f8;
+            padding: 10px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <h1>ProjectPulse Login Test</h1>
+    
+    <div class="info-box">
+        <h3>LDAP Configuration</h3>
+        <div id="ldap-config">Loading...</div>
+    </div>
+
+    <div class="container">
+        <h2>Login</h2>
+        <form id="login-form">
+            <div>
+                <label for="username">Username:</label>
+                <input type="text" id="username" name="username" required>
+            </div>
+            <div>
+                <label for="password">Password:</label>
+                <input type="password" id="password" name="password" required>
+            </div>
+            <button type="submit">Login</button>
+        </form>
+    </div>
+
+    <div class="container">
+        <h2>Current User</h2>
+        <button id="get-user">Get Current User</button>
+        <pre id="user-info">Not logged in</pre>
+    </div>
+
+    <div class="container">
+        <h2>Logout</h2>
+        <button id="logout">Logout</button>
+        <div id="logout-result"></div>
+    </div>
+
+    <script>
+        // API URL
+        const API_URL = 'http://localhost:7000/api';
+
+        // Load LDAP config on page load
+        document.addEventListener('DOMContentLoaded', async () => {
+            try {
+                const response = await fetch(`${API_URL}/ldap-config`);
+                const config = await response.json();
+                document.getElementById('ldap-config').innerHTML = `
+                    <p><strong>LDAP URL:</strong> ${config.url}</p>
+                    <p><strong>Bind DN:</strong> ${config.bindDN}</p>
+                    <p><strong>Search Base:</strong> ${config.searchBase}</p>
+                    <p><strong>Search Filter:</strong> ${config.searchFilter}</p>
+                `;
+            } catch (error) {
+                document.getElementById('ldap-config').innerHTML = `
+                    <p>Error loading LDAP config: ${error.message}</p>
+                `;
+            }
+        });
+
+        // Login form submission
+        document.getElementById('login-form').addEventListener('submit', async (event) => {
+            event.preventDefault();
+            
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            
+            try {
+                const response = await fetch(`${API_URL}/login`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ username, password }),
+                    credentials: 'include'
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    alert('Login successful!');
+                    document.getElementById('user-info').textContent = JSON.stringify(data, null, 2);
+                } else {
+                    alert(`Login failed: ${data.message}`);
+                }
+            } catch (error) {
+                alert(`Error: ${error.message}`);
+            }
+        });
+
+        // Get current user
+        document.getElementById('get-user').addEventListener('click', async () => {
+            try {
+                const response = await fetch(`${API_URL}/user`, {
+                    credentials: 'include'
+                });
+                
+                if (response.ok) {
+                    const user = await response.json();
+                    document.getElementById('user-info').textContent = JSON.stringify(user, null, 2);
+                } else {
+                    const error = await response.json();
+                    document.getElementById('user-info').textContent = `Not logged in: ${error.message}`;
+                }
+            } catch (error) {
+                document.getElementById('user-info').textContent = `Error: ${error.message}`;
+            }
+        });
+
+        // Logout
+        document.getElementById('logout').addEventListener('click', async () => {
+            try {
+                const response = await fetch(`${API_URL}/logout`, {
+                    method: 'POST',
+                    credentials: 'include'
+                });
+                
+                if (response.ok) {
+                    document.getElementById('logout-result').textContent = 'Logged out successfully';
+                    document.getElementById('user-info').textContent = 'Not logged in';
+                } else {
+                    document.getElementById('logout-result').textContent = 'Logout failed';
+                }
+            } catch (error) {
+                document.getElementById('logout-result').textContent = `Error: ${error.message}`;
+            }
+        });
+    </script>
+</body>
+</html> 

@@ -352,15 +352,21 @@ async function createProject(projectData, projectOfficer) {
     
     // Add budget and costs if values provided and columns exist
     if (availableColumns.includes('budget') && projectData.budget) {
+      const parsedBudget = parseBudgetValue(projectData.budget);
+      console.log(`Parsed budget for "${projectData.title || ''}": ${parsedBudget} (from "${projectData.budget}")`);
+      
       columns.push('budget');
       placeholders.push(`$${paramCounter++}`);
-      values.push(parseFloat(projectData.budget) || 0);
+      values.push(parsedBudget);
     }
     
     if (availableColumns.includes('actualcost') && projectData.actual_cost) {
+      const parsedCost = parseBudgetValue(projectData.actual_cost);
+      console.log(`Parsed actual cost for "${projectData.title || ''}": ${parsedCost} (from "${projectData.actual_cost}")`);
+      
       columns.push('actualcost');
       placeholders.push(`$${paramCounter++}`);
-      values.push(parseFloat(projectData.actual_cost) || 0);
+      values.push(parsedCost);
     }
     
     // Add createdat and updatedat timestamps if the columns exist
@@ -458,16 +464,16 @@ function getFieldFromRow(row, fieldType) {
     contractNumber: ['contract_number', 'contract', 'contract no', 'contract #', 'contractno'],
     startDate: ['start_date', 'start', 'date_start', 'project_start', 'startdate', 'start date'],
     endDate: ['end_date', 'end', 'date_end', 'project_end', 'enddate', 'end date'],
-    budget: ['budget', 'total_budget', 'project_budget', 'allocated_budget', 'budget in qar', 'totalbudget'],
+    budget: ['budget', 'total_budget', 'project_budget', 'allocated_budget', 'budget in qar', 'totalbudget', 'total budget', 'total  budget in qar', 'total budget in qar'],
     amountPaid: ['amount_paid', 'paid', 'payment', 'actual_cost', 'cost', 'amount paid', 'amountpaid'],
     status: ['status', 'project_status', 'current_status']
   };
   
   const possibleKeys = fieldMapping[fieldType] || [];
   
-  // Debug info
-  if (fieldType === 'title') {
-    console.log('Row keys:', Object.keys(row));
+  // Debug info for all available keys in the row
+  if (fieldType === 'budget') {
+    console.log('All row keys for budget lookup:', Object.keys(row));
   }
   
   // Normalize keys by converting to lowercase and removing whitespace
@@ -481,18 +487,82 @@ function getFieldFromRow(row, fieldType) {
   for (const key of possibleKeys) {
     const normalizedKey = key.toLowerCase().trim();
     if (normalizedRow[normalizedKey] !== undefined) {
+      // For budget field, add extra debugging
+      if (fieldType === 'budget') {
+        console.log(`Found budget under key "${normalizedKey}", value: "${normalizedRow[normalizedKey]}"`);
+      }
       return normalizedRow[normalizedKey];
+    }
+  }
+  
+  // Special handling for budget - look for any key containing "budget"
+  if (fieldType === 'budget') {
+    for (const key of Object.keys(normalizedRow)) {
+      if (key.includes('budget')) {
+        console.log(`Found budget using flexible match: key="${key}", value="${normalizedRow[key]}"`);
+        return normalizedRow[key];
+      }
     }
   }
   
   // Try secondary method - checking if any key contains our target field type
   for (const key of Object.keys(normalizedRow)) {
-    if (key.includes('project') && key.includes('name')) {
+    if (key.includes('project') && key.includes('name') && fieldType === 'title') {
       return normalizedRow[key];
     }
   }
   
   return null;
+}
+
+// Function to clean and parse budget values
+function parseBudgetValue(budgetStr) {
+  if (!budgetStr) return 0;
+  
+  // Convert to string just in case
+  const str = String(budgetStr).trim();
+  
+  // If empty or invalid, return 0
+  if (!str || str === 'null' || str === 'undefined' || str === '(blank)') return 0;
+  
+  // Check if it's a project reference number (common issue in the data)
+  if (str.includes('[GHQ') || str.includes('/CA/') || str.match(/\[\d+\/\d+\]/)) {
+    console.log(`Skipping budget value that appears to be a reference: "${str}"`);
+    return 0;
+  }
+  
+  // Handle values with millions/billions abbreviations
+  if (str.toLowerCase().includes('m')) {
+    const match = str.match(/(\d+\.?\d*)\s*m/i);
+    if (match) {
+      return parseFloat(match[1]) * 1000000;
+    }
+  }
+  
+  if (str.toLowerCase().includes('k')) {
+    const match = str.match(/(\d+\.?\d*)\s*k/i);
+    if (match) {
+      return parseFloat(match[1]) * 1000;
+    }
+  }
+  
+  // Handle values written as "X million"
+  if (str.toLowerCase().includes('million')) {
+    const match = str.match(/(\d+\.?\d*)\s*million/i);
+    if (match) {
+      return parseFloat(match[1]) * 1000000;
+    }
+  }
+  
+  // Remove any currency symbols, commas, and spaces
+  // Only keep digits, decimal points, and negative signs
+  const cleaned = str.replace(/[^\d.-]/g, '');
+  
+  // Parse as float
+  const value = parseFloat(cleaned);
+  
+  // Return 0 if NaN
+  return isNaN(value) ? 0 : value;
 }
 
 // Auto-detect the CSV delimiter by checking the first line
@@ -596,6 +666,9 @@ async function importProjects() {
             actual_cost: getFieldFromRow(row, 'amountPaid'),
             status: getFieldFromRow(row, 'status')
           };
+          
+          // Log budget data for debugging
+          console.log(`Row ${rowCount}: Project "${projectTitle}" - Raw budget: "${projectData.budget}", Parsed: ${parseBudgetValue(projectData.budget)}`);
           
           // Check if project already exists using the row-specific client
           const findProjectQuery = `
@@ -843,15 +916,21 @@ async function importProjects() {
           
           // Add budget and costs if values provided and columns exist
           if (availableColumns.includes('budget') && projectData.budget) {
+            const parsedBudget = parseBudgetValue(projectData.budget);
+            console.log(`Parsed budget for "${projectTitle}": ${parsedBudget} (from "${projectData.budget}")`);
+            
             columns.push('budget');
             placeholders.push(`$${paramCounter++}`);
-            values.push(parseFloat(projectData.budget) || 0);
+            values.push(parsedBudget);
           }
           
           if (availableColumns.includes('actualcost') && projectData.actual_cost) {
+            const parsedCost = parseBudgetValue(projectData.actual_cost);
+            console.log(`Parsed actual cost for "${projectTitle}": ${parsedCost} (from "${projectData.actual_cost}")`);
+            
             columns.push('actualcost');
             placeholders.push(`$${paramCounter++}`);
-            values.push(parseFloat(projectData.actual_cost) || 0);
+            values.push(parsedCost);
           }
           
           // Add createdat and updatedat timestamps if the columns exist

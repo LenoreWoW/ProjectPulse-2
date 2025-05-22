@@ -348,7 +348,7 @@ export default function ProjectsPage() {
                               )}
                               <div className="flex justify-between items-center mt-auto">
                                 <span className="text-sm font-medium">
-                                  {project.budget ? `${new Intl.NumberFormat('en-QA', { maximumFractionDigits: 0 }).format(project.budget)} QAR` : ''}
+                                  {project.budget ? `${t("budget")}: ${formatBudget(project.budget)} QAR` : ''}
                                 </span>
                                 {project.deadline && (
                                   <span className="text-xs text-gray-500 dark:text-gray-400">

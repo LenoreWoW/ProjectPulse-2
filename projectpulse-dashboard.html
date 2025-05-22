@@ -1,0 +1,949 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ProjectPulse - Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f8f9fa;
+        }
+        .sidebar {
+            position: fixed;
+            top: 0;
+            bottom: 0;
+            left: 0;
+            z-index: 100;
+            padding: 48px 0 0;
+            box-shadow: inset -1px 0 0 rgba(0, 0, 0, .1);
+            background-color: #343a40;
+            color: white;
+        }
+        .sidebar-sticky {
+            position: relative;
+            top: 0;
+            height: calc(100vh - 48px);
+            padding-top: 0.5rem;
+            overflow-x: hidden;
+            overflow-y: auto;
+        }
+        .sidebar .nav-link {
+            font-weight: 500;
+            color: #ced4da;
+            padding: 0.75rem 1rem;
+            border-left: 3px solid transparent;
+        }
+        .sidebar .nav-link:hover {
+            color: #fff;
+            background-color: rgba(255, 255, 255, 0.1);
+            border-left: 3px solid #0d6efd;
+        }
+        .sidebar .nav-link.active {
+            color: #fff;
+            background-color: rgba(255, 255, 255, 0.1);
+            border-left: 3px solid #0d6efd;
+        }
+        .main-content {
+            margin-left: 240px;
+            padding: 20px;
+        }
+        .card {
+            box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+            margin-bottom: 20px;
+        }
+        .login-form {
+            max-width: 400px;
+            margin: 2rem auto;
+        }
+        .navbar {
+            position: fixed;
+            top: 0;
+            right: 0;
+            left: 240px;
+            z-index: 1030;
+            box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+        }
+        .navbar-brand {
+            font-weight: 600;
+            color: #495057;
+        }
+        .user-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background-color: #0d6efd;
+            color: white;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            margin-right: 8px;
+        }
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+        }
+        .alert-badge {
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            padding: 3px 6px;
+            border-radius: 50%;
+            background: red;
+            color: white;
+            font-size: 12px;
+        }
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(0, 0, 0, 0.3);
+            border-radius: 50%;
+            border-top-color: #0d6efd;
+            animation: spin 1s ease-in-out infinite;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        #toast-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 9999;
+        }
+        .project-card {
+            transition: transform 0.2s;
+        }
+        .project-card:hover {
+            transform: translateY(-5px);
+        }
+    </style>
+</head>
+<body>
+    <!-- Login Screen -->
+    <div id="login-screen" class="container">
+        <div class="login-form">
+            <div class="card">
+                <div class="card-body">
+                    <h3 class="card-title text-center mb-4">ProjectPulse Login</h3>
+                    <form id="login-form">
+                        <div class="mb-3">
+                            <label for="username" class="form-label">Username</label>
+                            <input type="text" class="form-control" id="username" value="Hdmin" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="password" class="form-label">Password</label>
+                            <input type="password" class="form-control" id="password" value="Hdmin1738!@" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="login-strategy" class="form-label">Authentication Method</label>
+                            <select class="form-select" id="login-strategy">
+                                <option value="auto">Auto (LDAP then Local)</option>
+                                <option value="local" selected>Local Authentication</option>
+                                <option value="ldap">LDAP Authentication</option>
+                            </select>
+                        </div>
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-primary">Login</button>
+                        </div>
+                    </form>
+                    <div id="login-error" class="alert alert-danger mt-3" style="display: none;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Dashboard -->
+    <div id="dashboard" style="display: none;">
+        <!-- Sidebar -->
+        <nav class="col-md-2 d-none d-md-block sidebar" style="width: 240px;">
+            <div class="sidebar-sticky">
+                <div class="text-center py-3">
+                    <h4>ProjectPulse</h4>
+                </div>
+                <ul class="nav flex-column">
+                    <li class="nav-item">
+                        <a class="nav-link active" href="#" onclick="switchTab('overview')">
+                            <i class="bi bi-house-door"></i> Overview
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" onclick="switchTab('projects')">
+                            <i class="bi bi-kanban"></i> Projects
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" onclick="switchTab('departments')">
+                            <i class="bi bi-building"></i> Departments
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" onclick="switchTab('users')">
+                            <i class="bi bi-people"></i> Users
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" onclick="switchTab('settings')">
+                            <i class="bi bi-gear"></i> Settings
+                        </a>
+                    </li>
+                </ul>
+                <hr>
+                <div class="px-3 mt-4">
+                    <div class="d-grid">
+                        <button class="btn btn-outline-light" onclick="logout()">
+                            <i class="bi bi-box-arrow-right"></i> Logout
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </nav>
+
+        <!-- Top navbar -->
+        <nav class="navbar navbar-light bg-white">
+            <div class="container-fluid">
+                <button class="navbar-toggler d-md-none" type="button" data-bs-toggle="collapse" data-bs-target="#sidebarMenu">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+                <div class="d-flex align-items-center">
+                    <div class="position-relative me-3">
+                        <i class="bi bi-bell fs-4"></i>
+                        <span class="alert-badge">3</span>
+                    </div>
+                    <div class="dropdown">
+                        <a href="#" class="d-flex align-items-center text-decoration-none dropdown-toggle" id="user-dropdown" data-bs-toggle="dropdown">
+                            <div class="user-avatar" id="user-avatar">U</div>
+                            <span id="user-name">User</span>
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            <li><a class="dropdown-item" href="#" onclick="switchTab('profile')">Profile</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="#" onclick="logout()">Logout</a></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </nav>
+
+        <!-- Main content -->
+        <main class="main-content">
+            <!-- Overview Tab -->
+            <div id="overview-tab" class="tab-content active">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h2>Dashboard Overview</h2>
+                    <div class="btn-group">
+                        <button class="btn btn-outline-secondary">
+                            <i class="bi bi-download"></i> Export
+                        </button>
+                        <button class="btn btn-primary">
+                            <i class="bi bi-plus"></i> New Project
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Stats Cards -->
+                <div class="row">
+                    <div class="col-md-3">
+                        <div class="card bg-primary text-white">
+                            <div class="card-body">
+                                <h5 class="card-title">Total Projects</h5>
+                                <h2 class="card-text" id="total-projects">0</h2>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card bg-success text-white">
+                            <div class="card-body">
+                                <h5 class="card-title">Completed Projects</h5>
+                                <h2 class="card-text" id="completed-projects">0</h2>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card bg-warning text-dark">
+                            <div class="card-body">
+                                <h5 class="card-title">In Progress</h5>
+                                <h2 class="card-text" id="in-progress-projects">0</h2>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card bg-danger text-white">
+                            <div class="card-body">
+                                <h5 class="card-title">At Risk</h5>
+                                <h2 class="card-text" id="at-risk-projects">0</h2>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Recent Activities -->
+                <div class="card mt-4">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">Recent Activities</h5>
+                    </div>
+                    <div class="card-body">
+                        <div id="activities-list">
+                            <div class="d-flex justify-content-center">
+                                <div class="loading"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Projects Tab -->
+            <div id="projects-tab" class="tab-content">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h2>Projects</h2>
+                    <button class="btn btn-primary">
+                        <i class="bi bi-plus"></i> New Project
+                    </button>
+                </div>
+
+                <div class="card">
+                    <div class="card-body">
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <input type="text" class="form-control" placeholder="Search projects...">
+                            </div>
+                            <div class="col-md-3">
+                                <select class="form-select">
+                                    <option>All Departments</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3">
+                                <select class="form-select">
+                                    <option>All Statuses</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div id="projects-list">
+                            <div class="d-flex justify-content-center">
+                                <div class="loading"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Departments Tab -->
+            <div id="departments-tab" class="tab-content">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h2>Departments</h2>
+                    <button class="btn btn-primary">
+                        <i class="bi bi-plus"></i> New Department
+                    </button>
+                </div>
+
+                <div class="card">
+                    <div class="card-body">
+                        <div id="departments-list">
+                            <div class="d-flex justify-content-center">
+                                <div class="loading"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Users Tab -->
+            <div id="users-tab" class="tab-content">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h2>Users</h2>
+                    <button class="btn btn-primary">
+                        <i class="bi bi-plus"></i> New User
+                    </button>
+                </div>
+
+                <div class="card">
+                    <div class="card-body">
+                        <div id="users-list">
+                            <div class="d-flex justify-content-center">
+                                <div class="loading"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Settings Tab -->
+            <div id="settings-tab" class="tab-content">
+                <h2 class="mb-4">Settings</h2>
+
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">LDAP Configuration</h5>
+                    </div>
+                    <div class="card-body">
+                        <div id="ldap-config">
+                            <div class="d-flex justify-content-center">
+                                <div class="loading"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card mt-4">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">Application Settings</h5>
+                    </div>
+                    <div class="card-body">
+                        <form id="settings-form">
+                            <div class="mb-3">
+                                <label class="form-label">Default Language</label>
+                                <select class="form-select">
+                                    <option value="en">English</option>
+                                    <option value="ar">Arabic</option>
+                                </select>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Session Timeout (minutes)</label>
+                                <input type="number" class="form-control" value="24">
+                            </div>
+                            <div class="mb-3 form-check">
+                                <input type="checkbox" class="form-check-input" id="enable-notifications" checked>
+                                <label class="form-check-label" for="enable-notifications">Enable Email Notifications</label>
+                            </div>
+                            <button type="submit" class="btn btn-primary">Save Settings</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Profile Tab -->
+            <div id="profile-tab" class="tab-content">
+                <h2 class="mb-4">User Profile</h2>
+
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="card">
+                            <div class="card-body text-center">
+                                <div class="user-avatar mx-auto mb-3" style="width: 100px; height: 100px; font-size: 2rem;">U</div>
+                                <h5 id="profile-name">User Name</h5>
+                                <p id="profile-role" class="text-muted">Role</p>
+                                <button class="btn btn-outline-primary btn-sm">Change Avatar</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-8">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5 class="card-title mb-0">Profile Information</h5>
+                            </div>
+                            <div class="card-body">
+                                <form id="profile-form">
+                                    <div class="mb-3">
+                                        <label class="form-label">Username</label>
+                                        <input type="text" class="form-control" id="profile-username" readonly>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Email</label>
+                                        <input type="email" class="form-control" id="profile-email">
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Full Name</label>
+                                        <input type="text" class="form-control" id="profile-fullname">
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Department</label>
+                                        <input type="text" class="form-control" id="profile-department" readonly>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Change Password</label>
+                                        <input type="password" class="form-control" placeholder="New password">
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Confirm Password</label>
+                                        <input type="password" class="form-control" placeholder="Confirm new password">
+                                    </div>
+                                    <button type="submit" class="btn btn-primary">Save Changes</button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Toast Container for Notifications -->
+    <div id="toast-container"></div>
+
+    <!-- Bootstrap JS and Icons -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.1/font/bootstrap-icons.css">
+
+    <script>
+        // API URL
+        const API_URL = 'http://localhost:7000/api';
+        
+        // Current user
+        let currentUser = null;
+
+        // Document Ready
+        document.addEventListener('DOMContentLoaded', async () => {
+            // Check if user is already logged in
+            try {
+                const response = await fetch(`${API_URL}/user`, {
+                    credentials: 'include'
+                });
+                
+                if (response.ok) {
+                    // User is logged in
+                    currentUser = await response.json();
+                    showDashboard();
+                    updateUserInfo();
+                    loadDashboardData();
+                }
+            } catch (error) {
+                console.error('Error checking user login status:', error);
+            }
+            
+            // Set up event listeners
+            document.getElementById('login-form').addEventListener('submit', handleLogin);
+            document.getElementById('settings-form').addEventListener('submit', (e) => {
+                e.preventDefault();
+                showToast('Settings saved successfully', 'success');
+            });
+            document.getElementById('profile-form').addEventListener('submit', (e) => {
+                e.preventDefault();
+                showToast('Profile updated successfully', 'success');
+            });
+            
+            // Load LDAP configuration
+            loadLdapConfig();
+        });
+
+        // Handle Login
+        async function handleLogin(event) {
+            event.preventDefault();
+            
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            const strategy = document.getElementById('login-strategy').value;
+            const errorElement = document.getElementById('login-error');
+            
+            errorElement.style.display = 'none';
+            
+            try {
+                const response = await fetch(`${API_URL}/login`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ username, password, strategy }),
+                    credentials: 'include'
+                });
+                
+                if (response.ok) {
+                    currentUser = await response.json();
+                    showDashboard();
+                    updateUserInfo();
+                    loadDashboardData();
+                    showToast(`Welcome, ${currentUser.name}!`, 'success');
+                } else {
+                    const errorData = await response.json();
+                    errorElement.textContent = errorData.message || 'Authentication failed';
+                    errorElement.style.display = 'block';
+                }
+            } catch (error) {
+                console.error('Login error:', error);
+                errorElement.textContent = 'Network error. Please try again.';
+                errorElement.style.display = 'block';
+            }
+        }
+
+        // Logout Function
+        async function logout() {
+            try {
+                const response = await fetch(`${API_URL}/logout`, {
+                    method: 'POST',
+                    credentials: 'include'
+                });
+                
+                if (response.ok) {
+                    currentUser = null;
+                    showLoginScreen();
+                    showToast('Logged out successfully', 'info');
+                } else {
+                    showToast('Error logging out', 'error');
+                }
+            } catch (error) {
+                console.error('Logout error:', error);
+                showToast('Network error during logout', 'error');
+            }
+        }
+
+        // Show Dashboard
+        function showDashboard() {
+            document.getElementById('login-screen').style.display = 'none';
+            document.getElementById('dashboard').style.display = 'block';
+        }
+
+        // Show Login Screen
+        function showLoginScreen() {
+            document.getElementById('dashboard').style.display = 'none';
+            document.getElementById('login-screen').style.display = 'block';
+            document.getElementById('login-error').style.display = 'none';
+        }
+
+        // Update User Info in UI
+        function updateUserInfo() {
+            if (!currentUser) return;
+            
+            // Update navbar
+            document.getElementById('user-name').textContent = currentUser.name;
+            document.getElementById('user-avatar').textContent = currentUser.name.charAt(0);
+            
+            // Update profile tab
+            document.getElementById('profile-name').textContent = currentUser.name;
+            document.getElementById('profile-role').textContent = currentUser.role;
+            document.getElementById('profile-username').value = currentUser.username;
+            document.getElementById('profile-email').value = currentUser.email;
+            document.getElementById('profile-fullname').value = currentUser.name;
+            document.getElementById('profile-department').value = currentUser.departmentid ? `ID: ${currentUser.departmentid}` : 'Not Assigned';
+        }
+
+        // Switch Tabs
+        function switchTab(tabName) {
+            // Hide all tabs
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            // Show selected tab
+            document.getElementById(`${tabName}-tab`).classList.add('active');
+            
+            // Update sidebar active state
+            document.querySelectorAll('.nav-link').forEach(link => {
+                link.classList.remove('active');
+            });
+            
+            // Find the clicked link and make it active
+            const activeLink = document.querySelector(`.nav-link[onclick*="switchTab('${tabName}')"]`);
+            if (activeLink) {
+                activeLink.classList.add('active');
+            }
+            
+            // Load data for the tab if needed
+            if (tabName === 'projects') {
+                loadProjects();
+            } else if (tabName === 'departments') {
+                loadDepartments();
+            } else if (tabName === 'users') {
+                loadUsers();
+            }
+        }
+
+        // Load Dashboard Data
+        function loadDashboardData() {
+            // Set placeholder values for dashboard stats
+            document.getElementById('total-projects').textContent = '15';
+            document.getElementById('completed-projects').textContent = '8';
+            document.getElementById('in-progress-projects').textContent = '5';
+            document.getElementById('at-risk-projects').textContent = '2';
+            
+            // Placeholder for activities
+            const activities = [
+                { id: 1, user: 'Ahmed', action: 'created', item: 'Project X', time: '2 hours ago' },
+                { id: 2, user: 'Fatima', action: 'updated', item: 'Task A', time: '3 hours ago' },
+                { id: 3, user: 'Mohammed', action: 'completed', item: 'Milestone 1', time: '5 hours ago' },
+                { id: 4, user: 'Sara', action: 'commented on', item: 'Project Y', time: '1 day ago' },
+                { id: 5, user: 'Khalid', action: 'assigned', item: 'Task B to Omar', time: '2 days ago' }
+            ];
+            
+            let activitiesHtml = '<ul class="list-group list-group-flush">';
+            activities.forEach(activity => {
+                activitiesHtml += `
+                    <li class="list-group-item">
+                        <div class="d-flex justify-content-between">
+                            <div>
+                                <strong>${activity.user}</strong> ${activity.action} <a href="#">${activity.item}</a>
+                            </div>
+                            <small class="text-muted">${activity.time}</small>
+                        </div>
+                    </li>
+                `;
+            });
+            activitiesHtml += '</ul>';
+            
+            document.getElementById('activities-list').innerHTML = activitiesHtml;
+        }
+
+        // Load Projects
+        async function loadProjects() {
+            try {
+                const response = await fetch(`${API_URL}/projects`, {
+                    credentials: 'include'
+                });
+                
+                if (response.ok) {
+                    const projects = await response.json();
+                    
+                    if (projects.length === 0) {
+                        document.getElementById('projects-list').innerHTML = '<p class="text-center">No projects found.</p>';
+                        return;
+                    }
+                    
+                    let projectsHtml = '<div class="row">';
+                    projects.forEach(project => {
+                        projectsHtml += `
+                            <div class="col-md-4 mb-4">
+                                <div class="card project-card h-100">
+                                    <div class="card-body">
+                                        <h5 class="card-title">${project.name}</h5>
+                                        <p class="card-text">${project.description || 'No description'}</p>
+                                        <div class="d-flex justify-content-between mb-2">
+                                            <small class="text-muted">Status:</small>
+                                            <span class="badge bg-${getStatusColor(project.status)}">${project.status}</span>
+                                        </div>
+                                        <div class="d-flex justify-content-between">
+                                            <small class="text-muted">Department ID:</small>
+                                            <span>${project.departmentId || 'None'}</span>
+                                        </div>
+                                    </div>
+                                    <div class="card-footer bg-transparent">
+                                        <a href="#" class="btn btn-sm btn-outline-primary">View Details</a>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                    });
+                    projectsHtml += '</div>';
+                    
+                    document.getElementById('projects-list').innerHTML = projectsHtml;
+                } else {
+                    throw new Error('Failed to load projects');
+                }
+            } catch (error) {
+                console.error('Error loading projects:', error);
+                document.getElementById('projects-list').innerHTML = `
+                    <div class="alert alert-danger">
+                        Error loading projects: ${error.message}
+                    </div>
+                `;
+            }
+        }
+
+        // Load Departments
+        async function loadDepartments() {
+            try {
+                const response = await fetch(`${API_URL}/departments`, {
+                    credentials: 'include'
+                });
+                
+                if (response.ok) {
+                    const departments = await response.json();
+                    
+                    if (departments.length === 0) {
+                        document.getElementById('departments-list').innerHTML = '<p class="text-center">No departments found.</p>';
+                        return;
+                    }
+                    
+                    let departmentsHtml = '<div class="table-responsive"><table class="table table-striped">';
+                    departmentsHtml += `
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Name</th>
+                                <th>Description</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                    `;
+                    
+                    departments.forEach(dept => {
+                        departmentsHtml += `
+                            <tr>
+                                <td>${dept.id}</td>
+                                <td>${dept.name}</td>
+                                <td>${dept.description || 'No description'}</td>
+                                <td>
+                                    <button class="btn btn-sm btn-outline-primary">Edit</button>
+                                    <button class="btn btn-sm btn-outline-danger">Delete</button>
+                                </td>
+                            </tr>
+                        `;
+                    });
+                    
+                    departmentsHtml += '</tbody></table></div>';
+                    document.getElementById('departments-list').innerHTML = departmentsHtml;
+                } else {
+                    throw new Error('Failed to load departments');
+                }
+            } catch (error) {
+                console.error('Error loading departments:', error);
+                document.getElementById('departments-list').innerHTML = `
+                    <div class="alert alert-danger">
+                        Error loading departments: ${error.message}
+                    </div>
+                `;
+            }
+        }
+
+        // Load Users
+        async function loadUsers() {
+            try {
+                const response = await fetch(`${API_URL}/users`, {
+                    credentials: 'include'
+                });
+                
+                if (response.ok) {
+                    const users = await response.json();
+                    
+                    if (users.length === 0) {
+                        document.getElementById('users-list').innerHTML = '<p class="text-center">No users found.</p>';
+                        return;
+                    }
+                    
+                    let usersHtml = '<div class="table-responsive"><table class="table table-striped">';
+                    usersHtml += `
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Username</th>
+                                <th>Name</th>
+                                <th>Email</th>
+                                <th>Role</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                    `;
+                    
+                    users.forEach(user => {
+                        usersHtml += `
+                            <tr>
+                                <td>${user.id}</td>
+                                <td>${user.username}</td>
+                                <td>${user.name}</td>
+                                <td>${user.email}</td>
+                                <td>${user.role || 'N/A'}</td>
+                                <td><span class="badge bg-${getStatusColor(user.status)}">${user.status}</span></td>
+                                <td>
+                                    <button class="btn btn-sm btn-outline-primary">Edit</button>
+                                    <button class="btn btn-sm btn-outline-danger">Delete</button>
+                                </td>
+                            </tr>
+                        `;
+                    });
+                    
+                    usersHtml += '</tbody></table></div>';
+                    document.getElementById('users-list').innerHTML = usersHtml;
+                } else {
+                    throw new Error('Failed to load users');
+                }
+            } catch (error) {
+                console.error('Error loading users:', error);
+                document.getElementById('users-list').innerHTML = `
+                    <div class="alert alert-danger">
+                        Error loading users: ${error.message}
+                    </div>
+                `;
+            }
+        }
+
+        // Load LDAP Configuration
+        async function loadLdapConfig() {
+            try {
+                const response = await fetch(`${API_URL}/ldap-config`);
+                if (response.ok) {
+                    const config = await response.json();
+                    
+                    let configHtml = `
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">LDAP URL:</label>
+                            <input type="text" class="form-control" value="${config.url}" readonly>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Search Base:</label>
+                            <input type="text" class="form-control" value="${config.searchBase}" readonly>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Search Filter:</label>
+                            <input type="text" class="form-control" value="${config.searchFilter}" readonly>
+                        </div>
+                    `;
+                    
+                    document.getElementById('ldap-config').innerHTML = configHtml;
+                } else {
+                    throw new Error('Failed to load LDAP configuration');
+                }
+            } catch (error) {
+                console.error('Error loading LDAP config:', error);
+                document.getElementById('ldap-config').innerHTML = `
+                    <div class="alert alert-danger">
+                        Error loading LDAP configuration: ${error.message}
+                    </div>
+                `;
+            }
+        }
+
+        // Helper function to get Bootstrap color based on status
+        function getStatusColor(status) {
+            if (!status) return 'secondary';
+            
+            switch (status.toLowerCase()) {
+                case 'active':
+                case 'completed':
+                case 'online':
+                    return 'success';
+                case 'inactive':
+                case 'deleted':
+                case 'offline':
+                    return 'danger';
+                case 'pending':
+                case 'in progress':
+                case 'inprogress':
+                    return 'primary';
+                case 'hold':
+                case 'on hold':
+                case 'waiting':
+                    return 'warning';
+                default:
+                    return 'secondary';
+            }
+        }
+
+        // Show Toast Notification
+        function showToast(message, type = 'info') {
+            const toastId = 'toast-' + Date.now();
+            const bgClass = type === 'success' ? 'bg-success' :
+                          type === 'error' ? 'bg-danger' :
+                          type === 'warning' ? 'bg-warning' : 'bg-info';
+            
+            const toastHtml = `
+                <div id="${toastId}" class="toast ${bgClass} text-white" role="alert" aria-live="assertive" aria-atomic="true">
+                    <div class="toast-header">
+                        <strong class="me-auto">ProjectPulse</strong>
+                        <small>Just now</small>
+                        <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+                    </div>
+                    <div class="toast-body">
+                        ${message}
+                    </div>
+                </div>
+            `;
+            
+            document.getElementById('toast-container').insertAdjacentHTML('beforeend', toastHtml);
+            
+            const toastElement = document.getElementById(toastId);
+            const toast = new bootstrap.Toast(toastElement, { autohide: true, delay: 5000 });
+            toast.show();
+            
+            // Remove toast from DOM after it's hidden
+            toastElement.addEventListener('hidden.bs.toast', () => {
+                toastElement.remove();
+            });
+        }
+    </script>
+</body>
+</html> 

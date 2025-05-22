@@ -44,12 +44,18 @@ export async function setupVite(app: Express, server: Server): Promise<void> {
 
     app.use(vite.middlewares);
     app.use("*", async (req: Request, res: Response, next: NextFunction) => {
+      // Skip problematic URLs that might trigger path-to-regexp issues
       const url = req.originalUrl;
+      
+      // Skip processing API routes and problematic URLs
+      if (url.startsWith('/api') || url.includes('https://') || url.includes('http://')) {
+        return next();
+      }
 
       try {
         // Always read fresh index.html in dev
         let template = fs.readFileSync(
-          path.resolve(projectRoot, 'index.html'),
+          path.resolve(projectRoot, 'client/index.html'),
           'utf-8'
         );
 
@@ -74,7 +80,7 @@ export async function setupVite(app: Express, server: Server): Promise<void> {
  * Serve static files from the dist directory in production
  */
 export function serveStatic(app: Express): void {
-  const distPath = path.resolve(projectRoot, 'dist/client');
+  const distPath = path.resolve(projectRoot, 'dist/public');
   
   // serve static assets
   if (fs.existsSync(distPath)) {
@@ -82,7 +88,14 @@ export function serveStatic(app: Express): void {
   }
   
   // fall through to index.html if the file doesn't exist
-  app.use("*", (_req: Request, res: Response) => {
+  app.use("*", (req: Request, res: Response, next: NextFunction) => {
+    // Skip processing API routes and problematic URLs
+    const url = req.originalUrl;
+    if (url.startsWith('/api') || url.includes('https://') || url.includes('http://')) {
+      return next();
+    }
+    
+    // Otherwise send index.html
     res.sendFile(path.resolve(distPath, "index.html"));
   });
 }

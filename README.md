@@ -1,97 +1,188 @@
-# ProjectPulse CSV Import Tool
+# ProjectPulse
 
-This tool helps import projects from a CSV file into the ProjectPulse database. It handles creating projects and project managers as needed.
+ProjectPulse is a comprehensive project management system designed for organizations to track projects, manage departments, and handle user authentication with support for both local and LDAP authentication methods.
 
 ## Features
 
-- Import projects from a CSV file
-- Use Arabic name if available, fallback to English name
-- Automatically create project managers if they don't exist
-- Validate data before import
-- Handle various date and number formats
-- Detailed reporting and error handling
+- **User Authentication**: Supports both local database authentication and LDAP integration
+- **Project Management**: Create, update, and manage projects across departments
+- **Department Organization**: Organize teams and projects by departments
+- **User Management**: Admin controls for user accounts and permissions
+- **Dashboard Analytics**: Visual representations of project status and progress
+- **Responsive Design**: Works on desktop and mobile devices
 
-## Prerequisites
+## Tech Stack
 
-- Node.js installed (v16 or higher recommended)
-- Access to a PostgreSQL database with the ProjectPulse schema
-- A CSV file containing project data
+- **Backend**: Node.js with Express
+- **Database**: PostgreSQL
+- **Authentication**: Passport.js with Local and LDAP strategies
+- **Frontend**: HTML, CSS, JavaScript with Bootstrap 5
 
-## Setup
+## Getting Started
 
-1. Install required dependencies:
+### Prerequisites
+
+- Node.js (v14 or higher)
+- PostgreSQL database
+- LDAP server (optional, for LDAP authentication)
+
+### Installation
+
+1. Clone the repository:
+
+```bash
+git clone https://github.com/your-organization/projectpulse.git
+cd projectpulse
+```
+
+2. Install dependencies:
 
 ```bash
 npm install
 ```
 
-2. Create a `.env` file with your database connection details:
+3. Set up the database:
 
+```bash
+node create-db-schema.js
 ```
-DATABASE_URL=postgresql://username:password@localhost:5432/projectpulse
+
+4. Create the admin user:
+
+```bash
+node create-admin.js
 ```
 
-## CSV Format
+5. Start the server:
 
-Your CSV file should have the following columns:
+```bash
+node production-server.js
+```
 
-- `STATUS` - Project status (e.g., Completed, In Progress)
-- `CONTRACT NO` - Contract number
-- `PROJECT NAME` - English project name
-- `ARABIC NAME` - Arabic project name (optional)
-- `PROJECT OFFICER` - Name of the project officer
-- `START DATE` - Project start date
-- `END DATE` - Project end date
-- `BUDGET IN QAR` - Project budget
-- `AMOUNT PAID` - Amount paid
+### Configuration
 
-If your CSV uses different column names, you can use the converter tool to map them.
+1. Database configuration can be modified in `db-config.js`
+2. LDAP settings can be configured in `ldap-config.js`
+3. Server port and other settings can be adjusted in `server-config.js`
 
 ## Usage
 
-### Import Projects
+### Accessing the Application
 
-Run the import script with your CSV file:
+Once the server is running, you can access the application at:
 
-```bash
-node import-projects.js your-projects.csv
-```
+- **Dashboard**: Open `projectpulse-dashboard.html` in your browser
+- **API**: Access the API at `http://localhost:7000/api`
+- **Test Page**: A simple test page is available at `test-production.html`
 
-This will:
-1. Read the CSV file
-2. Validate the data
-3. Check for existing projects (to avoid duplicates)
-4. Create project officers if they don't exist
-5. Create projects in the database
-6. Provide a summary of the import process
+### Default Admin Credentials
 
-### Convert CSV Format
+The system comes with a default administrator account:
 
-If your CSV file uses different column names, you can convert it:
+- **Username**: Hdmin
+- **Password**: Hdmin1738!@
 
-```bash
-node convert-csv.js your-original.csv converted.csv
-```
+It is recommended to change this password after the first login.
 
-Then edit the `convert-csv.js` file to map your column names to the expected format.
+### API Endpoints
 
-## Behavior Details
+#### Authentication
 
-- Project Name: Uses the Arabic name if available, otherwise uses the English name
-- Project Officer: Creates a new user if the project officer doesn't exist in the database
-- Department: All imported projects are assigned to the Signal Corps department
-- Status: Maps various status text to the standard status values in the database
-- Duplicates: Skips projects that already exist (based on name)
+- `POST /api/login` - Authenticate a user
+- `POST /api/logout` - Log out the current user
+- `GET /api/user` - Get the current logged-in user
+
+#### Projects
+
+- `GET /api/projects` - List all projects
+- `POST /api/projects` - Create a new project
+- `GET /api/projects/:id` - Get a specific project
+- `PUT /api/projects/:id` - Update a project
+- `DELETE /api/projects/:id` - Delete a project
+
+#### Departments
+
+- `GET /api/departments` - List all departments
+- `POST /api/departments` - Create a new department
+- `GET /api/departments/:id` - Get a specific department
+- `PUT /api/departments/:id` - Update a department
+- `DELETE /api/departments/:id` - Delete a department
+
+#### Users
+
+- `GET /api/users` - List all users (admin only)
+- `POST /api/users` - Create a new user (admin only)
+- `GET /api/users/:id` - Get a specific user
+- `PUT /api/users/:id` - Update a user
+- `DELETE /api/users/:id` - Delete a user (admin only)
 
 ## Troubleshooting
 
-If you encounter issues:
+### Common Issues
 
-1. Check database connection in the `.env` file
-2. Verify your CSV file format
-3. Make sure the Signal Corps department exists in the database
-4. Check the console output for specific errors
+1. **Database Connection Errors**:
+   - Ensure PostgreSQL is running
+   - Check database credentials in `db-config.js`
+   - Verify the database exists and is accessible
+
+2. **LDAP Authentication Issues**:
+   - Verify LDAP server is reachable
+   - Check LDAP configuration settings
+   - Ensure proper bind credentials
+
+3. **Server Startup Problems**:
+   - Check for port conflicts
+   - Verify Node.js version is compatible
+   - Look for error messages in the console
+
+### Logging
+
+The application logs can be found in:
+- `logs/server.log` - General server logs
+- `logs/error.log` - Error-specific logs
+
+## Development
+
+### Project Structure
+
+```
+projectpulse/
+├── server/             # Server-side code
+│   ├── routes/         # API routes
+│   ├── middleware/     # Express middleware
+│   ├── controllers/    # Business logic
+│   └── models/         # Data models
+├── client/             # Client-side code
+│   ├── components/     # UI components
+│   ├── pages/          # Page layouts
+│   └── utils/          # Helper functions
+├── config/             # Configuration files
+├── scripts/            # Utility scripts
+└── public/             # Static assets
+```
+
+### Development Server
+
+For development, use the development server which includes hot-reloading:
+
+```bash
+npm run dev
+```
+
+### Building for Production
+
+To build the application for production:
+
+```bash
+npm run build
+```
 
 ## License
 
-This project is licensed under the MIT License - see the LICENSE file for details. 
+This project is licensed under the MIT License - see the LICENSE file for details.
+
+## Acknowledgements
+
+- Bootstrap for the UI framework
+- Passport.js for authentication strategies
+- Express.js for the API framework 

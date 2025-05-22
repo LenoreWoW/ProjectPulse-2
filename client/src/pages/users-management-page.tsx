@@ -429,9 +429,9 @@ export default function UsersManagementPage() {
                           <FormItem>
                             <FormLabel>{t("department")}</FormLabel>
                             <Select 
-                              onValueChange={(value) => field.onChange(value ? parseInt(value) : null)} 
-                              defaultValue={field.value?.toString() || ""}
-                              value={field.value?.toString() || ""}
+                              onValueChange={(value) => field.onChange(value === "none" ? null : parseInt(value))} 
+                              defaultValue={field.value?.toString() || "none"}
+                              value={field.value?.toString() || "none"}
                             >
                               <FormControl>
                                 <SelectTrigger>
@@ -659,9 +659,9 @@ export default function UsersManagementPage() {
                         <FormItem>
                           <FormLabel>{t("department")}</FormLabel>
                           <Select 
-                            onValueChange={(value) => field.onChange(value ? parseInt(value) : null)} 
-                            defaultValue={field.value?.toString() || ""}
-                            value={field.value?.toString() || ""}
+                            onValueChange={(value) => field.onChange(value === "none" ? null : parseInt(value))} 
+                            defaultValue={field.value?.toString() || "none"}
+                            value={field.value?.toString() || "none"}
                           >
                             <FormControl>
                               <SelectTrigger>
