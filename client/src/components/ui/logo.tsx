@@ -18,11 +18,11 @@ export function Logo({ className = "", size = "md", hideText = false }: LogoProp
   
   return (
     <div className={`flex items-center ${className}`}>
-      <div className={`${sizeClasses[size].logo} bg-maroon-700 rounded flex items-center justify-center text-white font-bold`}>
+      <div className={`${sizeClasses[size].logo} bg-white text-qatar-maroon dark:bg-gray-600 dark:text-white rounded flex items-center justify-center font-bold`}>
         PMO
       </div>
       {!hideText && (
-        <span className={`font-semibold ${sizeClasses[size].text} ${isRtl ? 'mr-2 ml-0' : 'ml-2 mr-0'}`}>
+        <span className={`font-semibold text-white dark:text-gray-200 ${sizeClasses[size].text} ${isRtl ? 'mr-2 ml-0' : 'ml-2 mr-0'}`}>
           مشاريعنا
         </span>
       )}

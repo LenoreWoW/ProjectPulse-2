@@ -116,8 +116,8 @@ export function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
         <a
           className={`flex items-center p-2 ${
             isActive(path)
-              ? "text-maroon-700 bg-maroon-50 dark:bg-maroon-900/20 dark:text-maroon-200"
-              : "text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700"
+              ? "text-white bg-white/20 dark:bg-gray-700 dark:text-gray-200"
+              : "text-white hover:bg-white/10 dark:text-gray-300 dark:hover:bg-gray-700"
           } rounded-lg transition-colors duration-200`}
           onClick={onClick}
         >
@@ -137,12 +137,12 @@ export function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
       />
 
       {/* Mobile menu panel */}
-      <div className="fixed inset-y-0 start-0 z-40 w-64 bg-white dark:bg-gray-800 shadow-lg transform transition-transform duration-300 ease-in-out">
+      <div className="fixed inset-y-0 start-0 z-40 w-64 bg-qatar-maroon dark:bg-gray-800 shadow-lg transform transition-transform duration-300 ease-in-out">
         <div className="h-full flex flex-col">
-          <div className="p-4 flex items-center justify-between border-b border-gray-200 dark:border-gray-700">
+          <div className="p-4 flex items-center justify-between border-b border-qatar-maroon/20 dark:border-gray-700">
             <Logo />
             <button
-              className="p-2 rounded-lg text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700"
+              className="p-2 rounded-lg text-white hover:bg-white/10 dark:text-gray-400 dark:hover:bg-gray-700"
               onClick={onClose}
             >
               <X className="h-5 w-5" />
@@ -163,14 +163,14 @@ export function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
             </ul>
           </nav>
 
-          <div className="p-4 border-t border-gray-200 dark:border-gray-700">
+          <div className="p-4 border-t border-qatar-maroon/20 dark:border-gray-700">
             <div className="flex items-center">
-              <div className="w-8 h-8 rounded-full bg-maroon-700 text-white flex items-center justify-center font-bold">
+              <div className="w-8 h-8 rounded-full bg-white text-qatar-maroon dark:bg-gray-600 dark:text-white flex items-center justify-center font-bold">
                 {user?.name?.charAt(0).toUpperCase() || "U"}
               </div>
               <div className={`${isRtl ? 'mr-3' : 'ml-3'}`}>
-                <p className="text-sm font-medium">{user?.name}</p>
-                <p className="text-xs text-gray-500 dark:text-gray-400">{user?.role}</p>
+                <p className="text-sm font-medium text-white dark:text-gray-200">{user?.name}</p>
+                <p className="text-xs text-white/70 dark:text-gray-400">{user?.role}</p>
               </div>
             </div>
           </div>
