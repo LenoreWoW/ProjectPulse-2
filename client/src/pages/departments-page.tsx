@@ -89,7 +89,7 @@ export default function DepartmentsPage() {
   const [editingDepartment, setEditingDepartment] = useState<Department | null>(null);
   
   // Check if current user has permission to manage departments
-  const canManageDepartments = user?.roles?.some(role => ["Administrator", "MainPMO"].includes(role)) || false;
+  const canManageDepartments = user?.roles?.some((role: string) => ["Administrator", "MainPMO"].includes(role)) || false;
   
   // Fetch departments
   const { 
@@ -286,7 +286,7 @@ export default function DepartmentsPage() {
               placeholder={t("searchDepartments")}
               className="pl-10 w-full sm:w-[250px]"
               value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchTerm(e.target.value)}
             />
           </div>
           
@@ -310,7 +310,7 @@ export default function DepartmentsPage() {
                     <FormField
                       control={form.control}
                       name="name"
-                      render={({ field }) => (
+                      render={({ field }: any) => (
                         <FormItem>
                           <FormLabel>{t("name")}</FormLabel>
                           <FormControl>
@@ -324,7 +324,7 @@ export default function DepartmentsPage() {
                     <FormField
                       control={form.control}
                       name="code"
-                      render={({ field }) => (
+                      render={({ field }: any) => (
                         <FormItem>
                           <FormLabel>{t("code")}</FormLabel>
                           <FormControl>
@@ -338,7 +338,7 @@ export default function DepartmentsPage() {
                     <FormField
                       control={form.control}
                       name="description"
-                      render={({ field }) => (
+                      render={({ field }: any) => (
                         <FormItem>
                           <FormLabel>{t("description")}</FormLabel>
                           <FormControl>
@@ -353,11 +353,11 @@ export default function DepartmentsPage() {
                       <FormField
                         control={form.control}
                         name="headUserId"
-                        render={({ field }) => (
+                        render={({ field }: any) => (
                           <FormItem>
                             <FormLabel>{t("departmentHead")}</FormLabel>
                             <Select 
-                              onValueChange={(value) => field.onChange(value === "none" ? null : parseInt(value))} 
+                              onValueChange={(value: string) => field.onChange(value === "none" ? null : parseInt(value))} 
                               defaultValue={field.value?.toString() || "none"}
                               value={field.value?.toString() || "none"}
                             >
@@ -385,7 +385,7 @@ export default function DepartmentsPage() {
                       <FormField
                         control={form.control}
                         name="budget"
-                        render={({ field }) => (
+                        render={({ field }: any) => (
                           <FormItem>
                             <FormLabel>{t("budget")}</FormLabel>
                             <FormControl>
@@ -393,7 +393,7 @@ export default function DepartmentsPage() {
                                 type="number"
                                 {...field}
                                 value={field.value === null || field.value === undefined ? '' : field.value}
-                                onChange={(e) => {
+                                onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
                                   const value = e.target.value;
                                   field.onChange(value === '' ? null : parseFloat(value));
                                 }}
@@ -410,7 +410,7 @@ export default function DepartmentsPage() {
                       <FormField
                         control={form.control}
                         name="location"
-                        render={({ field }) => (
+                        render={({ field }: any) => (
                           <FormItem>
                             <FormLabel>{t("location")}</FormLabel>
                             <FormControl>
@@ -424,7 +424,7 @@ export default function DepartmentsPage() {
                       <FormField
                         control={form.control}
                         name="phone"
-                        render={({ field }) => (
+                        render={({ field }: any) => (
                           <FormItem>
                             <FormLabel>{t("phone")}</FormLabel>
                             <FormControl>
@@ -439,7 +439,7 @@ export default function DepartmentsPage() {
                     <FormField
                       control={form.control}
                       name="email"
-                      render={({ field }) => (
+                      render={({ field }: any) => (
                         <FormItem>
                           <FormLabel>{t("email")}</FormLabel>
                           <FormControl>
@@ -485,7 +485,7 @@ export default function DepartmentsPage() {
                   <FormField
                     control={form.control}
                     name="name"
-                    render={({ field }) => (
+                    render={({ field }: any) => (
                       <FormItem>
                         <FormLabel>{t("name")}</FormLabel>
                         <FormControl>
@@ -499,7 +499,7 @@ export default function DepartmentsPage() {
                   <FormField
                     control={form.control}
                     name="code"
-                    render={({ field }) => (
+                    render={({ field }: any) => (
                       <FormItem>
                         <FormLabel>{t("code")}</FormLabel>
                         <FormControl>
@@ -513,7 +513,7 @@ export default function DepartmentsPage() {
                   <FormField
                     control={form.control}
                     name="description"
-                    render={({ field }) => (
+                    render={({ field }: any) => (
                       <FormItem>
                         <FormLabel>{t("description")}</FormLabel>
                         <FormControl>
@@ -528,11 +528,11 @@ export default function DepartmentsPage() {
                     <FormField
                       control={form.control}
                       name="headUserId"
-                      render={({ field }) => (
+                      render={({ field }: any) => (
                         <FormItem>
                           <FormLabel>{t("departmentHead")}</FormLabel>
                           <Select 
-                            onValueChange={(value) => field.onChange(value === "none" ? null : parseInt(value))} 
+                            onValueChange={(value: string) => field.onChange(value === "none" ? null : parseInt(value))} 
                             defaultValue={field.value?.toString() || "none"}
                             value={field.value?.toString() || "none"}
                           >
@@ -560,7 +560,7 @@ export default function DepartmentsPage() {
                     <FormField
                       control={form.control}
                       name="budget"
-                      render={({ field }) => (
+                      render={({ field }: any) => (
                         <FormItem>
                           <FormLabel>{t("budget")}</FormLabel>
                           <FormControl>
@@ -568,7 +568,7 @@ export default function DepartmentsPage() {
                               type="number"
                               {...field}
                               value={field.value === null || field.value === undefined ? '' : field.value}
-                              onChange={(e) => {
+                              onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
                                 const value = e.target.value;
                                 field.onChange(value === '' ? null : parseFloat(value));
                               }}
@@ -585,7 +585,7 @@ export default function DepartmentsPage() {
                     <FormField
                       control={form.control}
                       name="location"
-                      render={({ field }) => (
+                      render={({ field }: any) => (
                         <FormItem>
                           <FormLabel>{t("location")}</FormLabel>
                           <FormControl>
@@ -599,7 +599,7 @@ export default function DepartmentsPage() {
                     <FormField
                       control={form.control}
                       name="phone"
-                      render={({ field }) => (
+                      render={({ field }: any) => (
                         <FormItem>
                           <FormLabel>{t("phone")}</FormLabel>
                           <FormControl>
@@ -614,7 +614,7 @@ export default function DepartmentsPage() {
                   <FormField
                     control={form.control}
                     name="email"
-                    render={({ field }) => (
+                    render={({ field }: any) => (
                       <FormItem>
                         <FormLabel>{t("email")}</FormLabel>
                         <FormControl>
@@ -672,7 +672,7 @@ export default function DepartmentsPage() {
                     <div className="w-8 h-8 rounded-full bg-maroon-100 dark:bg-maroon-900 flex items-center justify-center text-qatar-maroon">
                       <UserIcon className="h-4 w-4" />
                     </div>
-                    <span>{getDepartmentHeadName(viewingDepartment.headUserId)}</span>
+                    <span>{getDepartmentHeadName(viewingDepartment.headUserId || null)}</span>
                   </div>
                 </div>
                 
@@ -859,7 +859,7 @@ export default function DepartmentsPage() {
                   <div className="flex justify-between">
                     <div>
                       <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">{t("head")}</h3>
-                      <p className="text-sm">{getDepartmentHeadName(department.headUserId)}</p>
+                      <p className="text-sm">{getDepartmentHeadName(department.headUserId || null)}</p>
                     </div>
                     <div>
                       <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">{t("members")}</h3>
@@ -868,7 +868,7 @@ export default function DepartmentsPage() {
                   </div>
                 </div>
               </CardContent>
-              <CardFooter className="border-t px-6 py-3 bg-gray-50 dark:bg-gray-900">
+              <CardFooter className="border-t px-6 py-3 bg-gray-50 dark:bg-gray-800">
                 <Button 
                   variant="ghost" 
                   className="w-full text-center justify-center hover:bg-white dark:hover:bg-gray-800"

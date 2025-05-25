@@ -1,5 +1,18 @@
 import React, { useState } from 'react';
-import { DragDropContext, Droppable, Draggable, DropResult } from 'react-beautiful-dnd';
+import {
+  DndContext,
+  DragEndEvent,
+  DragOverlay,
+  DragStartEvent,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  closestCenter,
+} from '@dnd-kit/core';
+import {
+  SortableContext,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable';
 import { Task } from '@/lib/schema-types';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -33,6 +46,16 @@ export function KanbanBoard({ tasks, projectId, users }: KanbanBoardProps) {
   const { t } = useI18n();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const [activeTask, setActiveTask] = useState<Task | null>(null);
+  
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8,
+      },
+    })
+  );
+
   const [columns, setColumns] = useState<Record<string, Task[]>>(() => {
     const initialColumns: Record<string, Task[]> = {};
     
@@ -139,46 +162,54 @@ export function KanbanBoard({ tasks, projectId, users }: KanbanBoardProps) {
     return format(new Date(date), "MMM d");
   };
 
-  const handleDragEnd = (result: DropResult) => {
-    const { destination, source, draggableId } = result;
+  const handleDragStart = (event: DragStartEvent) => {
+    const { active } = event;
+    const taskId = parseInt(active.id.toString().replace('task-', ''));
+    const task = tasks.find(t => t.id === taskId);
+    setActiveTask(task || null);
+  };
 
-    // If there's no destination or the item was dropped back to its original position
-    if (!destination || 
-        (destination.droppableId === source.droppableId && 
-         destination.index === source.index)) {
-      return;
-    }
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    setActiveTask(null);
 
-    // Find the task that was dragged
-    const taskId = parseInt(draggableId.replace('task-', ''));
+    if (!over) return;
+
+    const taskId = parseInt(active.id.toString().replace('task-', ''));
     const task = tasks.find(t => t.id === taskId);
     if (!task) return;
+
+    const sourceColumnId = Object.keys(columns).find(columnId =>
+      columns[columnId].some(t => t.id === taskId)
+    );
+    const destinationColumnId = over.id.toString();
+
+    if (!sourceColumnId || sourceColumnId === destinationColumnId) return;
+
+    // Find the target column definition to get its associated status
+    const targetColumnDef = COLUMN_DEFINITIONS.find(col => col.id === destinationColumnId);
+    if (!targetColumnDef) return;
 
     // Clone the columns
     const newColumns = { ...columns };
 
     // Remove the task from the source column
-    newColumns[source.droppableId] = newColumns[source.droppableId].filter(
+    newColumns[sourceColumnId] = newColumns[sourceColumnId].filter(
       t => t.id !== taskId
     );
-
-    // Add the task to the destination column
-    // Find the target column definition to get its associated status
-    const targetColumnDef = COLUMN_DEFINITIONS.find(col => col.id === destination.droppableId);
-    if (!targetColumnDef) return;
 
     // Update the task with the new status
     const updatedTask = { ...task };
     
     // If moving between Backlog and Up Next (both are Todo status), update priorityOrder field
-    if (destination.droppableId === 'up-next' && source.droppableId === 'backlog') {
+    if (destinationColumnId === 'up-next' && sourceColumnId === 'backlog') {
       // We're moving from backlog to up-next, so set priority order
       updateTaskMutation.mutate({ 
         taskId: task.id, 
         status: 'Todo',
         priorityOrder: 1
       });
-    } else if (destination.droppableId === 'backlog' && source.droppableId === 'up-next') {
+    } else if (destinationColumnId === 'backlog' && sourceColumnId === 'up-next') {
       // We're moving from up-next to backlog, so clear priority order
       updateTaskMutation.mutate({ 
         taskId: task.id, 
@@ -197,25 +228,64 @@ export function KanbanBoard({ tasks, projectId, users }: KanbanBoardProps) {
     }
 
     // If moving to Up Next, assign a priority order
-    if (destination.droppableId === 'up-next') {
+    if (destinationColumnId === 'up-next') {
       updatedTask.priorityOrder = 1;
-    } else if (destination.droppableId === 'backlog') {
+    } else if (destinationColumnId === 'backlog') {
       updatedTask.priorityOrder = null;
     }
 
-    // Add to the new column at the destination index
-    newColumns[destination.droppableId] = [
-      ...newColumns[destination.droppableId].slice(0, destination.index),
-      updatedTask,
-      ...newColumns[destination.droppableId].slice(destination.index)
-    ];
+    // Add to the new column
+    newColumns[destinationColumnId] = [...newColumns[destinationColumnId], updatedTask];
 
     // Update the state
     setColumns(newColumns);
   };
 
+  const renderTaskCard = (task: Task) => (
+    <Card className="shadow-sm hover:shadow transition-shadow duration-200">
+      <CardHeader className="p-3 pb-1">
+        <div className="flex justify-between items-start">
+          <CardTitle className="text-base font-medium">{task.title}</CardTitle>
+          <Badge className={getPriorityBadgeClass(task.priority ?? null)}>
+            <div className="flex items-center">
+              {getPriorityIcon(task.priority ?? null)}
+              <span className="text-xs">{t(task.priority?.toLowerCase() ?? '')}</span>
+            </div>
+          </Badge>
+        </div>
+      </CardHeader>
+      {task.description && (
+        <CardContent className="p-3 pt-1 pb-1">
+          <CardDescription className="line-clamp-2 text-xs">
+            {task.description}
+          </CardDescription>
+        </CardContent>
+      )}
+      <CardFooter className="p-3 pt-1 flex justify-between items-center">
+        {task.assignedUserId && (
+          <Avatar className="h-6 w-6">
+            <AvatarFallback className="text-xs">
+              {getUserName(task.assignedUserId).split(' ').map((n: string) => n[0]).join('')}
+            </AvatarFallback>
+          </Avatar>
+        )}
+        {task.deadline && (
+          <div className="flex items-center text-xs text-gray-500">
+            <CalendarIcon className="h-3 w-3 mr-1" />
+            {formatDate(task.deadline)}
+          </div>
+        )}
+      </CardFooter>
+    </Card>
+  );
+
   return (
-    <DragDropContext onDragEnd={handleDragEnd}>
+    <DndContext
+      sensors={sensors}
+      collisionDetection={closestCenter}
+      onDragStart={handleDragStart}
+      onDragEnd={handleDragEnd}
+    >
       <div className="flex flex-nowrap gap-4 overflow-x-auto pb-4" style={{ minHeight: '70vh' }}>
         {COLUMN_DEFINITIONS.map((column) => (
           <KanbanColumn
@@ -223,61 +293,12 @@ export function KanbanBoard({ tasks, projectId, users }: KanbanBoardProps) {
             id={column.id}
             title={t(column.title.toLowerCase())}
             tasks={columns[column.id] || []}
-            renderCard={(task, index) => (
-              <Draggable
-                key={`task-${task.id}`}
-                draggableId={`task-${task.id}`}
-                index={index}
-              >
-                {(provided, snapshot) => (
-                  <div
-                    ref={provided.innerRef}
-                    {...provided.draggableProps}
-                    {...provided.dragHandleProps}
-                    className={`mb-2 ${snapshot.isDragging ? 'opacity-70' : ''}`}
-                  >
-                    <Card className="shadow-sm hover:shadow transition-shadow duration-200">
-                      <CardHeader className="p-3 pb-1">
-                        <div className="flex justify-between items-start">
-                          <CardTitle className="text-base font-medium">{task.title}</CardTitle>
-                          <Badge className={getPriorityBadgeClass(task.priority)}>
-                            <div className="flex items-center">
-                              {getPriorityIcon(task.priority)}
-                              <span className="text-xs">{t(task.priority?.toLowerCase() || '')}</span>
-                            </div>
-                          </Badge>
-                        </div>
-                      </CardHeader>
-                      {task.description && (
-                        <CardContent className="p-3 pt-1 pb-1">
-                          <CardDescription className="line-clamp-2 text-xs">
-                            {task.description}
-                          </CardDescription>
-                        </CardContent>
-                      )}
-                      <CardFooter className="p-3 pt-1 flex justify-between items-center">
-                        {task.assignedUserId && (
-                          <Avatar className="h-6 w-6">
-                            <AvatarFallback className="text-xs">
-                              {getUserName(task.assignedUserId).split(' ').map(n => n[0]).join('')}
-                            </AvatarFallback>
-                          </Avatar>
-                        )}
-                        {task.deadline && (
-                          <div className="flex items-center text-xs text-gray-500">
-                            <CalendarIcon className="h-3 w-3 mr-1" />
-                            {formatDate(task.deadline)}
-                          </div>
-                        )}
-                      </CardFooter>
-                    </Card>
-                  </div>
-                )}
-              </Draggable>
-            )}
           />
         ))}
       </div>
-    </DragDropContext>
+      <DragOverlay>
+        {activeTask ? renderTaskCard(activeTask) : null}
+      </DragOverlay>
+    </DndContext>
   );
 } 

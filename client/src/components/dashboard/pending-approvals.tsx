@@ -176,7 +176,7 @@ export function PendingApprovals({ className = "" }: PendingApprovalsProps) {
           recentApprovals.map((request) => (
             <div key={request.id} 
               className="border border-maroon-200 dark:border-maroon-800 hover:border-maroon-300 dark:hover:border-maroon-700 
-                bg-white dark:bg-gray-900 hover:bg-maroon-50/50 dark:hover:bg-maroon-900/10 
+                bg-white dark:bg-gray-800 hover:bg-maroon-50/50 dark:hover:bg-maroon-900/10 
                 transition-all shadow-sm hover:shadow rounded-lg p-5">
               <div className="flex justify-between items-start mb-3">
                 <div className="flex items-start">

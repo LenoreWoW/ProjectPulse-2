@@ -4,19 +4,14 @@ import { useEffect, useState, useRef } from "react";
 import { Redirect } from "wouter";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm } from "react-hook-form";
+import { useForm, FieldValues, ControllerRenderProps, FieldPath } from "react-hook-form";
 import { insertUserSchema } from "@shared/schema";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { AlertDialog, AlertDialogContent, AlertDialogDescription, AlertDialogHeader, AlertDialogTitle, AlertDialogFooter, AlertDialogAction } from "@/components/ui/alert-dialog";
 
-// Import HD Qatar landmark images directly
-import landmark1 from "../assets/landmarks/hd/image_1747300730144.png"; // Qatar Islamic Cultural Center
-import landmark2 from "../assets/landmarks/hd/image_1747300807633.png"; // Museum of Islamic Art
-import landmark3 from "../assets/landmarks/hd/image_1747300874983.png"; // Al Zubarah Fort
-import landmark4 from "../assets/landmarks/hd/image_1747300899310.png"; // Katara Cultural Village
-import landmark5 from "../assets/landmarks/hd/image_1747300922286.png"; // Souq Waqif
-import landmark6 from "../assets/landmarks/hd/image_1747300962058.png"; // State Grand Mosque
+// Import Qatar landmark images from the existing index file
+import { qatarLandmarks } from "../assets/landmarks";
 import {
   FormRoot,
   FormControl,
@@ -43,33 +38,11 @@ export default function AuthPage() {
   const { user, isLoading, loginMutation, registerMutation } = useAuth();
   const { t, isRtl, setLanguage } = useI18n();
   const [activeTab, setActiveTab] = useState<string>("login");
-  const [showArabicReminder, setShowArabicReminder] = useState(false);
-  
-  // Show Arabic reminder dialog when login tab is active
-  useEffect(() => {
-    if (activeTab === "login") {
-      const timer = setTimeout(() => {
-        setShowArabicReminder(true);
-      }, 500);
-      return () => clearTimeout(timer);
-    }
-  }, [activeTab]);
-  
-  // Set Arabic as default language when dialog is acknowledged
-  const handleReminderClose = () => {
-    setShowArabicReminder(false);
-    setLanguage("ar");
-  };
 
   // If the user is already logged in, redirect to home
   if (user) {
     return <Redirect to="/" />;
   }
-  
-  // Create array of Qatar landmark images
-  const qatarLandmarks = [
-    landmark1, landmark2, landmark3, landmark4, landmark5, landmark6
-  ];
   
   // Image slider state
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
@@ -94,7 +67,7 @@ export default function AuthPage() {
     confirmPassword: z.string().min(1, { message: t("confirmPasswordRequired") }),
     passportImageFile: z.instanceof(File, { message: t("passportRequired") }).optional(),
     idCardImageFile: z.instanceof(File, { message: t("idCardRequired") }).optional(),
-  }).refine(data => data.password === data.confirmPassword, {
+  }).refine((data: any) => data.password === data.confirmPassword, {
     message: t("passwordsDontMatch"),
     path: ["confirmPassword"],
   });
@@ -176,22 +149,17 @@ export default function AuthPage() {
   const currentLandmarkImage = qatarLandmarks[currentImageIndex];
 
   return (
-    <div className="min-h-screen w-full flex items-center justify-center bg-qatar-black text-qatar-white overflow-hidden relative p-4">
-      {/* Background image with gradient overlay */}
-      <div
-        className="absolute inset-0 bg-cover bg-center z-0"
-        style={{
-          backgroundImage: `url(${currentLandmarkImage})`,
-          backgroundPosition: 'center',
-          backgroundSize: 'cover',
-        }}
-      >
-        <div className="absolute inset-0 bg-gradient-to-b from-qatar-black/60 to-qatar-black/80"></div>
-      </div>
+    <div className="min-h-screen w-full flex items-center justify-center relative p-4" style={{
+      backgroundImage: `url(${currentLandmarkImage})`,
+      backgroundPosition: 'center',
+      backgroundSize: 'cover',
+    }}>
+      {/* Single background overlay */}
+      <div className="absolute inset-0 bg-black/60"></div>
       
-      <div className="w-full max-w-md" style={{ position: 'relative', zIndex: 9999 }}>
-        {/* Auth Card */}
-        <Card className="w-full bg-black/60 backdrop-blur-md shadow-2xl rounded-2xl overflow-hidden border-2 border-qatar-maroon">
+      {/* Auth Card - positioned above overlay */}
+      <div className="relative z-10 w-full max-w-md">
+        <Card className="w-full bg-gray-900/80 backdrop-blur-md shadow-2xl rounded-2xl overflow-hidden border-2 border-qatar-maroon">
           <CardHeader className="space-y-1 flex flex-col items-center pt-8 pb-6 px-6">
             <div className="flex flex-col items-center justify-center mb-4">
               <QatarLogo size="lg" className="mb-2" />
@@ -200,32 +168,42 @@ export default function AuthPage() {
               </h2>
             </div>
           </CardHeader>
-          <CardContent className="px-8 pb-8 pt-0">
-            <Tabs 
-              value={activeTab} 
-              onValueChange={setActiveTab} 
-              className="w-full"
-            >
-              <TabsList className="grid w-full grid-cols-2 mb-6 bg-black/40 p-1 rounded-full overflow-hidden border border-qatar-maroon">
-                <TabsTrigger value="login" className="data-[state=active]:bg-qatar-maroon data-[state=active]:text-qatar-white text-qatar-white font-medium py-2 rounded-full">{t("login")}</TabsTrigger>
-                <TabsTrigger value="register" className="data-[state=active]:bg-qatar-maroon data-[state=active]:text-qatar-white text-qatar-white font-medium py-2 rounded-full">{t("register")}</TabsTrigger>
+          
+          <CardContent className="px-6 pb-6">
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+              <TabsList className="grid w-full grid-cols-2 mb-6 bg-qatar-maroon/20 rounded-lg">
+                <TabsTrigger 
+                  value="login" 
+                  className="text-white data-[state=active]:bg-qatar-maroon data-[state=active]:text-white rounded-md"
+                >
+                  {t("login")}
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="register" 
+                  className="text-white data-[state=active]:bg-qatar-maroon data-[state=active]:text-white rounded-md"
+                >
+                  {t("register")}
+                </TabsTrigger>
               </TabsList>
               
-              {/* Login Form */}
-              <TabsContent value="login" className="pt-2">
-                <FormRoot form={loginForm}>
-                  <form onSubmit={loginForm.handleSubmit(onLoginSubmit)} className="space-y-4">
+              {/* Login Tab */}
+              <TabsContent value="login" className="space-y-4">
+                <FormRoot 
+                  form={loginForm}
+                  onSubmit={loginForm.handleSubmit(onLoginSubmit)}
+                  className="space-y-4"
+                >
                     <FormField
                       control={loginForm.control}
                       name="username"
-                      render={({ field }) => (
+                      render={({ field }: any) => (
                         <FormItem>
                           <FormLabel className="text-qatar-white">{t("username")}</FormLabel>
                           <FormControl>
-                            <Input
-                              {...field}
+                            <Input 
+                              {...field} 
+                              className="auth-input"
                               placeholder={t("enterUsername")}
-                              className="bg-white/10 border-white/20 text-white"
                             />
                           </FormControl>
                           <FormMessage />
@@ -235,90 +213,91 @@ export default function AuthPage() {
                     <FormField
                       control={loginForm.control}
                       name="password"
-                      render={({ field }) => (
+                      render={({ field }: any) => (
                         <FormItem className="mb-6">
                           <FormControl>
                             <Input 
-                              type="password" 
-                              placeholder={t("password")} 
                               {...field} 
-                              className="auth-input text-white"
-                              style={{ color: 'white' }}
+                              type="password" 
+                              className="auth-input"
+                              placeholder={t("enterPassword")}
                             />
                           </FormControl>
-                          <FormMessage className="text-red-300 text-sm ml-2" />
+                          <FormMessage />
                         </FormItem>
                       )}
                     />
                     <Button 
                       type="submit" 
-                      className="w-full bg-qatar-maroon hover:bg-black/80 text-qatar-white font-medium py-3 rounded-full transition-all duration-200 shadow-md border border-qatar-white/30"
+                      className="w-full bg-qatar-maroon hover:bg-opacity-90 text-white font-semibold py-3 rounded-full transition-colors"
                       disabled={loginMutation.isPending}
                     >
-                      {loginMutation.isPending && (
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      {loginMutation.isPending ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          {t("loggingIn")}
+                        </>
+                      ) : (
+                        t("login")
                       )}
-                      {t("login")}
                     </Button>
-                  </form>
                 </FormRoot>
               </TabsContent>
               
-              {/* Registration Form */}
-              <TabsContent value="register" className="pt-2">
-                <FormRoot form={registerForm}>
-                  <form onSubmit={registerForm.handleSubmit(onRegisterSubmit)} className="space-y-4">
+              {/* Register Tab */}
+              <TabsContent value="register" className="space-y-4">
+                <FormRoot 
+                  form={registerForm}
+                  onSubmit={registerForm.handleSubmit(onRegisterSubmit)}
+                  className="space-y-3"
+                >
                     <FormField
                       control={registerForm.control}
                       name="name"
-                      render={({ field }) => (
+                      render={({ field }: any) => (
                         <FormItem className="mb-3">
                           <FormControl>
                             <Input 
-                              placeholder={t("name")} 
                               {...field} 
-                              className="auth-input text-white"
-                              style={{ color: 'white' }}
+                              className="auth-input"
+                              placeholder={t("fullName")}
                             />
                           </FormControl>
-                          <FormMessage className="text-red-300 text-sm ml-2" />
+                          <FormMessage />
                         </FormItem>
                       )}
                     />
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="grid grid-cols-2 gap-3">
                       <FormField
                         control={registerForm.control}
                         name="email"
-                        render={({ field }) => (
+                        render={({ field }: any) => (
                           <FormItem className="mb-3">
                             <FormControl>
                               <Input 
-                                type="email" 
-                                placeholder={t("email")} 
                                 {...field} 
-                                className="auth-input text-white"
-                                style={{ color: 'white' }}
+                                type="email" 
+                                className="auth-input"
+                                placeholder={t("email")}
                               />
                             </FormControl>
-                            <FormMessage className="text-red-300 text-sm ml-2" />
+                            <FormMessage />
                           </FormItem>
                         )}
                       />
                       <FormField
                         control={registerForm.control}
                         name="phone"
-                        render={({ field }) => (
+                        render={({ field }: any) => (
                           <FormItem className="mb-3">
                             <FormControl>
                               <Input 
-                                placeholder={t("phone")} 
                                 {...field} 
-                                value={field.value || ''} 
-                                className="auth-input text-white"
-                                style={{ color: 'white' }}
+                                className="auth-input"
+                                placeholder={t("phone")}
                               />
                             </FormControl>
-                            <FormMessage className="text-red-300 text-sm ml-2" />
+                            <FormMessage />
                           </FormItem>
                         )}
                       />
@@ -326,78 +305,72 @@ export default function AuthPage() {
                     <FormField
                       control={registerForm.control}
                       name="username"
-                      render={({ field }) => (
+                      render={({ field }: any) => (
                         <FormItem className="mb-3">
                           <FormControl>
                             <Input 
-                              placeholder={t("username")} 
-                              {...field}
-                              className="auth-input text-white"
-                              style={{ color: 'white' }}
+                              {...field} 
+                              className="auth-input"
+                              placeholder={t("username")}
                             />
                           </FormControl>
-                          <FormMessage className="text-red-300 text-sm ml-2" />
+                          <FormMessage />
                         </FormItem>
                       )}
                     />
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="grid grid-cols-2 gap-3">
                       <FormField
                         control={registerForm.control}
                         name="password"
-                        render={({ field }) => (
+                        render={({ field }: any) => (
                           <FormItem className="mb-3">
                             <FormControl>
                               <Input 
-                                type="password"
-                                placeholder={t("password")} 
-                                {...field}
-                                className="auth-input text-white"
-                                style={{ color: 'white' }}
+                                {...field} 
+                                type="password" 
+                                className="auth-input"
+                                placeholder={t("password")}
                               />
                             </FormControl>
-                            <FormMessage className="text-red-300 text-sm ml-2" />
+                            <FormMessage />
                           </FormItem>
                         )}
                       />
                       <FormField
                         control={registerForm.control}
                         name="confirmPassword"
-                        render={({ field }) => (
+                        render={({ field }: any) => (
                           <FormItem className="mb-3">
                             <FormControl>
                               <Input 
-                                type="password"
-                                placeholder={t("confirmPassword")} 
-                                {...field}
-                                className="auth-input text-white"
-                                style={{ color: 'white' }}
+                                {...field} 
+                                type="password" 
+                                className="auth-input"
+                                placeholder={t("confirmPassword")}
                               />
                             </FormControl>
-                            <FormMessage className="text-red-300 text-sm ml-2" />
+                            <FormMessage />
                           </FormItem>
                         )}
                       />
                     </div>
                     
-                    <div className="mt-4 p-2 border border-white/20 rounded-xl bg-white/5 backdrop-blur-sm">
-                      <h3 className="text-sm font-medium text-white mb-2">
-                        {t("requiredDocuments")}
-                      </h3>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-2">
+                    {/* File Upload Section */}
+                    <div className="space-y-3">
+                      <div className="grid grid-cols-2 gap-3">
                         <FormField
                           control={registerForm.control}
                           name="passportImageFile"
-                          render={({ field }) => (
+                          render={({ field }: any) => (
                             <FormItem>
                               <FormControl>
                                 <FileUpload
                                   id="passportUpload"
-                                  label={t("passportUpload")}
-                                  accept="image/*,.pdf"
-                                  required={true}
-                                  onChange={field.onChange}
+                                  onChange={(file: File | null) => field.onChange(file)}
+                                  accept="image/*"
+                                  label={t("passportImage")}
                                   value={field.value}
-                                  errorMessage={registerForm.formState.errors.passportImageFile?.message}
+                                  className="auth-input"
                                 />
                               </FormControl>
                               <FormMessage />
@@ -407,17 +380,16 @@ export default function AuthPage() {
                         <FormField
                           control={registerForm.control}
                           name="idCardImageFile"
-                          render={({ field }) => (
+                          render={({ field }: any) => (
                             <FormItem>
                               <FormControl>
                                 <FileUpload
                                   id="idCardUpload"
-                                  label={t("idCardUpload")}
-                                  accept="image/*,.pdf"
-                                  required={true}
-                                  onChange={field.onChange}
+                                  onChange={(file: File | null) => field.onChange(file)}
+                                  accept="image/*"
+                                  label={t("idCardImage")}
                                   value={field.value}
-                                  errorMessage={registerForm.formState.errors.idCardImageFile?.message}
+                                  className="auth-input"
                                 />
                               </FormControl>
                               <FormMessage />
@@ -425,22 +397,22 @@ export default function AuthPage() {
                           )}
                         />
                       </div>
-                      <p className="text-xs text-qatar-white/80 bg-qatar-maroon/20 p-2 rounded-md border border-qatar-maroon/30">
-                        {t("documentRequirementNote")}
-                      </p>
                     </div>
                     
                     <Button 
                       type="submit" 
-                      className="w-full bg-qatar-maroon hover:bg-black/80 text-qatar-white font-medium py-3 rounded-full transition-all duration-200 shadow-md border border-qatar-white/30 mt-6"
+                      className="w-full bg-qatar-maroon hover:bg-opacity-90 text-white font-semibold py-3 rounded-full transition-colors mt-4"
                       disabled={registerMutation.isPending}
                     >
-                      {registerMutation.isPending && (
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      {registerMutation.isPending ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          {t("registering")}
+                        </>
+                      ) : (
+                        t("register")
                       )}
-                      {t("register")}
                     </Button>
-                  </form>
                 </FormRoot>
               </TabsContent>
             </Tabs>

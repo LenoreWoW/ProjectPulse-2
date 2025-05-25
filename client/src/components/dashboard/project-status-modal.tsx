@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { ReactNode, useEffect, useState } from "react";
 import {
   Dialog,
   DialogContent,
@@ -11,9 +11,10 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { useI18n } from "@/hooks/use-i18n-new";
 import { Project } from "@shared/schema";
 import { format } from "date-fns";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import { Badge } from "@/components/ui/badge";
-import { Briefcase, Calendar, User, Building, ChevronRight } from "lucide-react";
+import { Briefcase, Calendar, User, Building, ChevronRight, ArrowRight } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
 
 interface ProjectStatusModalProps {
   isOpen: boolean;
@@ -21,7 +22,20 @@ interface ProjectStatusModalProps {
   title: string;
   projects: Project[];
   status: string;
-  icon: React.ReactNode;
+  icon: ReactNode;
+}
+
+interface User {
+  id: number;
+  name: string;
+  email: string;
+}
+
+// Extended project type to include properties that exist in the database
+interface ExtendedProject extends Project {
+  deadline?: string | null;
+  client?: string | null;
+  department?: string | null;
 }
 
 export function ProjectStatusModal({
@@ -33,23 +47,65 @@ export function ProjectStatusModal({
   icon,
 }: ProjectStatusModalProps) {
   const { t } = useI18n();
+  const [, setLocation] = useLocation();
+  const [projectManagers, setProjectManagers] = useState<Record<number, User>>({});
+
+  // Fetch users to get project manager names
+  const { data: users } = useQuery<User[]>({
+    queryKey: ["/api/users"],
+    enabled: isOpen && projects.length > 0,
+  });
+
+  useEffect(() => {
+    if (users && projects.length > 0) {
+      const managersMap: Record<number, User> = {};
+      projects.forEach(project => {
+        if (project.managerUserId) {
+          const manager = users.find(user => user.id === project.managerUserId);
+          if (manager) {
+            managersMap[project.id] = manager;
+          }
+        }
+      });
+      setProjectManagers(managersMap);
+    }
+  }, [users, projects]);
 
   // Map status to badge colors
-  const getStatusBadge = (status: string | null) => {
-    switch (status) {
+  const getStatusBadge = (projectStatus: string) => {
+    switch (projectStatus) {
       case "InProgress":
-        return <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-900/20 dark:text-blue-300 dark:border-blue-800">{t("inProgress")}</Badge>;
+        return <Badge variant="default" className="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">{t("inProgress")}</Badge>;
       case "Completed":
-        return <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 dark:bg-green-900/20 dark:text-green-300 dark:border-green-800">{t("completed")}</Badge>;
+        return <Badge variant="default" className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">{t("completed")}</Badge>;
       case "Planning":
-        return <Badge variant="outline" className="bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-900/20 dark:text-purple-300 dark:border-purple-800">{t("planning")}</Badge>;
+        return <Badge variant="default" className="bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200">{t("planning")}</Badge>;
       case "OnHold":
-        return <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-900/20 dark:text-amber-300 dark:border-amber-800">{t("onHold")}</Badge>;
+        return <Badge variant="default" className="bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200">{t("onHold")}</Badge>;
       case "Pending":
-        return <Badge variant="outline" className="bg-orange-50 text-orange-700 border-orange-200 dark:bg-orange-900/20 dark:text-orange-300 dark:border-orange-800">{t("pending")}</Badge>;
+        return <Badge variant="default" className="bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200">{t("pending")}</Badge>;
       default:
-        return <Badge variant="outline">{status ? status : t("unknown")}</Badge>;
+        return <Badge variant="secondary">{projectStatus}</Badge>;
     }
+  };
+
+  const formatDate = (dateString: string | null) => {
+    if (!dateString) return t("notSet");
+    return new Date(dateString).toLocaleDateString();
+  };
+
+  const handleProjectClick = (projectId: number) => {
+    setLocation(`/projects/${projectId}`);
+    onClose();
+  };
+
+  const isOverdue = (project: ExtendedProject) => {
+    if (!project.deadline || project.status === "Completed") return false;
+    const deadlineDate = new Date(project.deadline);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    deadlineDate.setHours(0, 0, 0, 0);
+    return deadlineDate < today;
   };
 
   return (
@@ -76,63 +132,79 @@ export function ProjectStatusModal({
             </div>
           ) : (
             <div className="space-y-3 p-1">
-              {projects.map((project) => (
-                <div 
-                  key={project.id} 
-                  className="rounded-lg border border-border p-4 hover:border-qatar-maroon/50 transition-colors relative group"
-                >
-                  <div className="flex justify-between items-start mb-2">
-                    <h3 className="font-semibold truncate pr-4 text-lg text-foreground">
-                      {project.title}
-                    </h3>
-                    {getStatusBadge(project.status)}
-                  </div>
+              {projects.map((project) => {
+                const extendedProject = project as ExtendedProject;
+                return (
+                  <div 
+                    key={project.id} 
+                    className="rounded-lg border border-border p-4 hover:border-qatar-maroon/50 transition-colors relative group"
+                    onClick={() => handleProjectClick(project.id)}
+                  >
+                    <div className="flex justify-between items-start mb-2">
+                      <h3 className="font-semibold truncate pr-4 text-lg text-foreground group-hover:text-primary transition-colors">
+                        {project.title}
+                      </h3>
+                      {getStatusBadge(project.status || "Unknown")}
+                    </div>
 
-                  <div className="grid grid-cols-2 gap-x-4 gap-y-2 mt-4 text-sm text-muted-foreground">
-                    {project.client && (
-                      <div className="flex items-center gap-2">
-                        <Building className="h-4 w-4 text-muted-foreground/70" />
-                        <span>{project.client}</span>
-                      </div>
-                    )}
-                    
-                    {project.managerUserId && (
-                      <div className="flex items-center gap-2">
-                        <User className="h-4 w-4 text-muted-foreground/70" />
-                        <span>{t("projectManager")}</span>
-                      </div>
-                    )}
-                    
-                    {project.deadline && (
-                      <div className="flex items-center gap-2">
-                        <Calendar className="h-4 w-4 text-muted-foreground/70" />
-                        <span>{format(new Date(project.deadline), "PPP")}</span>
-                      </div>
-                    )}
-                    
-                    {project.departmentId && (
-                      <div className="flex items-center gap-2">
-                        <Briefcase className="h-4 w-4 text-muted-foreground/70" />
-                        <span>{t("department")}</span>
-                      </div>
+                    <div className="grid grid-cols-2 gap-x-4 gap-y-2 mt-4 text-sm text-muted-foreground">
+                      {extendedProject.client && (
+                        <div className="flex items-center gap-2">
+                          <Building className="h-4 w-4 text-muted-foreground/70" />
+                          <span>{extendedProject.client}</span>
+                        </div>
+                      )}
+                      
+                      {project.managerUserId && (
+                        <div className="flex items-center gap-2">
+                          <User className="h-4 w-4 text-muted-foreground/70" />
+                          <span>
+                            {project.managerUserId && projectManagers[project.id] 
+                              ? projectManagers[project.id].name 
+                              : t("noManager")
+                            }
+                          </span>
+                        </div>
+                      )}
+                      
+                      {extendedProject.deadline && (
+                        <div className="flex items-center gap-2">
+                          <Calendar className="h-4 w-4 text-muted-foreground/70" />
+                          <span>{formatDate(extendedProject.deadline)}</span>
+                        </div>
+                      )}
+                      
+                      {extendedProject.department && (
+                        <div className="flex items-center gap-2">
+                          <Briefcase className="h-4 w-4 text-muted-foreground/70" />
+                          <span>{extendedProject.department}</span>
+                        </div>
+                      )}
+                    </div>
+
+                    {isOverdue(extendedProject) && (
+                      <Badge variant="destructive" className="absolute right-3 top-3 text-xs">
+                        {t("overdue")}
+                      </Badge>
                     )}
                   </div>
-
-                  <Link href={`/projects/${project.id}`}>
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
-                      className="absolute right-3 bottom-3 opacity-0 group-hover:opacity-100 transition-opacity"
-                    >
-                      {t("viewDetails")}
-                      <ChevronRight className="ml-1 h-4 w-4" />
-                    </Button>
-                  </Link>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </ScrollArea>
+
+        <div className="flex justify-end gap-2 pt-4 border-t">
+          <Button variant="outline" onClick={onClose}>
+            {t("close")}
+          </Button>
+          <Button onClick={() => {
+            setLocation("/projects");
+            onClose();
+          }}>
+            {t("viewAllProjects")}
+          </Button>
+        </div>
       </DialogContent>
     </Dialog>
   );

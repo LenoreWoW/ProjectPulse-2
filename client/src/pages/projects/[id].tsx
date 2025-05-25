@@ -619,7 +619,7 @@ export default function ProjectDetailsPage() {
               </Button>
             </Link>
             <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{project.title}</h1>
-            <Badge className={getStatusBadgeClass(project.status)}>{t(project.status?.toLowerCase() || "")}</Badge>
+            <Badge className={getStatusBadgeClass(project.status || null)}>{t(project.status?.toLowerCase() || "")}</Badge>
           </div>
           <div className="text-gray-500 dark:text-gray-400">
             {getDepartmentName(project.departmentId)} • {t("managedBy")}: {getUserName(project.managerUserId)}
@@ -713,7 +713,7 @@ export default function ProjectDetailsPage() {
                           id="new-budget"
                           type="number"
                           value={newBudget}
-                          onChange={(e) => setNewBudget(e.target.value)}
+                          onChange={(e: React.ChangeEvent<HTMLInputElement>) => setNewBudget(e.target.value)}
                           placeholder={project.budget?.toString() || "0"}
                         />
                         <span className="ml-2">QAR</span>
@@ -731,7 +731,7 @@ export default function ProjectDetailsPage() {
                         id="new-deadline"
                         type="date"
                         value={newDeadline}
-                        onChange={(e) => setNewDeadline(e.target.value)}
+                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setNewDeadline(e.target.value)}
                         className="col-span-3"
                       />
                     </div>
@@ -902,12 +902,12 @@ export default function ProjectDetailsPage() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                   <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">{t("client")}</h3>
-                  <p className="mt-1 text-base">{project.client || "-"}</p>
+                  <p className="mt-1 text-base">{(project as any).client || "-"}</p>
                 </div>
                 <div>
                   <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">{t("priority")}</h3>
                   <p className="mt-1">
-                    <Badge className={getPriorityBadgeClass(project.priority)}>
+                    <Badge className={getPriorityBadgeClass(project.priority || null)}>
                       {t(project.priority?.toLowerCase() || "")}
                     </Badge>
                   </p>
@@ -923,16 +923,16 @@ export default function ProjectDetailsPage() {
                   <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">{t("deadline")}</h3>
                   <p className="mt-1 text-base flex items-center">
                     <CalendarIcon className="mr-2 h-4 w-4 text-gray-400" />
-                    {formatDate(project.deadline)}
+                    {formatDate(project.endDate || null)}
                   </p>
                 </div>
                 <div>
                   <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">{t("budget")}</h3>
-                  <p className="mt-1 text-base">{formatCurrency(project.budget)} QAR</p>
+                  <p className="mt-1 text-base">{formatCurrency(project.budget || null)} QAR</p>
                 </div>
                 <div>
                   <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">{t("actualCost")}</h3>
-                  <p className="mt-1 text-base">{formatCurrency(project.actualCost)} QAR</p>
+                  <p className="mt-1 text-base">{formatCurrency(project.actualCost || null)} QAR</p>
                 </div>
               </div>
               
@@ -1103,7 +1103,7 @@ export default function ProjectDetailsPage() {
                           <Input
                             id="task-title"
                             value={taskTitle}
-                            onChange={(e) => {
+                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
                               setTaskTitle(e.target.value);
                               if (taskTitleError) setTaskTitleError('');
                             }}
@@ -1124,7 +1124,7 @@ export default function ProjectDetailsPage() {
                           <Textarea
                             id="task-description"
                             value={taskDescription}
-                            onChange={(e) => {
+                            onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => {
                               setTaskDescription(e.target.value);
                               if (taskDescriptionError) setTaskDescriptionError('');
                             }}
@@ -1147,7 +1147,7 @@ export default function ProjectDetailsPage() {
                             id="task-deadline"
                             type="date"
                             value={taskDeadline}
-                            onChange={(e) => {
+                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
                               setTaskDeadline(e.target.value);
                               if (taskDeadlineError) setTaskDeadlineError('');
                             }}
@@ -1166,7 +1166,7 @@ export default function ProjectDetailsPage() {
                         <div className="col-span-3 space-y-1">
                           <Select 
                             value={taskPriority} 
-                            onValueChange={(value) => {
+                            onValueChange={(value: string) => {
                               setTaskPriority(value);
                               if (taskPriorityError) setTaskPriorityError('');
                             }}
@@ -1267,7 +1267,7 @@ export default function ProjectDetailsPage() {
                           <Input
                             id="task-title-pm"
                             value={taskTitle}
-                            onChange={(e) => {
+                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
                               setTaskTitle(e.target.value);
                               if (taskTitleError) setTaskTitleError('');
                             }}
@@ -1288,7 +1288,7 @@ export default function ProjectDetailsPage() {
                           <Textarea
                             id="task-description-pm"
                             value={taskDescription}
-                            onChange={(e) => {
+                            onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => {
                               setTaskDescription(e.target.value);
                               if (taskDescriptionError) setTaskDescriptionError('');
                             }}
@@ -1311,7 +1311,7 @@ export default function ProjectDetailsPage() {
                             id="task-deadline-pm"
                             type="date"
                             value={taskDeadline}
-                            onChange={(e) => {
+                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
                               setTaskDeadline(e.target.value);
                               if (taskDeadlineError) setTaskDeadlineError('');
                             }}
@@ -1330,7 +1330,7 @@ export default function ProjectDetailsPage() {
                         <div className="col-span-3 space-y-1">
                           <Select 
                             value={taskPriority} 
-                            onValueChange={(value) => {
+                            onValueChange={(value: string) => {
                               setTaskPriority(value);
                               if (taskPriorityError) setTaskPriorityError('');
                             }}
@@ -1424,23 +1424,23 @@ export default function ProjectDetailsPage() {
                       </thead>
                       <tbody>
                         {tasks.map((task) => (
-                          <tr key={task.id} className="bg-white border-b dark:bg-gray-900 dark:border-gray-700">
+                          <tr key={task.id} className="bg-white border-b dark:bg-gray-800 dark:border-gray-700">
                             <td className="px-6 py-4 font-medium text-gray-900 dark:text-white">
                               {task.title}
                             </td>
                             <td className="px-6 py-4">
-                              {getUserName(task.assignedUserId)}
+                              {getUserName(task.assignedUserId || null)}
                             </td>
                             <td className="px-6 py-4">
-                              {formatDate(task.deadline)}
+                              {formatDate(task.deadline || null)}
                             </td>
                             <td className="px-6 py-4">
-                              <Badge className={getStatusBadgeClass(task.status)}>
+                              <Badge className={getStatusBadgeClass(task.status || null)}>
                                 {t(task.status?.toLowerCase() || "")}
                               </Badge>
                             </td>
                             <td className="px-6 py-4">
-                              <Badge className={getPriorityBadgeClass(task.priority)}>
+                              <Badge className={getPriorityBadgeClass(task.priority || null)}>
                                 {t(task.priority?.toLowerCase() || "")}
                               </Badge>
                             </td>
@@ -1757,7 +1757,7 @@ export default function ProjectDetailsPage() {
                           {formatDate(cost.updatedAt)} • {t("by")} {getUserName(cost.updatedByUserId)}
                         </p>
                         <p className="text-sm text-gray-500 dark:text-gray-400">
-                          {t("newAmount")}: {formatCurrency(cost.amount)} QAR
+                          {t("newAmount")}: {formatCurrency(cost.amount || null)} QAR
                         </p>
                       </div>
                     </li>

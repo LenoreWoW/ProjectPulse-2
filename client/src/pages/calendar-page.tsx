@@ -56,11 +56,11 @@ export default function CalendarPage() {
     // Add project deadlines
     if (projects) {
       projects.forEach(project => {
-        if (project.deadline) {
+        if (project.endDate) {
           events.push({
             id: project.id,
             title: project.title || 'Unnamed Project',
-            date: new Date(project.deadline),
+            date: new Date(project.endDate),
             type: 'project',
             status: project.status || 'Unknown',
             priority: project.priority || 'Medium'
@@ -313,13 +313,13 @@ export default function CalendarPage() {
             <Calendar
               mode="single"
               selected={date}
-              onSelect={(newDate) => newDate && setDate(newDate)}
+              onSelect={(newDate: Date | undefined) => newDate && setDate(newDate)}
               className="rounded-md border border-gray-200 dark:border-gray-700 dark:bg-gray-800 dark:text-white"
               components={{
-                DayContent: (props: DayProps) => (
+                DayContent: (props: any) => (
                   <div>
-                    <div>{props.date?.getDate()}</div>
-                    {props.date && getDayIndicator(props.date)}
+                    <div>{props.day?.date?.getDate()}</div>
+                    {props.day?.date && getDayIndicator(props.day.date)}
                   </div>
                 ),
               }}
@@ -390,7 +390,7 @@ export default function CalendarPage() {
                     >
                       <div className="flex justify-between items-center">
                         <h4 className="font-medium">{event.title}</h4>
-                        <span className="text-xs uppercase px-2 py-0.5 bg-black/20 rounded-full">
+                        <span className="text-xs uppercase px-2 py-0.5 bg-black bg-opacity-20 rounded-full">
                           {event.type}
                         </span>
                       </div>

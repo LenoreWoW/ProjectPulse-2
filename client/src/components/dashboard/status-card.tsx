@@ -54,7 +54,7 @@ export function StatusCard({
           <div className={`p-2 rounded-lg mr-3 ${iconBgClass}`}>
             {icon}
           </div>
-          <span className="text-sm font-medium text-white/70">{title}</span>
+          <span className="text-sm font-medium text-white text-opacity-70">{title}</span>
         </div>
         <div className="flex justify-between items-end">
           <span className="text-2xl font-bold">{count}</span>

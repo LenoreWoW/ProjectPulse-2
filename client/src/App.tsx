@@ -25,7 +25,16 @@ import ReportsPage from "@/pages/reports-page";
 import DependenciesPage from "@/pages/dependencies-page";
 import GoalsDependenciesPage from "@/pages/goals-dependencies-page";
 import SettingsPage from "@/pages/settings-page";
+import CalendarPage from "@/pages/calendar-page";
+import ApprovalsPage from "@/pages/approvals-page";
+import AnalyticsDashboard from "@/pages/analytics-dashboard";
+import AuditLogsPage from "@/pages/audit-logs-page";
+import AssignmentsPage from "@/pages/assignments-page";
+import UserPermissionsPage from "@/pages/user-permissions-page";
+import RepositoryPage from "@/pages/repository-page";
 import NotFound from "@/pages/not-found";
+import EditProjectPage from "@/pages/projects/edit-project-page";
+import NewAssignmentPage from "@/pages/assignments/new-assignment-page";
 
 // Components
 import { Header } from "@/components/layout/header";
@@ -138,6 +147,10 @@ function Router() {
         <ProjectDetailsPage />
       </ProtectedRoute>
 
+      <ProtectedRoute path="/projects/:id/edit">
+        <EditProjectPage />
+      </ProtectedRoute>
+
       <ProtectedRoute path="/tasks">
         <TasksPage />
       </ProtectedRoute>
@@ -178,6 +191,38 @@ function Router() {
         <SettingsPage />
       </ProtectedRoute>
 
+      <ProtectedRoute path="/calendar">
+        <CalendarPage />
+      </ProtectedRoute>
+
+      <ProtectedRoute path="/approvals">
+        <ApprovalsPage />
+      </ProtectedRoute>
+
+      <ProtectedRoute path="/reports/analytics">
+        <AnalyticsDashboard />
+      </ProtectedRoute>
+
+      <ProtectedRoute path="/audit-logs">
+        <AuditLogsPage />
+      </ProtectedRoute>
+
+      <ProtectedRoute path="/assignments">
+        <AssignmentsPage />
+      </ProtectedRoute>
+
+      <ProtectedRoute path="/assignments/new">
+        <NewAssignmentPage />
+      </ProtectedRoute>
+
+      <ProtectedRoute path="/user-permissions">
+        <UserPermissionsPage />
+      </ProtectedRoute>
+
+      <ProtectedRoute path="/repository">
+        <RepositoryPage />
+      </ProtectedRoute>
+
       <Route path="*">
         <NotFound />
       </Route>
@@ -188,7 +233,7 @@ function Router() {
 // Main App Component
 export default function App() {
   return (
-    <ThemeProvider defaultTheme="dark" forcedTheme="dark">
+    <ThemeProvider defaultTheme="light">
       <I18nProvider>
         <TooltipProvider>
           <AppLayout>

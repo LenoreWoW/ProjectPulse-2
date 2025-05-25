@@ -74,7 +74,7 @@ export function FileUpload({
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
         className={cn(
-          "border-2 border-dashed rounded-xl p-4 text-center cursor-pointer transition-colors bg-black/40",
+          "border-2 border-dashed rounded-xl p-4 text-center cursor-pointer transition-colors bg-black bg-opacity-40",
           "max-h-[100px] overflow-hidden", // Height limits to prevent expanding too much
           isDragging
             ? "border-qatar-maroon bg-white/10"
@@ -102,7 +102,7 @@ export function FileUpload({
               variant="ghost" 
               size="sm" 
               className="p-0 h-auto text-xs text-qatar-maroon hover:text-qatar-white"
-              onClick={(e) => {
+              onClick={(e: React.MouseEvent) => {
                 e.stopPropagation();
                 onChange(null);
               }}
@@ -112,7 +112,7 @@ export function FileUpload({
           </div>
         ) : (
           <div className="flex flex-col items-center justify-center">
-            <Upload className="h-5 w-5 text-white/70" />
+            <Upload className="h-5 w-5 text-white text-opacity-70" />
             <p className="text-xs font-medium text-white">{t("dropFileHere")}</p>
           </div>
         )}

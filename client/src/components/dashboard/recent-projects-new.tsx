@@ -130,7 +130,7 @@ export function RecentProjects({ className = "" }: RecentProjectsProps) {
   
   if (isLoading) {
     return (
-      <div className={`lg:col-span-2 bg-white dark:bg-gray-900 shadow-md rounded-xl border ${className || 'border-gray-100 dark:border-gray-800'}`}>
+      <div className={`lg:col-span-2 bg-white dark:bg-gray-800 shadow-md rounded-xl border ${className || 'border-gray-100 dark:border-gray-800'}`}>
         <div className="p-5 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between">
           <Skeleton className="h-7 w-36" />
           <Skeleton className="h-5 w-20" />
@@ -158,7 +158,7 @@ export function RecentProjects({ className = "" }: RecentProjectsProps) {
   
   if (error || !projects) {
     return (
-      <div className="bg-white dark:bg-gray-900 shadow-md rounded-xl border-l-4 border-red-500 overflow-hidden">
+      <div className="bg-white dark:bg-gray-800 shadow-md rounded-xl border-l-4 border-red-500 overflow-hidden">
         <div className="p-5 border-b border-gray-100 dark:border-gray-800">
           <h2 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center">
             <Briefcase className="h-5 w-5 text-red-500 mr-2" />
@@ -184,7 +184,7 @@ export function RecentProjects({ className = "" }: RecentProjectsProps) {
     .slice(0, 3);
   
   return (
-    <div className={`lg:col-span-2 bg-white dark:bg-gray-900 shadow-md hover:shadow-lg transition-all duration-200 rounded-xl overflow-hidden ${className || 'border border-gray-100 dark:border-gray-800'}`}>
+    <div className={`lg:col-span-2 bg-white dark:bg-gray-800 shadow-md hover:shadow-lg transition-all duration-200 rounded-xl overflow-hidden ${className || 'border border-gray-100 dark:border-gray-800'}`}>
       <div className="px-6 py-4 border-b border-qatar-maroon/20 dark:border-qatar-maroon/10 flex justify-between items-center">
         <h2 className="text-lg font-semibold text-qatar-maroon dark:text-white flex items-center">
           <Briefcase className="h-5 w-5 mr-2" />
@@ -223,9 +223,9 @@ export function RecentProjects({ className = "" }: RecentProjectsProps) {
                       <div>
                         <div className="font-medium text-gray-900 dark:text-white flex items-center">
                           {project.title}
-                          {project.deadline && (
+                          {project.endDate && (
                             <span className="ml-2 text-xs px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded-md text-gray-600 dark:text-gray-300">
-                              {getDaysUntilDeadline(project.deadline)}
+                              {getDaysUntilDeadline(project.endDate)}
                             </span>
                           )}
                         </div>

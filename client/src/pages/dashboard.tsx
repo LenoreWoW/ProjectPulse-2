@@ -26,7 +26,8 @@ import {
   CalendarClock,
   Users2,
   Briefcase,
-  FileText
+  FileText,
+  CalendarX
 } from "lucide-react";
 import { Link } from "wouter";
 
@@ -50,6 +51,7 @@ export default function Dashboard() {
       onHoldProjects: [],
       pendingProjects: [],
       atRiskProjects: [],
+      overdueProjects: [],
       allProjects: []
     };
     
@@ -66,6 +68,16 @@ export default function Dashboard() {
       return deadlineDate <= new Date();
     });
     
+    // Calculate overdue projects - any project (except completed) with passed deadline
+    const overdueProjects = projects.filter(p => {
+      if (p.status === "Completed" || !p.deadline) return false;
+      const deadlineDate = new Date(p.deadline);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      deadlineDate.setHours(0, 0, 0, 0);
+      return deadlineDate < today;
+    });
+    
     return {
       activeProjects,
       completedProjects,
@@ -73,6 +85,7 @@ export default function Dashboard() {
       onHoldProjects,
       pendingProjects,
       atRiskProjects,
+      overdueProjects,
       allProjects: projects
     };
   };
@@ -112,7 +125,7 @@ export default function Dashboard() {
         </div>
         
         {/* Stat Cards in Hero */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 relative z-10">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-7 gap-4 relative z-10">
           <StatusCard
             icon={<LayoutList className="h-5 w-5" />}
             title={t("allProjects")}
@@ -167,11 +180,11 @@ export default function Dashboard() {
           />
           
           <StatusCard
-            icon={<AlertTriangle className="h-5 w-5" />}
-            title={t("atRisk")}
-            count={metrics.atRiskProjects.length}
-            status="AtRisk"
-            projects={metrics.atRiskProjects}
+            icon={<CalendarX className="h-5 w-5" />}
+            title={t("overdue")}
+            count={metrics.overdueProjects.length}
+            status="Overdue"
+            projects={metrics.overdueProjects}
             color="red"
           />
         </div>

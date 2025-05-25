@@ -10,6 +10,9 @@ import {
   type ControllerProps,
   type FieldPath,
   type FieldValues,
+  type ControllerRenderProps,
+  type ControllerFieldState,
+  type UseFormStateReturn,
 } from "react-hook-form"
 
 import { cn } from "@/lib/utils"
@@ -32,11 +35,20 @@ const FormField = <
   TFieldValues extends FieldValues = FieldValues,
   TName extends FieldPath<TFieldValues> = FieldPath<TFieldValues>
 >({
+  name,
+  render,
   ...props
-}: ControllerProps<TFieldValues, TName>) => {
+}: {
+  name: TName
+  render: (props: {
+    field: ControllerRenderProps<TFieldValues, TName>
+    fieldState: ControllerFieldState
+    formState: UseFormStateReturn<TFieldValues>
+  }) => React.ReactElement
+} & Omit<ControllerProps<TFieldValues, TName>, 'name' | 'render'>) => {
   return (
-    <FormFieldContext.Provider value={{ name: props.name }}>
-      <Controller {...props} />
+    <FormFieldContext.Provider value={{ name }}>
+      <Controller name={name} render={render} {...props} />
     </FormFieldContext.Provider>
   )
 }
@@ -44,9 +56,42 @@ const FormField = <
 const useFormField = () => {
   const fieldContext = React.useContext(FormFieldContext)
   const itemContext = React.useContext(FormItemContext)
-  const { getFieldState, formState } = useFormContext()
+  
+  // Safely get form context
+  let formContextData;
+  try {
+    formContextData = useFormContext()
+  } catch (error) {
+    console.warn('useFormContext not available:', error);
+    formContextData = { getFieldState: null, formState: {} }
+  }
+  
+  const { getFieldState, formState } = formContextData
 
-  const fieldState = getFieldState(fieldContext.name, formState)
+  // Safely handle getFieldState which might not be available
+  let fieldState;
+  try {
+    if (typeof getFieldState === 'function' && formState) {
+      fieldState = getFieldState(fieldContext.name, formState)
+    } else {
+      // Fallback to basic field state from formState with null checks
+      fieldState = {
+        invalid: formState?.errors?.[fieldContext.name] ? true : false,
+        error: formState?.errors?.[fieldContext.name] || null,
+        isDirty: formState?.dirtyFields?.[fieldContext.name] || false,
+        isTouched: formState?.touchedFields?.[fieldContext.name] || false,
+      }
+    }
+  } catch (error) {
+    console.warn('getFieldState not available, using fallback:', error);
+    // Fallback to basic field state from formState with null checks
+    fieldState = {
+      invalid: formState?.errors?.[fieldContext.name] ? true : false,
+      error: formState?.errors?.[fieldContext.name] || null,
+      isDirty: formState?.dirtyFields?.[fieldContext.name] || false,
+      isTouched: formState?.touchedFields?.[fieldContext.name] || false,
+    }
+  }
 
   if (!fieldContext) {
     throw new Error("useFormField should be used within <FormField>")
@@ -93,7 +138,7 @@ const FormLabel = React.forwardRef<
   const { error, formItemId } = useFormField()
 
   return (
-    <Label
+    <LabelPrimitive.Root
       ref={ref}
       className={cn(error && "text-destructive", className)}
       htmlFor={formItemId}

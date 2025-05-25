@@ -230,12 +230,15 @@ export default function SettingsPage() {
                     <CardDescription>{t("profileSettingsDescription")}</CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-6">
-                    <FormRoot form={profileForm}>
-                      <form onSubmit={profileForm.handleSubmit(onProfileSubmit)} className="space-y-4">
+                    <FormRoot 
+                      form={profileForm}
+                      onSubmit={profileForm.handleSubmit(onProfileSubmit)}
+                      className="space-y-4"
+                    >
                         <FormField
                           control={profileForm.control}
                           name="name"
-                          render={({ field }) => (
+                          render={({ field }: any) => (
                             <FormItem>
                               <FormLabel>{t("name")}</FormLabel>
                               <FormControl>
@@ -248,7 +251,7 @@ export default function SettingsPage() {
                         <FormField
                           control={profileForm.control}
                           name="email"
-                          render={({ field }) => (
+                          render={({ field }: any) => (
                             <FormItem>
                               <FormLabel>{t("email")}</FormLabel>
                               <FormControl>
@@ -261,7 +264,7 @@ export default function SettingsPage() {
                         <FormField
                           control={profileForm.control}
                           name="bio"
-                          render={({ field }) => (
+                          render={({ field }: any) => (
                             <FormItem>
                               <FormLabel>{t("bio")}</FormLabel>
                               <FormControl>
@@ -273,7 +276,6 @@ export default function SettingsPage() {
                           )}
                         />
                         <Button type="submit">{t("saveChanges")}</Button>
-                      </form>
                     </FormRoot>
                   </CardContent>
                 </Card>
@@ -328,12 +330,15 @@ export default function SettingsPage() {
                     <CardDescription>{t("notificationSettingsDescription")}</CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-6">
-                    <FormRoot form={notificationForm}>
-                      <form onSubmit={notificationForm.handleSubmit(onNotificationsSubmit)} className="space-y-4">
+                    <FormRoot 
+                      form={notificationForm}
+                      onSubmit={notificationForm.handleSubmit(onNotificationsSubmit)}
+                      className="space-y-4"
+                    >
                         <FormField
                           control={notificationForm.control}
                           name="emailNotifications"
-                          render={({ field }) => (
+                          render={({ field }: any) => (
                             <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3">
                               <div className="space-y-0.5">
                                 <FormLabel>{t("emailNotifications")}</FormLabel>
@@ -353,7 +358,7 @@ export default function SettingsPage() {
                         <FormField
                           control={notificationForm.control}
                           name="projectUpdates"
-                          render={({ field }) => (
+                          render={({ field }: any) => (
                             <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3">
                               <div className="space-y-0.5">
                                 <FormLabel>{t("projectUpdates")}</FormLabel>
@@ -373,7 +378,7 @@ export default function SettingsPage() {
                         <FormField
                           control={notificationForm.control}
                           name="taskAssignments"
-                          render={({ field }) => (
+                          render={({ field }: any) => (
                             <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3">
                               <div className="space-y-0.5">
                                 <FormLabel>{t("taskAssignments")}</FormLabel>
@@ -393,7 +398,7 @@ export default function SettingsPage() {
                         <FormField
                           control={notificationForm.control}
                           name="systemAnnouncements"
-                          render={({ field }) => (
+                          render={({ field }: any) => (
                             <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3">
                               <div className="space-y-0.5">
                                 <FormLabel>{t("systemAnnouncements")}</FormLabel>
@@ -411,7 +416,6 @@ export default function SettingsPage() {
                           )}
                         />
                         <Button type="submit">{t("saveChanges")}</Button>
-                      </form>
                     </FormRoot>
                   </CardContent>
                 </Card>

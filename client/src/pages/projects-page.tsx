@@ -156,7 +156,7 @@ export default function ProjectsPage() {
                 placeholder={t("searchProjects")}
                 className="pl-8"
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchQuery(e.target.value)}
               />
             </div>
           </div>
@@ -280,13 +280,16 @@ export default function ProjectsPage() {
                         </CardHeader>
                         <CardContent>
                           <div className="flex justify-between">
-                            <div>
-                              <span className="text-sm font-medium text-gray-500 dark:text-gray-400">
-                                {t("budget")}: {formatBudget(project.budget)} QAR
-                              </span>
+                            <div className="space-y-1">
+                              <div className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                                {t("budget")}: {formatBudget(project.budget || null)} QAR
+                              </div>
+                              <div className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                                {t("actualCost")}: {formatBudget(project.actualCost || null)} QAR
+                              </div>
                             </div>
-                            <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusClasses(project.status)}`}>
-                              {formatStatus(project.status)}
+                            <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusClasses(project.status || null)}`}>
+                              {formatStatus(project.status || null)}
                             </span>
                           </div>
                           {project.description && (
@@ -347,12 +350,17 @@ export default function ProjectsPage() {
                                 </p>
                               )}
                               <div className="flex justify-between items-center mt-auto">
-                                <span className="text-sm font-medium">
-                                  {project.budget ? `${t("budget")}: ${formatBudget(project.budget)} QAR` : ''}
-                                </span>
+                                <div className="space-y-1">
+                                  <div className="text-sm font-medium">
+                                    {t("budget")}: {formatBudget(project.budget || null)} QAR
+                                  </div>
+                                  <div className="text-sm font-medium">
+                                    {t("actualCost")}: {formatBudget(project.actualCost || null)} QAR
+                                  </div>
+                                </div>
                                 {project.deadline && (
                                   <span className="text-xs text-gray-500 dark:text-gray-400">
-                                    {formatDate(project.deadline)}
+                                    {formatDate(project.deadline || null)}
                                   </span>
                                 )}
                               </div>

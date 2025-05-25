@@ -42,9 +42,9 @@ export function Header({ onMobileMenuToggle }: HeaderProps) {
             <Input
               type="text"
               placeholder={t("search") + "..."}
-              className={`w-64 ${isRtl ? 'pr-10 pl-4' : 'pl-10 pr-4'} py-2 text-sm rounded-lg bg-maroon-700/50 border-maroon-600 text-white placeholder:text-white/70 focus:border-white focus:ring-white/30`}
+              className={`w-64 ${isRtl ? 'pr-10 pl-4' : 'pl-10 pr-4'} py-2 text-sm rounded-lg bg-maroon-700/50 border-maroon-600 text-white placeholder:text-white text-opacity-70 focus:border-white focus:ring-white ring-opacity-30`}
             />
-            <Search className={`h-5 w-5 absolute ${isRtl ? 'right-3' : 'left-3'} top-2.5 text-white/70`} />
+            <Search className={`h-5 w-5 absolute ${isRtl ? 'right-3' : 'left-3'} top-2.5 text-white text-opacity-70`} />
           </div>
         </div>
 

@@ -5,7 +5,11 @@ export default {
     "./client/src/**/*.{js,ts,jsx,tsx}",
   ],
   theme: {
-    extend: {},
+    extend: {
+      height: {
+        11: '2.75rem',
+      },
+    },
   },
   plugins: [],
 } 

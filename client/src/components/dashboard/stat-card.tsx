@@ -14,7 +14,7 @@ export function StatCard({ title, value, icon, iconBgColor, iconTextColor, cardB
   const { isRtl } = useI18n();
   
   return (
-    <div className={`bg-white dark:bg-gray-900 shadow-md hover:shadow-lg transition-all duration-200 rounded-xl overflow-hidden border-l-4 ${cardBorder || 'border-qatar-maroon'}`}>
+    <div className={`bg-white dark:bg-gray-800 shadow-md hover:shadow-lg transition-all duration-200 rounded-xl overflow-hidden border-l-4 ${cardBorder || 'border-qatar-maroon'}`}>
       <div className="flex flex-col p-5">
         <div className="flex items-center justify-between mb-3">
           <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">{title}</h3>

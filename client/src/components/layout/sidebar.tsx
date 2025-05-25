@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link, useLocation } from "wouter";
 import { useI18n } from "@/hooks/use-i18n-new";
 import { useAuth } from "@/hooks/use-auth";
+import { useTheme } from "@/providers/theme-provider";
 import { PermissionGate } from "@/hooks/use-permissions";
 import { Logo } from "@/components/ui/logo";
 import {
@@ -42,22 +43,11 @@ export function Sidebar() {
   const [location] = useLocation();
   const { t, language, setLanguage, isRtl } = useI18n();
   const { user, logoutMutation } = useAuth();
+  const { theme, setTheme } = useTheme();
   const [collapsed, setCollapsed] = useState(false);
-  const [darkMode, setDarkMode] = useState(() => 
-    document.documentElement.classList.contains("dark")
-  );
 
-  const toggleDarkMode = () => {
-    const isDark = !darkMode;
-    setDarkMode(isDark);
-    
-    if (isDark) {
-      document.documentElement.classList.add("dark");
-      localStorage.setItem("theme", "dark");
-    } else {
-      document.documentElement.classList.remove("dark");
-      localStorage.setItem("theme", "light");
-    }
+  const toggleTheme = () => {
+    setTheme(theme === "light" ? "dark" : "light");
   };
 
   const toggleLanguage = () => {
@@ -79,8 +69,8 @@ export function Sidebar() {
         href={path}
         className={`flex items-center p-2 ${
           isActive(path)
-            ? "text-white bg-maroon-700 dark:bg-maroon-800 dark:text-white"
-            : "text-white hover:bg-maroon-600 dark:text-gray-100 dark:hover:bg-maroon-700"
+            ? "text-white bg-primary/90"
+            : "text-white hover:bg-primary/80"
         } rounded-lg transition-colors duration-200`}
       >
         <Icon className={`h-5 w-5 ${isRtl ? 'ml-3' : 'mr-3'} rtl-mirror`} />
@@ -93,12 +83,12 @@ export function Sidebar() {
     <aside 
       className={`${
         collapsed ? "w-20" : "w-64"
-      } hidden md:flex flex-col bg-qatar-maroon dark:bg-qatar-maroon shadow-lg transition-all duration-300 ease-in-out z-20 shrink-0 border-r border-maroon-700 dark:border-maroon-800 h-screen`}
+      } hidden md:flex flex-col bg-sidebar shadow-lg transition-all duration-300 ease-in-out z-20 shrink-0 border-r border-sidebar-border h-screen`}
     >
-      <div className="p-4 flex items-center justify-between border-b border-maroon-700 dark:border-maroon-800">
+      <div className="p-4 flex items-center justify-between border-b border-sidebar-border">
         <Logo hideText={collapsed} />
         <button
-          className="p-1 rounded-full text-white hover:bg-maroon-700 dark:hover:bg-maroon-800"
+          className="p-1 rounded-full text-sidebar-foreground hover:bg-sidebar-accent"
           onClick={() => setCollapsed(!collapsed)}
         >
           {isRtl ? (
@@ -145,7 +135,7 @@ export function Sidebar() {
             {renderNavItem({ icon: Building, label: t("departments"), path: "/departments" })}
           </PermissionGate>
 
-          <div className="pt-4 mt-4 border-t border-maroon-700 dark:border-maroon-800">
+          <div className="pt-4 mt-4 border-t border-sidebar-border">
             <PermissionGate permission="canManageUsers">
               {renderNavItem({ icon: ShieldCheck, label: t("userPermissions"), path: "/user-permissions" })}
             </PermissionGate>
@@ -157,55 +147,55 @@ export function Sidebar() {
       </nav>
 
       {!collapsed && (
-        <div className="p-2 border-t border-maroon-700 dark:border-maroon-800">
+        <div className="p-2 border-t border-sidebar-border">
           {/* Discord-style user settings */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <button className="w-full text-start flex items-center p-2 rounded-lg hover:bg-maroon-700 dark:hover:bg-maroon-800 transition-colors duration-200 cursor-pointer">
-                <div className="w-8 h-8 rounded-full bg-maroon-600 text-white flex items-center justify-center font-bold">
+              <button className="w-full text-start flex items-center p-2 rounded-lg hover:bg-sidebar-accent transition-colors duration-200 cursor-pointer">
+                <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold">
                   {user?.name?.charAt(0).toUpperCase() || "U"}
                 </div>
                 <div className={`${isRtl ? 'mr-3' : 'ml-3'} flex-1`}>
-                  <p className="text-sm font-medium text-white">{user?.name}</p>
-                  <p className="text-xs text-gray-300 dark:text-gray-400">{user?.role}</p>
+                  <p className="text-sm font-medium text-sidebar-foreground">{user?.name}</p>
+                  <p className="text-xs text-muted-foreground">{user?.role}</p>
                 </div>
                 <div className="flex space-x-1 rtl:space-x-reverse">
-                  {darkMode ? (
-                    <Sun className="h-4 w-4 text-gray-300" />
+                  {theme === "dark" ? (
+                    <Sun className="h-4 w-4 text-muted-foreground" />
                   ) : (
-                    <Moon className="h-4 w-4 text-gray-300" />
+                    <Moon className="h-4 w-4 text-muted-foreground" />
                   )}
-                  <span className="text-xs font-bold text-gray-300">
+                  <span className="text-xs font-bold text-muted-foreground">
                     {language === "en" ? "EN" : "AR"}
                   </span>
                 </div>
               </button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align={isRtl ? "end" : "start"} side="top" className="w-56 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100">
+            <DropdownMenuContent align={isRtl ? "end" : "start"} side="top" className="w-56">
               <DropdownMenuLabel className="pb-2 border-b">{user?.name}</DropdownMenuLabel>
               
               {/* User Settings Section */}
               <div className="py-1 px-1">
                 <DropdownMenuItem 
-                  className="flex items-center justify-between cursor-pointer rounded-md my-1 px-2 py-2 hover:bg-maroon-50 dark:hover:bg-maroon-900/20"
-                  onClick={toggleDarkMode}
+                  className="flex items-center justify-between cursor-pointer rounded-md my-1 px-2 py-2"
+                  onClick={toggleTheme}
                 >
                   <div className="flex items-center gap-2">
-                    {darkMode ? (
-                      <Sun className="h-4 w-4 text-maroon-600 dark:text-maroon-300" />
+                    {theme === "dark" ? (
+                      <Sun className="h-4 w-4" />
                     ) : (
-                      <Moon className="h-4 w-4 text-maroon-600 dark:text-maroon-300" />
+                      <Moon className="h-4 w-4" />
                     )}
-                    <span>{darkMode ? t("lightMode") : t("darkMode")}</span>
+                    <span>{theme === "dark" ? t("lightMode") : t("darkMode")}</span>
                   </div>
                 </DropdownMenuItem>
                 
                 <DropdownMenuItem 
-                  className="flex items-center justify-between cursor-pointer rounded-md my-1 px-2 py-2 hover:bg-maroon-50 dark:hover:bg-maroon-900/20"
+                  className="flex items-center justify-between cursor-pointer rounded-md my-1 px-2 py-2"
                   onClick={toggleLanguage}
                 >
                   <div className="flex items-center gap-2">
-                    <span className="w-4 h-4 flex items-center justify-center font-bold text-xs text-maroon-600 dark:text-maroon-300">
+                    <span className="w-4 h-4 flex items-center justify-center font-bold text-xs">
                       {language === "en" ? "AR" : "EN"}
                     </span>
                     <span>{language === "en" ? t("arabicLanguage") : t("englishLanguage")}</span>
@@ -218,7 +208,7 @@ export function Sidebar() {
               {/* User Actions */}
               <div className="py-1 px-1">
                 <DropdownMenuItem 
-                  className="flex items-center cursor-pointer rounded-md my-1 px-2 py-2 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20"
+                  className="flex items-center cursor-pointer rounded-md my-1 px-2 py-2 text-destructive"
                   onClick={handleLogout}
                 >
                   <LogOut className="mr-2 h-4 w-4" />

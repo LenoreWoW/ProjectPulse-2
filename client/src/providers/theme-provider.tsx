@@ -5,7 +5,6 @@ type Theme = "dark" | "light" | "system";
 type ThemeProviderProps = {
   children: React.ReactNode;
   defaultTheme?: Theme;
-  forcedTheme?: Theme;
   storageKey?: string;
 };
 
@@ -23,9 +22,8 @@ const ThemeProviderContext = createContext<ThemeProviderState>(initialState);
 
 export function ThemeProvider({
   children,
-  defaultTheme = "system",
-  forcedTheme,
-  storageKey = "ui-theme",
+  defaultTheme = "light",
+  storageKey = "vite-ui-theme",
   ...props
 }: ThemeProviderProps) {
   const [theme, setTheme] = useState<Theme>(
@@ -36,12 +34,6 @@ export function ThemeProvider({
     const root = window.document.documentElement;
 
     root.classList.remove("light", "dark");
-
-    // If forcedTheme is provided, use it instead of the state or system preference
-    if (forcedTheme) {
-      root.classList.add(forcedTheme);
-      return;
-    }
 
     if (theme === "system") {
       const systemTheme = window.matchMedia("(prefers-color-scheme: dark)")
@@ -54,7 +46,7 @@ export function ThemeProvider({
     }
 
     root.classList.add(theme);
-  }, [theme, forcedTheme]);
+  }, [theme]);
 
   const value = {
     theme,
