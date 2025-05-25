@@ -28,17 +28,17 @@ export function StatusCard({
   const getColorClasses = () => {
     switch (color) {
       case "blue":
-        return "bg-blue-400/10 text-blue-500 dark:bg-blue-500/20 dark:text-blue-300";
+        return "bg-blue-400/20 text-blue-100 dark:bg-blue-500/20 dark:text-blue-300";
       case "green":
-        return "bg-green-400/10 text-green-500 dark:bg-green-500/20 dark:text-green-300";
+        return "bg-green-400/20 text-green-100 dark:bg-green-500/20 dark:text-green-300";
       case "amber":
-        return "bg-amber-400/10 text-amber-500 dark:bg-amber-500/20 dark:text-amber-300";
+        return "bg-amber-400/20 text-amber-100 dark:bg-amber-500/20 dark:text-amber-300";
       case "red":
-        return "bg-red-400/10 text-red-500 dark:bg-red-500/20 dark:text-red-300";
+        return "bg-red-400/20 text-red-100 dark:bg-red-500/20 dark:text-red-300";
       case "purple":
-        return "bg-purple-400/10 text-purple-500 dark:bg-purple-500/20 dark:text-purple-300";
+        return "bg-purple-400/20 text-purple-100 dark:bg-purple-500/20 dark:text-purple-300";
       default:
-        return "bg-white/10 text-white";
+        return "bg-black/20 text-white dark:bg-white/10 dark:text-white";
     }
   };
 
@@ -47,18 +47,18 @@ export function StatusCard({
   return (
     <>
       <div 
-        className="bg-white/10 backdrop-filter backdrop-blur-sm rounded-xl p-5 flex flex-col transition-all hover:bg-white/15 group cursor-pointer"
+        className="bg-black/20 backdrop-filter backdrop-blur-sm rounded-xl p-5 flex flex-col transition-all hover:bg-black/30 group cursor-pointer"
         onClick={() => setIsModalOpen(true)}
       >
         <div className="flex items-center mb-3">
           <div className={`p-2 rounded-lg mr-3 ${iconBgClass}`}>
             {icon}
           </div>
-          <span className="text-sm font-medium text-white text-opacity-70">{title}</span>
+          <span className="text-sm font-medium text-white text-opacity-90">{title}</span>
         </div>
         <div className="flex justify-between items-end">
-          <span className="text-2xl font-bold">{count}</span>
-          <span className="text-xs text-white/60 group-hover:text-white/80 transition-colors flex items-center">
+          <span className="text-2xl font-bold text-white">{count}</span>
+          <span className="text-xs text-white/80 group-hover:text-white/90 transition-colors flex items-center">
             {t("viewAll")}
             <ChevronRight className="h-3 w-3 ml-1" />
           </span>
