@@ -193,17 +193,17 @@ export default function CalendarPage() {
     if (!priority) priority = 'Medium';
     // Base color on type and adjust intensity based on priority
     if (type === 'project') {
-      return priority === 'High' ? 'bg-maroon-700 text-white' :
-             priority === 'Medium' ? 'bg-maroon-500 text-white' :
-             'bg-maroon-300 text-white';
+      return priority === 'High' ? 'bg-red-600 text-white' :
+             priority === 'Medium' ? 'bg-red-500 text-white' :
+             'bg-red-400 text-white';
     } else if (type === 'task') {
-      return priority === 'High' ? 'bg-blue-700 text-white' :
+      return priority === 'High' ? 'bg-blue-600 text-white' :
              priority === 'Medium' ? 'bg-blue-500 text-white' :
-             'bg-blue-300 text-white';
+             'bg-blue-400 text-white';
     } else {
-      return priority === 'High' ? 'bg-green-700 text-white' :
+      return priority === 'High' ? 'bg-green-600 text-white' :
              priority === 'Medium' ? 'bg-green-500 text-white' :
-             'bg-green-300 text-white';
+             'bg-green-400 text-white';
     }
   };
   
@@ -224,206 +224,206 @@ export default function CalendarPage() {
     
     return (
       <div className="flex justify-center space-x-1 mt-1">
-        {hasProject && <div className="w-1.5 h-1.5 rounded-full bg-maroon-500"></div>}
+        {hasProject && <div className="w-1.5 h-1.5 rounded-full bg-red-500"></div>}
         {hasTask && <div className="w-1.5 h-1.5 rounded-full bg-blue-500"></div>}
         {hasAssignment && <div className="w-1.5 h-1.5 rounded-full bg-green-500"></div>}
       </div>
     );
   };
-  
+
   return (
-    <>
+    <div className="space-y-6">
       {/* Page Title */}
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{t("calendar")}</h1>
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-bold text-foreground">{t("calendar")}</h1>
       </div>
       
       {/* Calendar Controls */}
-      <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-4 mb-6 border border-gray-200 dark:border-gray-700">
-        <div className="flex flex-col sm:flex-row justify-between items-center mb-4">
-          <div className="flex items-center space-x-2 mb-4 sm:mb-0">
-            <Button 
-              variant="outline" 
-              size="icon" 
-              onClick={goToPrevious}
-              className="dark:border-gray-700 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-white"
-            >
-              <ChevronLeft className="h-4 w-4" />
-            </Button>
-            <Button 
-              variant="outline" 
-              onClick={goToToday}
-              className="dark:border-gray-700 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-white"
-            >
-              {t("today")}
-            </Button>
-            <Button 
-              variant="outline" 
-              size="icon" 
-              onClick={goToNext}
-              className="dark:border-gray-700 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-white"
-            >
-              <ChevronRight className="h-4 w-4" />
-            </Button>
-            <h2 className="text-xl font-semibold text-gray-900 dark:text-white">{formatDateRange()}</h2>
+      <Card>
+        <CardContent className="p-6">
+          <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 mb-6">
+            <div className="flex items-center space-x-2">
+              <Button 
+                variant="outline" 
+                size="icon" 
+                onClick={goToPrevious}
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+              <Button 
+                variant="outline" 
+                onClick={goToToday}
+              >
+                today
+              </Button>
+              <Button 
+                variant="outline" 
+                size="icon" 
+                onClick={goToNext}
+              >
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+              <h2 className="text-xl font-semibold text-foreground ml-4">{formatDateRange()}</h2>
+            </div>
+            
+            <div className="flex space-x-2">
+              <Button
+                variant={view === "month" ? "default" : "outline"}
+                size="sm"
+                onClick={() => setView("month")}
+                className={view === "month" ? "bg-primary text-primary-foreground" : ""}
+              >
+                <CalendarIcon className="mr-2 h-4 w-4" />
+                month
+              </Button>
+              <Button
+                variant={view === "week" ? "default" : "outline"}
+                size="sm"
+                onClick={() => setView("week")}
+                className={view === "week" ? "bg-primary text-primary-foreground" : ""}
+              >
+                <LayoutGrid className="mr-2 h-4 w-4" />
+                week
+              </Button>
+              <Button
+                variant={view === "day" ? "default" : "outline"}
+                size="sm"
+                onClick={() => setView("day")}
+                className={view === "day" ? "bg-primary text-primary-foreground" : ""}
+              >
+                <List className="mr-2 h-4 w-4" />
+                day
+              </Button>
+            </div>
           </div>
           
-          <div className="flex space-x-2">
-            <Button
-              variant={view === "month" ? "default" : "outline"}
-              size="sm"
-              onClick={() => setView("month")}
-              className={view === "month" 
-                ? "bg-maroon-700 hover:bg-maroon-800 text-white" 
-                : "dark:border-gray-700 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-white"
-              }
-            >
-              <CalendarIcon className="mr-2 h-4 w-4" />
-              {t("month")}
-            </Button>
-            <Button
-              variant={view === "week" ? "default" : "outline"}
-              size="sm"
-              onClick={() => setView("week")}
-              className={view === "week" 
-                ? "bg-maroon-700 hover:bg-maroon-800 text-white" 
-                : "dark:border-gray-700 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-white"
-              }
-            >
-              <LayoutGrid className="mr-2 h-4 w-4" />
-              {t("week")}
-            </Button>
-            <Button
-              variant={view === "day" ? "default" : "outline"}
-              size="sm"
-              onClick={() => setView("day")}
-              className={view === "day" 
-                ? "bg-maroon-700 hover:bg-maroon-800 text-white" 
-                : "dark:border-gray-700 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-white"
-              }
-            >
-              <List className="mr-2 h-4 w-4" />
-              {t("day")}
-            </Button>
-          </div>
-        </div>
-        
-        <Tabs value={view}>
-          <TabsContent value="month" className="mt-0">
-            <Calendar
-              mode="single"
-              selected={date}
-              onSelect={(newDate: Date | undefined) => newDate && setDate(newDate)}
-              className="rounded-md border border-gray-200 dark:border-gray-700 dark:bg-gray-800 dark:text-white"
-              components={{
-                DayContent: (props: any) => (
-                  <div>
-                    <div>{props.day?.date?.getDate()}</div>
-                    {props.day?.date && getDayIndicator(props.day.date)}
-                  </div>
-                ),
-              }}
-            />
-          </TabsContent>
-          
-          <TabsContent value="week" className="mt-0">
-            <div className="grid grid-cols-7 gap-2">
-              {Array.from({ length: 7 }).map((_, i) => {
-                const dayDate = new Date(date);
-                const startOfWeek = new Date(dayDate.setDate(dayDate.getDate() - dayDate.getDay()));
-                const currentDay = new Date(startOfWeek);
-                currentDay.setDate(startOfWeek.getDate() + i);
-                
-                const isToday = 
-                  currentDay.getDate() === new Date().getDate() &&
-                  currentDay.getMonth() === new Date().getMonth() &&
-                  currentDay.getFullYear() === new Date().getFullYear();
-                
-                const dayEvents = events.filter(event => 
-                  event.date.getDate() === currentDay.getDate() &&
-                  event.date.getMonth() === currentDay.getMonth() &&
-                  event.date.getFullYear() === currentDay.getFullYear()
-                );
-                
-                return (
-                  <div key={i} className="min-h-[150px]">
-                    <div className={`p-2 text-center ${isToday ? 'bg-maroon-100 dark:bg-maroon-900/20 rounded-t-lg' : 'bg-gray-100 dark:bg-gray-800 rounded-t-lg'}`}>
-                      <div className="font-semibold">
-                        {new Intl.DateTimeFormat('en-US', { weekday: 'short' }).format(currentDay)}
+          <Tabs value={view} className="w-full">
+            <TabsContent value="month" className="mt-0">
+              <div className="flex justify-center">
+                <Calendar
+                  mode="single"
+                  selected={date}
+                  onSelect={(newDate: Date | undefined) => newDate && setDate(newDate)}
+                  className="rounded-md border bg-card text-card-foreground"
+                  components={{
+                    DayContent: ({ date: dayDate }: { date: Date }) => (
+                      <div className="relative w-full h-full flex flex-col items-center justify-center">
+                        <div className="text-sm">{dayDate?.getDate()}</div>
+                        {dayDate && getDayIndicator(dayDate)}
                       </div>
-                      <div className={`text-lg ${isToday ? 'bg-maroon-700 text-white rounded-full w-8 h-8 flex items-center justify-center mx-auto' : ''}`}>
-                        {currentDay.getDate()}
+                    ),
+                  }}
+                />
+              </div>
+            </TabsContent>
+            
+            <TabsContent value="week" className="mt-0">
+              <div className="grid grid-cols-7 gap-2">
+                {Array.from({ length: 7 }).map((_, i) => {
+                  const dayDate = new Date(date);
+                  const startOfWeek = new Date(dayDate.setDate(dayDate.getDate() - dayDate.getDay()));
+                  const currentDay = new Date(startOfWeek);
+                  currentDay.setDate(startOfWeek.getDate() + i);
+                  
+                  const isToday = 
+                    currentDay.getDate() === new Date().getDate() &&
+                    currentDay.getMonth() === new Date().getMonth() &&
+                    currentDay.getFullYear() === new Date().getFullYear();
+                  
+                  const dayEvents = events.filter(event => 
+                    event.date.getDate() === currentDay.getDate() &&
+                    event.date.getMonth() === currentDay.getMonth() &&
+                    event.date.getFullYear() === currentDay.getFullYear()
+                  );
+                  
+                  return (
+                    <div key={i} className="min-h-[150px] border rounded-lg overflow-hidden">
+                      <div className={`p-2 text-center border-b ${isToday ? 'bg-primary/10' : 'bg-muted'}`}>
+                        <div className="font-semibold text-sm text-muted-foreground">
+                          {new Intl.DateTimeFormat('en-US', { weekday: 'short' }).format(currentDay)}
+                        </div>
+                        <div className={`text-lg font-medium ${isToday ? 'bg-primary text-primary-foreground rounded-full w-8 h-8 flex items-center justify-center mx-auto mt-1' : 'text-foreground'}`}>
+                          {currentDay.getDate()}
+                        </div>
+                      </div>
+                      <div className="p-1 space-y-1 h-[100px] overflow-y-auto">
+                        {dayEvents.map((event) => (
+                          <div 
+                            key={`${event.type}-${event.id}`}
+                            className={`px-2 py-1 text-xs rounded truncate ${getEventColor(event.type, event.priority)}`}
+                            title={event.title}
+                          >
+                            {event.title}
+                          </div>
+                        ))}
                       </div>
                     </div>
-                    <div className="border border-t-0 rounded-b-lg p-1 space-y-1 h-[100px] overflow-y-auto">
-                      {dayEvents.map((event) => (
+                  );
+                })}
+              </div>
+            </TabsContent>
+            
+            <TabsContent value="day" className="mt-0">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg">
+                    {new Intl.DateTimeFormat('en-US', { weekday: 'long', day: 'numeric', month: 'long' }).format(date)}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {filteredEvents.length === 0 ? (
+                    <div className="text-center py-8 text-muted-foreground">
+                      No events today
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      {filteredEvents.map((event) => (
                         <div 
                           key={`${event.type}-${event.id}`}
-                          className={`px-2 py-1 text-xs rounded truncate ${getEventColor(event.type, event.priority)}`}
+                          className={`p-4 rounded-lg ${getEventColor(event.type, event.priority)}`}
                         >
-                          {event.title}
+                          <div className="flex justify-between items-start">
+                            <h4 className="font-medium text-lg">{event.title}</h4>
+                            <span className="text-xs uppercase px-2 py-1 bg-black bg-opacity-20 rounded-full">
+                              {event.type}
+                            </span>
+                          </div>
+                          <div className="text-sm mt-2 opacity-90">
+                            {new Intl.DateTimeFormat('en-US', { hour: 'numeric', minute: 'numeric' }).format(event.date)}
+                          </div>
                         </div>
                       ))}
                     </div>
-                  </div>
-                );
-              })}
-            </div>
-          </TabsContent>
-          
-          <TabsContent value="day" className="mt-0">
-            <div className="border rounded-lg p-4">
-              <h3 className="text-lg font-semibold mb-4">
-                {new Intl.DateTimeFormat('en-US', { weekday: 'long', day: 'numeric', month: 'long' }).format(date)}
-              </h3>
-              
-              {filteredEvents.length === 0 ? (
-                <div className="text-center py-8 text-gray-500 dark:text-gray-400">
-                  {t("noEventsToday")}
-                </div>
-              ) : (
-                <div className="space-y-2">
-                  {filteredEvents.map((event) => (
-                    <div 
-                      key={`${event.type}-${event.id}`}
-                      className={`p-3 rounded-lg ${getEventColor(event.type, event.priority)}`}
-                    >
-                      <div className="flex justify-between items-center">
-                        <h4 className="font-medium">{event.title}</h4>
-                        <span className="text-xs uppercase px-2 py-0.5 bg-black bg-opacity-20 rounded-full">
-                          {event.type}
-                        </span>
-                      </div>
-                      <div className="text-sm mt-1 opacity-80">
-                        {new Intl.DateTimeFormat('en-US', { hour: 'numeric', minute: 'numeric' }).format(event.date)}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          </TabsContent>
-        </Tabs>
-      </div>
+                  )}
+                </CardContent>
+              </Card>
+            </TabsContent>
+          </Tabs>
+        </CardContent>
+      </Card>
       
       {/* Legend */}
-      <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-4 border border-gray-200 dark:border-gray-700">
-        <h3 className="font-medium mb-3 text-gray-900 dark:text-white">{t("legend")}</h3>
-        <div className="flex flex-wrap gap-4">
-          <div className="flex items-center">
-            <div className="w-4 h-4 rounded-full bg-maroon-500 mr-2 border border-maroon-600"></div>
-            <span className="text-gray-700 dark:text-gray-200">{t("projectDeadlines")}</span>
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">legend</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-wrap gap-6">
+            <div className="flex items-center">
+              <div className="w-4 h-4 rounded-full bg-red-500 mr-2"></div>
+              <span className="text-sm text-muted-foreground">Project Deadlines</span>
+            </div>
+            <div className="flex items-center">
+              <div className="w-4 h-4 rounded-full bg-blue-500 mr-2"></div>
+              <span className="text-sm text-muted-foreground">Task Deadlines</span>
+            </div>
+            <div className="flex items-center">
+              <div className="w-4 h-4 rounded-full bg-green-500 mr-2"></div>
+              <span className="text-sm text-muted-foreground">Assignment Deadlines</span>
+            </div>
           </div>
-          <div className="flex items-center">
-            <div className="w-4 h-4 rounded-full bg-blue-500 mr-2 border border-blue-600"></div>
-            <span className="text-gray-700 dark:text-gray-200">{t("taskDeadlines")}</span>
-          </div>
-          <div className="flex items-center">
-            <div className="w-4 h-4 rounded-full bg-green-500 mr-2 border border-green-600"></div>
-            <span className="text-gray-700 dark:text-gray-200">{t("assignmentDeadlines")}</span>
-          </div>
-        </div>
-      </div>
-    </>
+        </CardContent>
+      </Card>
+    </div>
   );
 }
