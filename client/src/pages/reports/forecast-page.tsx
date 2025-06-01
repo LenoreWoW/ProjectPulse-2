@@ -25,103 +25,6 @@ import { ReportTemplate, SummaryCard, ReportCard } from "@/components/reports/re
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
-// Sample data for the charts and tables
-const quarterlyForecastData = [
-  { 
-    quarter: "Q1 2023", 
-    forecastedRevenue: 600000, 
-    actualRevenue: 580000, 
-    forecastedCost: 500000, 
-    actualCost: 510000,
-    forecastedProfit: 100000,
-    actualProfit: 70000
-  },
-  { 
-    quarter: "Q2 2023", 
-    forecastedRevenue: 650000, 
-    actualRevenue: 670000, 
-    forecastedCost: 520000, 
-    actualCost: 530000,
-    forecastedProfit: 130000,
-    actualProfit: 140000
-  },
-  { 
-    quarter: "Q3 2023", 
-    forecastedRevenue: 700000, 
-    actualRevenue: 710000, 
-    forecastedCost: 550000, 
-    actualCost: 560000,
-    forecastedProfit: 150000,
-    actualProfit: 150000
-  },
-  { 
-    quarter: "Q4 2023", 
-    forecastedRevenue: 750000, 
-    actualRevenue: 730000, 
-    forecastedCost: 580000, 
-    actualCost: 590000,
-    forecastedProfit: 170000,
-    actualProfit: 140000
-  },
-  { 
-    quarter: "Q1 2024", 
-    forecastedRevenue: 800000, 
-    actualRevenue: 0, 
-    forecastedCost: 600000, 
-    actualCost: 0,
-    forecastedProfit: 200000,
-    actualProfit: 0
-  },
-  { 
-    quarter: "Q2 2024", 
-    forecastedRevenue: 850000, 
-    actualRevenue: 0, 
-    forecastedCost: 620000, 
-    actualCost: 0,
-    forecastedProfit: 230000,
-    actualProfit: 0
-  },
-];
-
-const projectForecastData = [
-  { 
-    project: "Project Alpha", 
-    department: "Technology",
-    forecastedCost: 320000, 
-    actualCost: 310000, 
-    remainingCost: 10000, 
-    completionPercent: 85,
-    status: "On Track"
-  },
-  { 
-    project: "Project Beta", 
-    department: "Operations",
-    forecastedCost: 250000, 
-    actualCost: 270000, 
-    remainingCost: -20000, 
-    completionPercent: 90,
-    status: "Over Budget"
-  },
-  { 
-    project: "Project Gamma", 
-    department: "Security",
-    forecastedCost: 180000, 
-    actualCost: 160000, 
-    remainingCost: 20000, 
-    completionPercent: 70,
-    status: "Under Budget"
-  },
-  { 
-    project: "Project Delta", 
-    department: "Logistics",
-    forecastedCost: 420000, 
-    actualCost: 400000, 
-    remainingCost: 20000, 
-    completionPercent: 75,
-    status: "On Track"
-  },
-];
-
 interface ForecastSummary {
   currentYearForecast: number;
   nextYearForecast: number;
@@ -129,46 +32,19 @@ interface ForecastSummary {
   varianceFromBudget: number;
 }
 
-const defaultForecastSummary: ForecastSummary = {
-  currentYearForecast: 2690000,
-  nextYearForecast: 2780000,
-  percentChange: 3.3,
-  varianceFromBudget: -1.5
-};
-
-// Mock data - would be replaced with actual API data
-const mockProjectForecasts = [
-  { id: 1, name: "Digital Transformation", department: "IT", currentYearForecast: 500000, nextYearForecast: 350000, percentChange: -30, budget: 475000 },
-  { id: 2, name: "HR System Upgrade", department: "HR", currentYearForecast: 250000, nextYearForecast: 100000, percentChange: -60, budget: 275000 },
-  { id: 3, name: "Office Expansion", department: "Facilities", currentYearForecast: 1200000, nextYearForecast: 500000, percentChange: -58.3, budget: 1150000 },
-  { id: 4, name: "Security Compliance", department: "IT", currentYearForecast: 350000, nextYearForecast: 400000, percentChange: 14.3, budget: 375000 },
-  { id: 5, name: "Data Center Migration", department: "IT", currentYearForecast: 800000, nextYearForecast: 950000, percentChange: 18.8, budget: 825000 },
-];
-
 export default function ForecastReportPage() {
   const { t } = useI18n();
   const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'ascending' | 'descending' } | null>(null);
 
-  // Mock API call - would be replaced with actual API endpoint
-  const { data, isLoading } = useQuery({
+  // Fetch forecast data from API
+  const { data, isLoading, error } = useQuery({
     queryKey: ["/api/reports/forecast"],
     queryFn: async () => {
-      // Simulate API call
-      const totalCurrentYear = mockProjectForecasts.reduce((sum, project) => sum + project.currentYearForecast, 0);
-      const totalNextYear = mockProjectForecasts.reduce((sum, project) => sum + project.nextYearForecast, 0);
-      const percentChange = ((totalNextYear - totalCurrentYear) / totalCurrentYear) * 100;
-      const totalBudget = mockProjectForecasts.reduce((sum, project) => sum + project.budget, 0);
-      const varianceFromBudget = totalCurrentYear - totalBudget;
-
-      return {
-        projects: mockProjectForecasts,
-        summary: {
-          currentYearForecast: totalCurrentYear,
-          nextYearForecast: totalNextYear,
-          percentChange,
-          varianceFromBudget
-        } as ForecastSummary
-      };
+      const response = await fetch("/api/reports/forecast");
+      if (!response.ok) {
+        throw new Error("Failed to fetch forecast data");
+      }
+      return response.json();
     }
   });
 
@@ -199,143 +75,195 @@ export default function ForecastReportPage() {
     return 0;
   }) : [];
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0
-    }).format(amount);
-  };
-
-  const getChangeColor = (change: number) => {
-    if (change > 0) return "text-red-600";
-    if (change < 0) return "text-green-600";
-    return "text-gray-600";
-  };
-
-  const getVarianceColor = (variance: number) => {
-    if (variance < 0) return "text-green-600";
-    if (variance > 0) return "text-red-600";
-    return "text-gray-600";
-  };
-
   const exportReport = () => {
-    alert("Export functionality not implemented yet");
+    if (!data?.projects) return;
+    
+    // Create CSV content
+    const headers = ['ID', 'Name', 'Department', 'Current Year Forecast', 'Next Year Forecast', 'Percent Change', 'Budget'];
+    const csvContent = [
+      headers.join(','),
+      ...data.projects.map((project: any) => [
+        project.id,
+        `"${project.name}"`,
+        project.department,
+        project.currentYearForecast,
+        project.nextYearForecast,
+        project.percentChange,
+        project.budget
+      ].join(','))
+    ].join('\n');
+    
+    // Download CSV
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'forecast-report.csv';
+    a.click();
+    window.URL.revokeObjectURL(url);
   };
+
+  if (error) {
+    return (
+      <ReportTemplate
+        title={t("forecastReport")}
+        description={t("forecastReportDescription")}
+      >
+        <div className="text-center py-8">
+          <p className="text-red-600 dark:text-red-400">{t("errorLoadingData")}</p>
+          <p className="text-sm text-gray-500 mt-2">{(error as Error).message}</p>
+        </div>
+      </ReportTemplate>
+    );
+  }
 
   return (
-    <ReportTemplate 
-      title={t("forecastReport")} 
+    <ReportTemplate
+      title={t("forecastReport")}
       description={t("forecastReportDescription")}
     >
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         <SummaryCard
-          title={t("fiscalYear2023")}
-          value={formatCurrency(data?.summary.currentYearForecast || 0)}
-          description={t("currentYearForecast")}
+          title={t("currentYearForecast")}
+          value={`$${(data?.summary?.currentYearForecast || 0).toLocaleString()}`}
+          description={t("totalForecastedRevenue")}
         />
         <SummaryCard
-          title={t("fiscalYear2024")}
-          value={formatCurrency(data?.summary.nextYearForecast || 0)}
-          description={t("nextYearForecast")}
+          title={t("nextYearForecast")}
+          value={`$${(data?.summary?.nextYearForecast || 0).toLocaleString()}`}
+          description={t("projectedNextYear")}
         />
         <SummaryCard
-          title={t("forecastChange")}
-          value={`${(data?.summary.percentChange || 0).toFixed(1)}%`}
+          title={t("percentChange")}
+          value={`${(data?.summary?.percentChange || 0).toFixed(1)}%`}
           description={t("yearOverYearChange")}
-          valueColor={getChangeColor(data?.summary.percentChange || 0)}
+          valueColor={cn(
+            (data?.summary?.percentChange || 0) > 0 ? "text-green-600" : "text-red-600"
+          )}
         />
         <SummaryCard
           title={t("budgetVariance")}
-          value={formatCurrency(data?.summary.varianceFromBudget || 0)}
-          description={t("currentVsBudget")}
-          valueColor={getVarianceColor(data?.summary.varianceFromBudget || 0)}
+          value={`${(data?.summary?.varianceFromBudget || 0).toFixed(1)}%`}
+          description={t("varianceFromBudget")}
+          valueColor={cn(
+            (data?.summary?.varianceFromBudget || 0) > 0 ? "text-green-600" : "text-red-600"
+          )}
         />
       </div>
 
-      <ReportCard title={t("forecastByProject")}>
-        <div className="mb-4 flex justify-between items-center">
-          <div className="flex items-center gap-2">
-            <TrendingUp className="h-5 w-5 text-blue-500" />
-            <span className="text-lg font-medium">{t("projectForecasts")}</span>
+      {data?.quarterlyData && (
+        <ReportCard title={t("quarterlyForecast")}>
+          <div className="h-80 mb-4">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={data.quarterlyData}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="quarter" />
+                <YAxis />
+                <Tooltip formatter={(value: number) => [`$${value.toLocaleString()}`, '']} />
+                <Legend />
+                <Line 
+                  type="monotone" 
+                  dataKey="forecastedRevenue" 
+                  stroke="#8A1538" 
+                  strokeWidth={2}
+                  name={t("forecastedRevenue")}
+                />
+                <Line 
+                  type="monotone" 
+                  dataKey="actualRevenue" 
+                  stroke="#22c55e" 
+                  strokeWidth={2}
+                  name={t("actualRevenue")}
+                />
+              </LineChart>
+            </ResponsiveContainer>
           </div>
-          <Button 
-            size="sm" 
-            variant="outline" 
-            className="flex items-center gap-1"
-            onClick={exportReport}
-          >
-            <Download className="h-4 w-4" />
-            {t("export")}
-          </Button>
-        </div>
+          <div className="flex justify-end">
+            <Button 
+              size="sm" 
+              variant="outline" 
+              className="flex items-center gap-1"
+              onClick={exportReport}
+              disabled={!data?.projects || data.projects.length === 0}
+            >
+              <Download className="h-4 w-4" />
+              {t("export")}
+            </Button>
+          </div>
+        </ReportCard>
+      )}
 
-        <div className="overflow-x-auto">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="cursor-pointer" onClick={() => requestSort('id')}>
-                  ID {getSortDirection('id')}
-                </TableHead>
-                <TableHead className="cursor-pointer" onClick={() => requestSort('name')}>
-                  {t("project")} {getSortDirection('name')}
-                </TableHead>
-                <TableHead className="cursor-pointer" onClick={() => requestSort('department')}>
-                  {t("department")} {getSortDirection('department')}
-                </TableHead>
-                <TableHead className="cursor-pointer text-right" onClick={() => requestSort('currentYearForecast')}>
-                  {t("fiscalYear2023")} {getSortDirection('currentYearForecast')}
-                </TableHead>
-                <TableHead className="cursor-pointer text-right" onClick={() => requestSort('nextYearForecast')}>
-                  {t("fiscalYear2024")} {getSortDirection('nextYearForecast')}
-                </TableHead>
-                <TableHead className="cursor-pointer text-right" onClick={() => requestSort('percentChange')}>
-                  {t("change")} {getSortDirection('percentChange')}
-                </TableHead>
-                <TableHead className="cursor-pointer text-right" onClick={() => requestSort('budget')}>
-                  {t("budget")} {getSortDirection('budget')}
-                </TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {isLoading ? (
+      <ReportCard title={t("projectForecastDetails")}>
+        {isLoading ? (
+          <div className="text-center py-8">
+            <p className="text-gray-500">{t("loading")}</p>
+          </div>
+        ) : !data?.projects || data.projects.length === 0 ? (
+          <div className="text-center py-8">
+            <p className="text-gray-500">{t("noForecastDataFound")}</p>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
                 <TableRow>
-                  <TableCell colSpan={7} className="text-center py-4">
-                    {t("loading")}...
-                  </TableCell>
+                  <TableHead className="cursor-pointer">
+                    <div onClick={() => requestSort('id')}>
+                      ID {getSortDirection('id')}
+                    </div>
+                  </TableHead>
+                  <TableHead className="cursor-pointer">
+                    <div onClick={() => requestSort('name')}>
+                      {t("project")} {getSortDirection('name')}
+                    </div>
+                  </TableHead>
+                  <TableHead className="cursor-pointer">
+                    <div onClick={() => requestSort('department')}>
+                      {t("department")} {getSortDirection('department')}
+                    </div>
+                  </TableHead>
+                  <TableHead className="cursor-pointer">
+                    <div onClick={() => requestSort('currentYearForecast')}>
+                      {t("currentYearForecast")} {getSortDirection('currentYearForecast')}
+                    </div>
+                  </TableHead>
+                  <TableHead className="cursor-pointer">
+                    <div onClick={() => requestSort('nextYearForecast')}>
+                      {t("nextYearForecast")} {getSortDirection('nextYearForecast')}
+                    </div>
+                  </TableHead>
+                  <TableHead className="cursor-pointer">
+                    <div onClick={() => requestSort('percentChange')}>
+                      {t("percentChange")} {getSortDirection('percentChange')}
+                    </div>
+                  </TableHead>
+                  <TableHead className="cursor-pointer">
+                    <div onClick={() => requestSort('budget')}>
+                      {t("budget")} {getSortDirection('budget')}
+                    </div>
+                  </TableHead>
                 </TableRow>
-              ) : sortedProjects.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={7} className="text-center py-4">
-                    {t("noProjectsWithForecasts")}
-                  </TableCell>
-                </TableRow>
-              ) : (
-                sortedProjects.map((project: any) => (
+              </TableHeader>
+              <TableBody>
+                {sortedProjects.map((project: any) => (
                   <TableRow key={project.id}>
-                    <TableCell>{project.id}</TableCell>
+                    <TableCell className="font-medium">{project.id}</TableCell>
                     <TableCell>{project.name}</TableCell>
                     <TableCell>{project.department}</TableCell>
-                    <TableCell className="text-right">{formatCurrency(project.currentYearForecast)}</TableCell>
-                    <TableCell className="text-right">{formatCurrency(project.nextYearForecast)}</TableCell>
-                    <TableCell className={cn("text-right", getChangeColor(project.percentChange))}>
-                      {project.percentChange.toFixed(1)}%
+                    <TableCell>${project.currentYearForecast?.toLocaleString()}</TableCell>
+                    <TableCell>${project.nextYearForecast?.toLocaleString()}</TableCell>
+                    <TableCell className={cn(
+                      project.percentChange > 0 ? "text-green-600" : "text-red-600"
+                    )}>
+                      {project.percentChange?.toFixed(1)}%
                     </TableCell>
-                    <TableCell className="text-right">{formatCurrency(project.budget)}</TableCell>
+                    <TableCell>${project.budget?.toLocaleString()}</TableCell>
                   </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
-        </div>
-      </ReportCard>
-
-      <ReportCard title={t("forecastingAssumptions")}>
-        <div className="py-8 text-center bg-gray-50 dark:bg-gray-800 rounded-md">
-          <p className="mb-4">{t("detailedForecastingMethodologyComingSoon")}</p>
-          <p className="text-sm text-gray-500 dark:text-gray-400">{t("checkBackLater")}</p>
-        </div>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        )}
       </ReportCard>
     </ReportTemplate>
   );

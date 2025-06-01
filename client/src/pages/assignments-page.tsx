@@ -4,6 +4,7 @@ import { Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { Assignment } from "@shared/schema";
 import { useAuth } from "@/hooks/use-auth";
+import AssignmentDetailDialog from "@/components/assignments/assignment-detail-dialog";
 import { Button } from "@/components/ui/button";
 import { 
   Card, 
@@ -34,6 +35,7 @@ import {
   CheckCircle,
   UserCheck
 } from "lucide-react";
+import { PermissionGate, usePermissions, Permission } from "@/hooks/use-permissions";
 
 interface AssignmentsData {
   assignedToMe: Assignment[];
@@ -47,10 +49,24 @@ export default function AssignmentsPage() {
   const [filterStatus, setFilterStatus] = useState<string>("");
   const [filterPriority, setFilterPriority] = useState<string>("");
   const [searchQuery, setSearchQuery] = useState<string>("");
+  const [selectedAssignmentId, setSelectedAssignmentId] = useState<number | null>(null);
+  const [isAssignmentDialogOpen, setIsAssignmentDialogOpen] = useState(false);
   
   const { data, isLoading, error } = useQuery<AssignmentsData>({
     queryKey: ["/api/assignments"],
   });
+  
+  // Handle assignment click
+  const handleAssignmentClick = (assignmentId: number) => {
+    setSelectedAssignmentId(assignmentId);
+    setIsAssignmentDialogOpen(true);
+  };
+  
+  // Handle dialog close
+  const handleDialogClose = () => {
+    setIsAssignmentDialogOpen(false);
+    setSelectedAssignmentId(null);
+  };
   
   // Apply filters
   const filterAssignments = (assignments: Assignment[] = []) => {
@@ -134,7 +150,7 @@ export default function AssignmentsPage() {
   };
   
   // Format priority badge
-  const getPriorityBadge = (priority: string | null) => {
+  const getPriorityBadge = (priority: string | null | undefined) => {
     if (!priority) return null;
     switch (priority) {
       case 'Critical':
@@ -169,7 +185,7 @@ export default function AssignmentsPage() {
   };
   
   // Format status badge
-  const getStatusBadge = (status: string | null) => {
+  const getStatusBadge = (status: string | null | undefined) => {
     if (!status) return null;
     switch (status) {
       case 'Todo':
@@ -206,16 +222,18 @@ export default function AssignmentsPage() {
   };
   
   return (
-    <>
+    <div className="space-y-6">
       {/* Page Title */}
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{t("assignments")}</h1>
-        <Link href="/assignments/new">
-          <Button className="bg-qatar-maroon hover:bg-maroon-800 text-white">
-            <Plus className="mr-2 h-4 w-4" />
-            <span>{t("newAssignment")}</span>
-          </Button>
-        </Link>
+        <h1 className="text-2xl font-bold text-contrast dark:text-white">{t("assignments")}</h1>
+        <PermissionGate permission={'canCreateAssignment' as keyof Permission}>
+          <Link href="/assignments/new">
+            <Button className="bg-qatar-maroon hover:bg-maroon-800 text-white">
+              <Plus className="mr-2 h-4 w-4" />
+              <span>{t("newAssignment")}</span>
+            </Button>
+          </Link>
+        </PermissionGate>
       </div>
       
       {/* Filters */}
@@ -231,7 +249,7 @@ export default function AssignmentsPage() {
                 placeholder={t("searchAssignments")}
                 className="pl-8"
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchQuery(e.target.value)}
               />
             </div>
           </div>
@@ -333,7 +351,11 @@ export default function AssignmentsPage() {
                 </Card>
               ) : (
                 activeAssignedToMe.map((assignment) => (
-                  <Card key={assignment.id} className="hover:border-maroon-300 dark:hover:border-maroon-700 transition-all cursor-pointer">
+                  <Card 
+                    key={assignment.id} 
+                    className="hover:border-maroon-300 dark:hover:border-maroon-700 transition-all cursor-pointer"
+                    onClick={() => handleAssignmentClick(assignment.id)}
+                  >
                     <CardHeader className="pb-2">
                       <div className="flex justify-between items-start">
                         <CardTitle>{assignment.title}</CardTitle>
@@ -404,7 +426,11 @@ export default function AssignmentsPage() {
                 </Card>
               ) : (
                 activeAssignedByMe.map((assignment) => (
-                  <Card key={assignment.id} className="hover:border-maroon-300 dark:hover:border-maroon-700 transition-all cursor-pointer">
+                  <Card 
+                    key={assignment.id} 
+                    className="hover:border-maroon-300 dark:hover:border-maroon-700 transition-all cursor-pointer"
+                    onClick={() => handleAssignmentClick(assignment.id)}
+                  >
                     <CardHeader className="pb-2">
                       <div className="flex justify-between items-start">
                         <CardTitle>{assignment.title}</CardTitle>
@@ -475,7 +501,11 @@ export default function AssignmentsPage() {
                 </Card>
               ) : (
                 completedAssignments.map((assignment) => (
-                  <Card key={assignment.id} className="hover:border-maroon-300 dark:hover:border-maroon-700 transition-all cursor-pointer opacity-80">
+                  <Card 
+                    key={assignment.id} 
+                    className="hover:border-maroon-300 dark:hover:border-maroon-700 transition-all cursor-pointer opacity-80"
+                    onClick={() => handleAssignmentClick(assignment.id)}
+                  >
                     <CardHeader className="pb-2">
                       <div className="flex justify-between items-start">
                         <CardTitle>{assignment.title}</CardTitle>
@@ -512,6 +542,13 @@ export default function AssignmentsPage() {
           )}
         </TabsContent>
       </Tabs>
-    </>
+      
+      {/* Assignment Detail Dialog */}
+      <AssignmentDetailDialog
+        assignmentId={selectedAssignmentId}
+        isOpen={isAssignmentDialogOpen}
+        onClose={handleDialogClose}
+      />
+    </div>
   );
 }

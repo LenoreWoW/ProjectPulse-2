@@ -14,7 +14,7 @@ import {
   List
 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
-import { DayProps } from "react-day-picker";
+import { formatDate } from "date-fns";
 
 // Event interfaces
 interface CalendarEvent {
@@ -28,7 +28,7 @@ interface CalendarEvent {
 
 export default function CalendarPage() {
   const { t } = useI18n();
-  const [date, setDate] = useState<Date>(new Date());
+  const [date, setDate] = useState<Date | undefined>(new Date());
   const [view, setView] = useState<"month" | "week" | "day">("month");
   
   // Fetch data
@@ -112,6 +112,8 @@ export default function CalendarPage() {
   
   // Filter events for current view
   const getFilteredEvents = () => {
+    if (!date) return [];
+    
     if (view === "month") {
       return events.filter(event => {
         const eventDate = new Date(event.date);
@@ -147,6 +149,7 @@ export default function CalendarPage() {
   const goToToday = () => setDate(new Date());
   
   const goToPrevious = () => {
+    if (!date) return;
     const newDate = new Date(date);
     if (view === "month") {
       newDate.setMonth(date.getMonth() - 1);
@@ -159,6 +162,7 @@ export default function CalendarPage() {
   };
   
   const goToNext = () => {
+    if (!date) return;
     const newDate = new Date(date);
     if (view === "month") {
       newDate.setMonth(date.getMonth() + 1);
@@ -172,6 +176,8 @@ export default function CalendarPage() {
   
   // Format date range for display
   const formatDateRange = () => {
+    if (!date) return '';
+    
     if (view === "month") {
       return new Intl.DateTimeFormat('en-US', { month: 'long', year: 'numeric' }).format(date);
     } else if (view === "week") {
@@ -233,9 +239,13 @@ export default function CalendarPage() {
 
   return (
     <div className="space-y-6">
-      {/* Page Title */}
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-foreground">{t("calendar")}</h1>
+      {/* Page Header */}
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6">
+        <div className="flex-1">
+          <h1 className="text-2xl font-bold text-contrast dark:text-white mb-2">
+            {t("calendar")}
+          </h1>
+        </div>
       </div>
       
       {/* Calendar Controls */}
@@ -299,27 +309,170 @@ export default function CalendarPage() {
           
           <Tabs value={view} className="w-full">
             <TabsContent value="month" className="mt-0">
-              <div className="flex justify-center">
-                <Calendar
-                  mode="single"
-                  selected={date}
-                  onSelect={(newDate: Date | undefined) => newDate && setDate(newDate)}
-                  className="rounded-md border bg-card text-card-foreground"
-                  components={{
-                    DayContent: ({ date: dayDate }: { date: Date }) => (
-                      <div className="relative w-full h-full flex flex-col items-center justify-center">
-                        <div className="text-sm">{dayDate?.getDate()}</div>
-                        {dayDate && getDayIndicator(dayDate)}
-                      </div>
-                    ),
-                  }}
-                />
+              <div className="flex flex-col lg:flex-row gap-6 h-auto lg:h-[600px] justify-center">
+                {/* Calendar Section - Centered */}
+                <div className="flex-shrink-0 w-full lg:w-auto flex justify-center">
+                  <Calendar
+                    mode="single"
+                    selected={date}
+                    onSelect={setDate}
+                    className="rounded-md border shadow"
+                  />
+                </div>
+                
+                {/* Events Section - Right Side */}
+                <div className="flex-1 border rounded-md shadow p-4 bg-card min-h-[400px] lg:min-h-0 max-w-md">
+                  <div className="h-full flex flex-col">
+                    <div className="mb-4">
+                      <h3 className="text-lg font-semibold text-foreground">
+                        {date ? formatDate(date, "EEEE, MMMM d, yyyy") : "Select a date"}
+                      </h3>
+                      <p className="text-sm text-muted-foreground">
+                        Events and activities for the selected day
+                      </p>
+                    </div>
+                    
+                    <div className="flex-1 overflow-auto space-y-4">
+                      {date && (() => {
+                        const dayEvents = getFilteredEvents().filter(event => 
+                          event.date.toDateString() === date.toDateString()
+                        );
+                        
+                        const projects = dayEvents.filter(e => e.type === 'project');
+                        const tasks = dayEvents.filter(e => e.type === 'task');
+                        const assignments = dayEvents.filter(e => e.type === 'assignment');
+                        
+                        if (dayEvents.length === 0) {
+                          return (
+                            <div className="flex items-center justify-center h-32 text-muted-foreground">
+                              <div className="text-center">
+                                <CalendarIcon className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                                <p>No events scheduled for this day</p>
+                              </div>
+                            </div>
+                          );
+                        }
+                        
+                        return (
+                          <div className="space-y-6">
+                            {/* Projects Section */}
+                            {projects.length > 0 && (
+                              <div>
+                                <h4 className="text-md font-medium text-foreground mb-3 flex items-center gap-2">
+                                  <div className="w-3 h-3 rounded-full bg-red-500"></div>
+                                  Projects ({projects.length})
+                                </h4>
+                                <div className="space-y-2">
+                                  {projects.map((event, index) => (
+                                    <div key={`project-${index}`} className="p-3 border rounded-lg bg-red-50 border-red-200 hover:bg-red-100 transition-colors cursor-pointer">
+                                      <div className="flex items-start justify-between">
+                                        <div className="flex-1 min-w-0">
+                                          <h5 className="font-medium text-red-900 truncate">{event.title}</h5>
+                                          {event.status && (
+                                            <span className="inline-block px-2 py-1 text-xs rounded-full bg-red-100 text-red-700 mt-1">
+                                              {event.status}
+                                            </span>
+                                          )}
+                                        </div>
+                                        {event.priority && (
+                                          <span className={`px-2 py-1 text-xs rounded-full ml-2 flex-shrink-0 ${
+                                            event.priority === 'High' ? 'bg-red-200 text-red-800' :
+                                            event.priority === 'Medium' ? 'bg-yellow-200 text-yellow-800' :
+                                            'bg-green-200 text-green-800'
+                                          }`}>
+                                            {event.priority}
+                                          </span>
+                                        )}
+                                      </div>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                            
+                            {/* Tasks Section */}
+                            {tasks.length > 0 && (
+                              <div>
+                                <h4 className="text-md font-medium text-foreground mb-3 flex items-center gap-2">
+                                  <div className="w-3 h-3 rounded-full bg-blue-500"></div>
+                                  Tasks ({tasks.length})
+                                </h4>
+                                <div className="space-y-2">
+                                  {tasks.map((event, index) => (
+                                    <div key={`task-${index}`} className="p-3 border rounded-lg bg-blue-50 border-blue-200 hover:bg-blue-100 transition-colors cursor-pointer">
+                                      <div className="flex items-start justify-between">
+                                        <div className="flex-1 min-w-0">
+                                          <h5 className="font-medium text-blue-900 truncate">{event.title}</h5>
+                                          {event.status && (
+                                            <span className="inline-block px-2 py-1 text-xs rounded-full bg-blue-100 text-blue-700 mt-1">
+                                              {event.status}
+                                            </span>
+                                          )}
+                                        </div>
+                                        {event.priority && (
+                                          <span className={`px-2 py-1 text-xs rounded-full ml-2 flex-shrink-0 ${
+                                            event.priority === 'High' ? 'bg-red-200 text-red-800' :
+                                            event.priority === 'Medium' ? 'bg-yellow-200 text-yellow-800' :
+                                            'bg-green-200 text-green-800'
+                                          }`}>
+                                            {event.priority}
+                                          </span>
+                                        )}
+                                      </div>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                            
+                            {/* Assignments Section */}
+                            {assignments.length > 0 && (
+                              <div>
+                                <h4 className="text-md font-medium text-foreground mb-3 flex items-center gap-2">
+                                  <div className="w-3 h-3 rounded-full bg-green-500"></div>
+                                  Assignments ({assignments.length})
+                                </h4>
+                                <div className="space-y-2">
+                                  {assignments.map((event, index) => (
+                                    <div key={`assignment-${index}`} className="p-3 border rounded-lg bg-green-50 border-green-200 hover:bg-green-100 transition-colors cursor-pointer">
+                                      <div className="flex items-start justify-between">
+                                        <div className="flex-1 min-w-0">
+                                          <h5 className="font-medium text-green-900 truncate">{event.title}</h5>
+                                          {event.status && (
+                                            <span className="inline-block px-2 py-1 text-xs rounded-full bg-green-100 text-green-700 mt-1">
+                                              {event.status}
+                                            </span>
+                                          )}
+                                        </div>
+                                        {event.priority && (
+                                          <span className={`px-2 py-1 text-xs rounded-full ml-2 flex-shrink-0 ${
+                                            event.priority === 'High' ? 'bg-red-200 text-red-800' :
+                                            event.priority === 'Medium' ? 'bg-yellow-200 text-yellow-800' :
+                                            'bg-green-200 text-green-800'
+                                          }`}>
+                                            {event.priority}
+                                          </span>
+                                        )}
+                                      </div>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })()}
+                    </div>
+                  </div>
+                </div>
               </div>
             </TabsContent>
             
             <TabsContent value="week" className="mt-0">
               <div className="grid grid-cols-7 gap-2">
                 {Array.from({ length: 7 }).map((_, i) => {
+                  if (!date) return null;
+                  
                   const dayDate = new Date(date);
                   const startOfWeek = new Date(dayDate.setDate(dayDate.getDate() - dayDate.getDay()));
                   const currentDay = new Date(startOfWeek);
@@ -367,7 +520,7 @@ export default function CalendarPage() {
               <Card>
                 <CardHeader>
                   <CardTitle className="text-lg">
-                    {new Intl.DateTimeFormat('en-US', { weekday: 'long', day: 'numeric', month: 'long' }).format(date)}
+                    {date && new Intl.DateTimeFormat('en-US', { weekday: 'long', day: 'numeric', month: 'long' }).format(date)}
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
@@ -405,21 +558,21 @@ export default function CalendarPage() {
       {/* Legend */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">legend</CardTitle>
+          <CardTitle className="text-lg">{t("legend")}</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="flex flex-wrap gap-6">
-            <div className="flex items-center">
-              <div className="w-4 h-4 rounded-full bg-red-500 mr-2"></div>
-              <span className="text-sm text-muted-foreground">Project Deadlines</span>
+          <div className="flex flex-wrap gap-4">
+            <div className="flex items-center space-x-2">
+              <div className="w-4 h-4 rounded bg-red-500"></div>
+              <span className="text-sm text-foreground">Projects</span>
             </div>
-            <div className="flex items-center">
-              <div className="w-4 h-4 rounded-full bg-blue-500 mr-2"></div>
-              <span className="text-sm text-muted-foreground">Task Deadlines</span>
+            <div className="flex items-center space-x-2">
+              <div className="w-4 h-4 rounded bg-blue-500"></div>
+              <span className="text-sm text-foreground">Tasks</span>
             </div>
-            <div className="flex items-center">
-              <div className="w-4 h-4 rounded-full bg-green-500 mr-2"></div>
-              <span className="text-sm text-muted-foreground">Assignment Deadlines</span>
+            <div className="flex items-center space-x-2">
+              <div className="w-4 h-4 rounded bg-green-500"></div>
+              <span className="text-sm text-foreground">Assignments</span>
             </div>
           </div>
         </CardContent>

@@ -14,6 +14,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Goal, Project, GoalWithRelationships } from "@/lib/schema-types";
 import { useI18n } from "@/hooks/use-i18n-new";
+import { GoalEditDialog } from "@/components/goals/goal-edit-dialog";
 import { 
   Calendar, 
   CalendarDays, 
@@ -22,7 +23,8 @@ import {
   Clock, 
   Flag, 
   LinkIcon, 
-  User 
+  User,
+  Edit
 } from "lucide-react";
 
 export default function GoalDetailsPage() {
@@ -31,6 +33,7 @@ export default function GoalDetailsPage() {
   const id = params?.id;
   const { t } = useI18n();
   const [activeTab, setActiveTab] = useState<string>("details");
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
   
   const { data: goal, isLoading, error } = useQuery<GoalWithRelationships>({
     queryKey: [`/api/goals/${id}`],
@@ -153,12 +156,23 @@ export default function GoalDetailsPage() {
     <div className="space-y-6">
       {/* Goal Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{goal.title}</h1>
-          <div className="flex flex-wrap items-center gap-2 mt-2">
-            {getGoalTypeBadge(goal.isStrategic)}
-            {getPriorityBadge(goal.priority)}
-            {'status' in goal && getStatusBadge(goal.status as string | null)}
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight">{goal.title}</h1>
+            <p className="text-muted-foreground mt-2">{goal.description}</p>
+          </div>
+          <div className="flex items-center gap-2">
+            <Badge variant={goal.isStrategic ? "default" : "secondary"}>
+              {goal.isStrategic ? t("strategic") : t("annual")}
+            </Badge>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setEditDialogOpen(true)}
+            >
+              <Edit className="h-4 w-4 mr-2" />
+              {t("editGoalRelationships")}
+            </Button>
           </div>
         </div>
         <div className="space-x-2">
@@ -249,14 +263,13 @@ export default function GoalDetailsPage() {
               <CardHeader>
                 <CardTitle>{t("contributesToProjects")}</CardTitle>
                 <CardDescription>
-                  {goal.relatedProjects?.length 
-                    ? t("projectsRelatedToGoal", { count: goal.relatedProjects.length.toString() })
-                    : t("noProjectsRelated")
-                  }
+                  {goal.relatedProjects && goal.relatedProjects.length > 0 ? (
+                    t("projectsRelatedToGoal", { count: goal.relatedProjects.length.toString() })
+                  ) : t("noProjectsRelated")}
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                {goal.relatedProjects?.length > 0 ? (
+                {goal.relatedProjects && goal.relatedProjects.length > 0 ? (
                   <ul className="space-y-3">
                     {goal.relatedProjects.map(({ project, weight }) => (
                       <li key={project.id} className="flex items-center justify-between border-b pb-2 last:border-0">
@@ -286,14 +299,14 @@ export default function GoalDetailsPage() {
               <CardHeader>
                 <CardTitle>{t("parentTo")}</CardTitle>
                 <CardDescription>
-                  {goal.childGoals?.length 
+                  {goal.childGoals && goal.childGoals.length 
                     ? t("childGoalsCount", { count: goal.childGoals.length.toString() })
                     : t("noChildGoals")
                   }
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                {goal.childGoals?.length > 0 ? (
+                {goal.childGoals && goal.childGoals.length > 0 ? (
                   <ul className="space-y-3">
                     {goal.childGoals.map(({ goal: childGoal, weight }) => (
                       <li key={childGoal.id} className="flex items-center justify-between border-b pb-2 last:border-0">
@@ -323,14 +336,14 @@ export default function GoalDetailsPage() {
               <CardHeader>
                 <CardTitle>{t("childOf")}</CardTitle>
                 <CardDescription>
-                  {goal.parentGoals?.length 
+                  {goal.parentGoals && goal.parentGoals.length 
                     ? t("parentGoalsCount", { count: goal.parentGoals.length.toString() })
                     : t("noParentGoals")
                   }
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                {goal.parentGoals?.length > 0 ? (
+                {goal.parentGoals && goal.parentGoals.length > 0 ? (
                   <ul className="space-y-3">
                     {goal.parentGoals.map(({ goal: parentGoal, weight }) => (
                       <li key={parentGoal.id} className="flex items-center justify-between border-b pb-2 last:border-0">
@@ -374,6 +387,15 @@ export default function GoalDetailsPage() {
           </Card>
         </TabsContent>
       </Tabs>
+      
+      {/* Goal Edit Dialog */}
+      {goal && (
+        <GoalEditDialog
+          goal={goal}
+          open={editDialogOpen}
+          onOpenChange={setEditDialogOpen}
+        />
+      )}
     </div>
   );
 } 

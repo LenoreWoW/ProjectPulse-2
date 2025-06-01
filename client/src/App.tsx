@@ -203,7 +203,7 @@ function Router() {
         <AnalyticsDashboard />
       </ProtectedRoute>
 
-      <ProtectedRoute path="/audit-logs">
+      <ProtectedRoute path="/audit-logs" requiredRoles={["Administrator", "MainPMO", "SubPMO", "DepartmentDirector"]}>
         <AuditLogsPage />
       </ProtectedRoute>
 

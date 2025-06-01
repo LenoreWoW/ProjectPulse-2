@@ -2,8 +2,9 @@ import { useState } from "react";
 import { useI18n } from "@/hooks/use-i18n-new";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "wouter";
-import { Task } from "@/lib/schema-types";
+import { Task } from "@shared/schema";
 import { useAuth } from "@/hooks/use-auth";
+import TaskDetailDialog from "@/components/tasks/task-detail-dialog";
 import { 
   Card, 
   CardContent, 
@@ -21,25 +22,49 @@ import {
   Clock,
   CheckCircle,
   User,
-  Calendar
+  Calendar,
+  LayoutGrid,
+  List
 } from "lucide-react";
+import { PermissionGate } from "@/hooks/use-permissions";
+
+// API response type where dates are strings (serialized)
+interface ApiTask extends Omit<Task, 'deadline' | 'createdAt' | 'updatedAt'> {
+  deadline?: string | null | undefined;
+  createdAt: string;
+  updatedAt: string;
+}
 
 interface TasksData {
-  assignedToMe: Task[];
-  assignedByMe: Task[];
+  assignedToMe: ApiTask[];
+  assignedByMe: ApiTask[];
 }
 
 export default function TasksPage() {
   const { t } = useI18n();
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState<string>("assigned-to-me");
+  const [selectedTaskId, setSelectedTaskId] = useState<number | null>(null);
+  const [isTaskDialogOpen, setIsTaskDialogOpen] = useState(false);
   
   const { data, isLoading, error } = useQuery<TasksData>({
     queryKey: ["/api/tasks"],
   });
   
+  // Handle task click
+  const handleTaskClick = (taskId: number) => {
+    setSelectedTaskId(taskId);
+    setIsTaskDialogOpen(true);
+  };
+  
+  // Handle dialog close
+  const handleDialogClose = () => {
+    setIsTaskDialogOpen(false);
+    setSelectedTaskId(null);
+  };
+  
   // Format priority badge
-  const getPriorityBadge = (priority: string | null) => {
+  const getPriorityBadge = (priority: string | null | undefined) => {
     if (!priority) return null;
     switch (priority) {
       case 'Critical':
@@ -74,7 +99,7 @@ export default function TasksPage() {
   };
   
   // Format status badge
-  const getStatusBadge = (status: string | null) => {
+  const getStatusBadge = (status: string | null | undefined) => {
     if (!status) return null;
     switch (status) {
       case 'Todo':
@@ -111,48 +136,70 @@ export default function TasksPage() {
   };
   
   // Format date for display
-  const formatDate = (dateString?: string | Date | null) => {
+  const formatDate = (dateString?: string | Date | null | undefined) => {
     if (!dateString) return "";
-    return new Intl.DateTimeFormat('en-US', { 
-      year: 'numeric', 
-      month: 'short', 
-      day: 'numeric' 
-    }).format(new Date(dateString));
+    
+    try {
+      const date = new Date(dateString);
+      // Check if the date is valid
+      if (isNaN(date.getTime())) {
+        return "";
+      }
+      
+      return new Intl.DateTimeFormat('en-US', { 
+        year: 'numeric', 
+        month: 'short', 
+        day: 'numeric' 
+      }).format(date);
+    } catch (error) {
+      console.warn('Invalid date format:', dateString);
+      return "";
+    }
   };
   
   // Get days until deadline
-  const getDaysUntilDeadline = (deadline?: string | Date | null) => {
+  const getDaysUntilDeadline = (deadline?: string | Date | null | undefined) => {
     if (!deadline) return null;
     
-    const deadlineDate = new Date(deadline);
-    const today = new Date();
-    const diffTime = deadlineDate.getTime() - today.getTime();
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    
-    if (diffDays < 0) {
-      return (
-        <span className="text-red-600 dark:text-red-400 text-xs font-medium">
-          {Math.abs(diffDays)} {t("daysOverdue")}
-        </span>
-      );
-    } else if (diffDays === 0) {
-      return (
-        <span className="text-orange-600 dark:text-orange-400 text-xs font-medium">
-          {t("dueToday")}
-        </span>
-      );
-    } else if (diffDays <= 3) {
-      return (
-        <span className="text-orange-600 dark:text-orange-400 text-xs font-medium">
-          {diffDays} {t("daysLeft")}
-        </span>
-      );
-    } else {
-      return (
-        <span className="text-gray-600 dark:text-gray-400 text-xs">
-          {diffDays} {t("daysLeft")}
-        </span>
-      );
+    try {
+      const deadlineDate = new Date(deadline);
+      // Check if the date is valid
+      if (isNaN(deadlineDate.getTime())) {
+        return null;
+      }
+      
+      const today = new Date();
+      const diffTime = deadlineDate.getTime() - today.getTime();
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      
+      if (diffDays < 0) {
+        return (
+          <span className="text-red-600 dark:text-red-400 text-xs font-medium">
+            {Math.abs(diffDays)} {t("daysOverdue")}
+          </span>
+        );
+      } else if (diffDays === 0) {
+        return (
+          <span className="text-orange-600 dark:text-orange-400 text-xs font-medium">
+            {t("dueToday")}
+          </span>
+        );
+      } else if (diffDays <= 3) {
+        return (
+          <span className="text-orange-600 dark:text-orange-400 text-xs font-medium">
+            {diffDays} {t("daysLeft")}
+          </span>
+        );
+      } else {
+        return (
+          <span className="text-gray-600 dark:text-gray-400 text-xs">
+            {diffDays} {t("daysLeft")}
+          </span>
+        );
+      }
+    } catch (error) {
+      console.warn('Invalid deadline format:', deadline);
+      return null;
     }
   };
   
@@ -160,13 +207,15 @@ export default function TasksPage() {
     <>
       {/* Page Title */}
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{t("tasks")}</h1>
-        <Link href="/tasks/new">
-          <Button className="bg-qatar-maroon hover:bg-maroon-800 text-white">
-            <Plus className="mr-2 h-4 w-4" />
-            <span>{t("newTask")}</span>
-          </Button>
-        </Link>
+        <h1 className="text-2xl font-bold text-contrast dark:text-white">{t("tasks")}</h1>
+        <PermissionGate permission="canCreateTask">
+          <Link href="/tasks/new">
+            <Button className="bg-qatar-maroon hover:bg-maroon-800 text-white">
+              <Plus className="mr-2 h-4 w-4" />
+              <span>{t("newTask")}</span>
+            </Button>
+          </Link>
+        </PermissionGate>
       </div>
       
       {/* Tasks Content */}
@@ -223,7 +272,11 @@ export default function TasksPage() {
                 data.assignedToMe
                   .filter(task => task.status !== "Completed")
                   .map((task) => (
-                    <Card key={task.id} className="hover:border-maroon-300 dark:hover:border-maroon-700 transition-all cursor-pointer">
+                    <Card 
+                      key={task.id} 
+                      className="hover:border-maroon-300 dark:hover:border-maroon-700 transition-all cursor-pointer"
+                      onClick={() => handleTaskClick(task.id)}
+                    >
                       <CardHeader className="pb-2">
                         <div className="flex justify-between items-start">
                           <CardTitle>{task.title}</CardTitle>
@@ -303,7 +356,11 @@ export default function TasksPage() {
                 data.assignedByMe
                   .filter(task => task.status !== "Completed")
                   .map((task) => (
-                    <Card key={task.id} className="hover:border-maroon-300 dark:hover:border-maroon-700 transition-all cursor-pointer">
+                    <Card 
+                      key={task.id} 
+                      className="hover:border-maroon-300 dark:hover:border-maroon-700 transition-all cursor-pointer"
+                      onClick={() => handleTaskClick(task.id)}
+                    >
                       <CardHeader className="pb-2">
                         <div className="flex justify-between items-start">
                           <CardTitle>{task.title}</CardTitle>
@@ -386,7 +443,11 @@ export default function TasksPage() {
                   ...(data.assignedToMe?.filter(t => t.status === "Completed") || []),
                   ...(data.assignedByMe?.filter(t => t.status === "Completed") || [])
                 ].map((task) => (
-                  <Card key={task.id} className="hover:border-maroon-300 dark:hover:border-maroon-700 transition-all cursor-pointer opacity-75">
+                  <Card 
+                    key={task.id} 
+                    className="hover:border-maroon-300 dark:hover:border-maroon-700 transition-all cursor-pointer opacity-75"
+                    onClick={() => handleTaskClick(task.id)}
+                  >
                     <CardHeader className="pb-2">
                       <div className="flex justify-between items-start">
                         <CardTitle>{task.title}</CardTitle>
@@ -433,6 +494,13 @@ export default function TasksPage() {
           )}
         </TabsContent>
       </Tabs>
+      
+      {/* Task Detail Dialog */}
+      <TaskDetailDialog
+        taskId={selectedTaskId}
+        isOpen={isTaskDialogOpen}
+        onClose={handleDialogClose}
+      />
     </>
   );
 }

@@ -34,6 +34,7 @@ import { Link } from "wouter";
 export default function Dashboard() {
   const { t } = useI18n();
   const { user } = useAuth();
+  const userName = user?.name || t("user");
   
   const {
     data: projects,
@@ -120,8 +121,8 @@ export default function Dashboard() {
         
         {/* Welcome Message */}
         <div className="mb-8 relative z-10">
-          <h1 className="text-3xl font-bold tracking-tight">{t("welcomeBack")}, {user?.name}!</h1>
-          <p className="mt-2 text-white/80 max-w-2xl">{t("dashboardIntro")}</p>
+          <h1 className="text-3xl font-bold tracking-tight hero-text text-contrast dark:text-white">{t("welcomeMessage", { name: userName })}</h1>
+          <p className="mt-2 text-white/90 max-w-2xl hero-text">{t("dashboardIntro")}</p>
         </div>
         
         {/* Stat Cards in Hero */}
@@ -194,44 +195,44 @@ export default function Dashboard() {
       <div className="mt-8 grid grid-cols-2 md:grid-cols-4 gap-5">
         {/* Projects link is always visible */}
         <Link href="/projects">
-          <div className="flex flex-col items-center justify-center p-6 bg-white dark:bg-gray-800 rounded-xl shadow-md border border-gray-200 dark:border-gray-700 hover:shadow-lg hover:border-maroon-200 dark:hover:border-maroon-700 transition-all group">
+          <div className="flex flex-col items-center justify-center p-6 bg-white dark:bg-gray-800 rounded-xl shadow-md border border-gray-200 dark:border-gray-700 hover:shadow-lg hover:border-maroon-200 dark:hover:border-maroon-700 transition-all group card-contrast">
             <div className="p-3 bg-maroon-50 dark:bg-maroon-900/20 rounded-full mb-3 group-hover:bg-maroon-100 dark:group-hover:bg-maroon-900/30 transition-colors">
               <Briefcase className="h-8 w-8 text-maroon-700 dark:text-maroon-300" />
             </div>
-            <span className="text-gray-900 dark:text-white font-bold">{t("projects")}</span>
+            <span className="text-gray-900 dark:text-white font-bold dashboard-text">{t("projects")}</span>
           </div>
         </Link>
         
         {/* Departments link requires permissions */}
         <PermissionGate permission="canViewAllDepartments">
           <Link href="/departments">
-            <div className="flex flex-col items-center justify-center p-6 bg-white dark:bg-gray-800 rounded-xl shadow-md border border-gray-200 dark:border-gray-700 hover:shadow-lg hover:border-maroon-200 dark:hover:border-maroon-700 transition-all group">
+            <div className="flex flex-col items-center justify-center p-6 bg-white dark:bg-gray-800 rounded-xl shadow-md border border-gray-200 dark:border-gray-700 hover:shadow-lg hover:border-maroon-200 dark:hover:border-maroon-700 transition-all group card-contrast">
               <div className="p-3 bg-maroon-50 dark:bg-maroon-900/20 rounded-full mb-3 group-hover:bg-maroon-100 dark:group-hover:bg-maroon-900/30 transition-colors">
                 <Users2 className="h-8 w-8 text-maroon-700 dark:text-maroon-300" />
               </div>
-              <span className="text-gray-900 dark:text-white font-bold">{t("departments")}</span>
+              <span className="text-gray-900 dark:text-white font-bold dashboard-text">{t("departments")}</span>
             </div>
           </Link>
         </PermissionGate>
         
         {/* Calendar link is always visible */}
         <Link href="/calendar">
-          <div className="flex flex-col items-center justify-center p-6 bg-white dark:bg-gray-800 rounded-xl shadow-md border border-gray-200 dark:border-gray-700 hover:shadow-lg hover:border-maroon-200 dark:hover:border-maroon-700 transition-all group">
+          <div className="flex flex-col items-center justify-center p-6 bg-white dark:bg-gray-800 rounded-xl shadow-md border border-gray-200 dark:border-gray-700 hover:shadow-lg hover:border-maroon-200 dark:hover:border-maroon-700 transition-all group card-contrast">
             <div className="p-3 bg-maroon-50 dark:bg-maroon-900/20 rounded-full mb-3 group-hover:bg-maroon-100 dark:group-hover:bg-maroon-900/30 transition-colors">
               <CalendarClock className="h-8 w-8 text-maroon-700 dark:text-maroon-300" />
             </div>
-            <span className="text-gray-900 dark:text-white font-bold">{t("calendar")}</span>
+            <span className="text-gray-900 dark:text-white font-bold dashboard-text">{t("calendar")}</span>
           </div>
         </Link>
         
         {/* Reports link requires permissions */}
         <PermissionGate permission="canViewReports">
           <Link href="/reports">
-            <div className="flex flex-col items-center justify-center p-6 bg-white dark:bg-gray-800 rounded-xl shadow-md border border-gray-200 dark:border-gray-700 hover:shadow-lg hover:border-maroon-200 dark:hover:border-maroon-700 transition-all group">
+            <div className="flex flex-col items-center justify-center p-6 bg-white dark:bg-gray-800 rounded-xl shadow-md border border-gray-200 dark:border-gray-700 hover:shadow-lg hover:border-maroon-200 dark:hover:border-maroon-700 transition-all group card-contrast">
               <div className="p-3 bg-maroon-50 dark:bg-maroon-900/20 rounded-full mb-3 group-hover:bg-maroon-100 dark:group-hover:bg-maroon-900/30 transition-colors">
                 <BarChart3 className="h-8 w-8 text-maroon-700 dark:text-maroon-300" />
               </div>
-              <span className="text-gray-900 dark:text-white font-bold">{t("reports")}</span>
+              <span className="text-gray-900 dark:text-white font-bold dashboard-text">{t("reports")}</span>
             </div>
           </Link>
         </PermissionGate>
@@ -241,7 +242,7 @@ export default function Dashboard() {
       <PermissionGate permission="canViewReports">
         <div className="mt-10">
           <div className="flex justify-between items-center mb-5">
-            <h2 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center">
+            <h2 className="text-2xl font-bold dashboard-text flex items-center">
               <div className="p-2 bg-maroon-50 dark:bg-maroon-900/20 rounded-lg mr-3">
                 <BarChart3 className="h-6 w-6 text-maroon-700 dark:text-maroon-300" />
               </div>
@@ -267,7 +268,7 @@ export default function Dashboard() {
         {/* Recent Projects - Available to all authorized users */}
         <div className="lg:col-span-2">
           <div className="flex justify-between items-center mb-5">
-            <h2 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center">
+            <h2 className="text-2xl font-bold dashboard-text flex items-center">
               <div className="p-2 bg-maroon-50 dark:bg-maroon-900/20 rounded-lg mr-3">
                 <Briefcase className="h-6 w-6 text-maroon-700 dark:text-maroon-300" />
               </div>
@@ -291,7 +292,7 @@ export default function Dashboard() {
         <PermissionGate permission="canApproveProject">
           <div>
             <div className="flex justify-between items-center mb-5">
-              <h2 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center">
+              <h2 className="text-2xl font-bold dashboard-text flex items-center">
                 <div className="p-2 bg-maroon-50 dark:bg-maroon-900/20 rounded-lg mr-3">
                   <Clock className="h-6 w-6 text-maroon-700 dark:text-maroon-300" />
                 </div>
@@ -317,7 +318,7 @@ export default function Dashboard() {
       <PermissionGate permission="canCreateProject">
         <div className="mt-10">
           <div className="flex justify-between items-center mb-5">
-            <h2 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center">
+            <h2 className="text-2xl font-bold dashboard-text flex items-center">
               <div className="p-2 bg-maroon-50 dark:bg-maroon-900/20 rounded-lg mr-3">
                 <FileText className="h-6 w-6 text-maroon-700 dark:text-maroon-300" />
               </div>

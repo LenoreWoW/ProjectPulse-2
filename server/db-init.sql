@@ -93,9 +93,13 @@ CREATE TABLE IF NOT EXISTS change_requests (
 CREATE TABLE IF NOT EXISTS goals (
   id SERIAL PRIMARY KEY,
   title VARCHAR(255) NOT NULL,
+  title_ar VARCHAR(255),
   description TEXT,
+  description_ar TEXT,
   createdByUserId INTEGER NOT NULL,
   isStrategic BOOLEAN DEFAULT FALSE,
+  isAnnual BOOLEAN DEFAULT TRUE,
+  departmentId INTEGER,
   startDate TIMESTAMP WITH TIME ZONE,
   deadline TIMESTAMP WITH TIME ZONE,
   status VARCHAR(50) DEFAULT 'Active',
@@ -103,7 +107,8 @@ CREATE TABLE IF NOT EXISTS goals (
   progress INTEGER DEFAULT 0,
   createdAt TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
   updatedAt TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-  FOREIGN KEY (createdByUserId) REFERENCES users(id)
+  FOREIGN KEY (createdByUserId) REFERENCES users(id),
+  FOREIGN KEY (departmentId) REFERENCES departments(id)
 );
 
 -- ProjectGoals Table

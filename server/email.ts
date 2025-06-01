@@ -46,6 +46,7 @@ interface EmailParams {
 // Extended SentMessageInfo for Ethereal email preview URLs
 interface EtherealMessageInfo extends nodemailer.SentMessageInfo {
   preview?: string;
+  messageId?: string;
 }
 
 /**

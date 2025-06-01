@@ -7,7 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { format } from "date-fns";
 import { useI18n } from "@/hooks/use-i18n-new";
 import { Badge } from "@/components/ui/badge";
-import { CalendarDays, Clock, CheckCircle } from "lucide-react";
+import { CalendarDays, Clock, CheckCircle, Flag, Plus, X } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
@@ -54,12 +54,14 @@ const TaskDetailDialog: React.FC<TaskDetailDialogProps> = ({ taskId, isOpen, onC
   const queryClient = useQueryClient();
   const [newComment, setNewComment] = useState("");
   const [newStatus, setNewStatus] = useState<string | null>(null);
+  const [selectedMilestoneId, setSelectedMilestoneId] = useState<number | null>(null);
 
   // Reset comment field when dialog opens or closes
   useEffect(() => {
     if (isOpen) {
       setNewComment("");
       setNewStatus(null);
+      setSelectedMilestoneId(null);
     }
   }, [isOpen]);
 
@@ -128,6 +130,34 @@ const TaskDetailDialog: React.FC<TaskDetailDialogProps> = ({ taskId, isOpen, onC
       return response.json();
     },
     enabled: !!task?.createdByUserId && isOpen,
+  });
+
+  // Fetch task milestones
+  const { data: taskMilestones = [], refetch: refetchTaskMilestones } = useQuery({
+    queryKey: ["taskMilestones", taskId],
+    queryFn: async () => {
+      if (!taskId) return [];
+      const response = await fetch(`/api/tasks/${taskId}/milestones`);
+      if (!response.ok) {
+        throw new Error("Failed to fetch task milestones");
+      }
+      return response.json();
+    },
+    enabled: !!taskId && isOpen,
+  });
+
+  // Fetch project milestones for linking
+  const { data: projectMilestones = [] } = useQuery({
+    queryKey: ["projectMilestones", task?.projectId],
+    queryFn: async () => {
+      if (!task?.projectId) return [];
+      const response = await fetch(`/api/projects/${task.projectId}/milestones`);
+      if (!response.ok) {
+        throw new Error("Failed to fetch project milestones");
+      }
+      return response.json();
+    },
+    enabled: !!task?.projectId && isOpen,
   });
 
   // Add comment mutation
@@ -219,6 +249,70 @@ const TaskDetailDialog: React.FC<TaskDetailDialogProps> = ({ taskId, isOpen, onC
     },
   });
 
+  // Link task to milestone mutation
+  const linkToMilestoneMutation = useMutation({
+    mutationFn: async (milestoneId: number) => {
+      if (!taskId) throw new Error("Task ID is required");
+      const response = await fetch(`/api/tasks/${taskId}/milestones`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ milestoneId, weight: 1 }),
+      });
+      
+      if (!response.ok) {
+        throw new Error("Failed to link task to milestone");
+      }
+      
+      return response.json();
+    },
+    onSuccess: () => {
+      refetchTaskMilestones();
+      setSelectedMilestoneId(null);
+      toast({
+        title: t("success"),
+        description: t("taskLinkedToMilestone"),
+      });
+    },
+    onError: () => {
+      toast({
+        title: t("error"),
+        description: t("failedToLinkTaskToMilestone"),
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Unlink task from milestone mutation
+  const unlinkFromMilestoneMutation = useMutation({
+    mutationFn: async (taskMilestoneId: number) => {
+      const response = await fetch(`/api/task-milestones/${taskMilestoneId}`, {
+        method: "DELETE",
+      });
+      
+      if (!response.ok) {
+        throw new Error("Failed to unlink task from milestone");
+      }
+      
+      return response.json();
+    },
+    onSuccess: () => {
+      refetchTaskMilestones();
+      toast({
+        title: t("success"),
+        description: t("taskUnlinkedFromMilestone"),
+      });
+    },
+    onError: () => {
+      toast({
+        title: t("error"),
+        description: t("failedToUnlinkTaskFromMilestone"),
+        variant: "destructive",
+      });
+    },
+  });
+
   // Handle submit comment
   const handleSubmitComment = () => {
     if (!newComment.trim()) return;
@@ -230,6 +324,22 @@ const TaskDetailDialog: React.FC<TaskDetailDialogProps> = ({ taskId, isOpen, onC
     if (!newStatus || newStatus === task?.status) return;
     updateTaskMutation.mutate(newStatus);
   };
+
+  // Handle milestone linking
+  const handleLinkToMilestone = () => {
+    if (!selectedMilestoneId) return;
+    linkToMilestoneMutation.mutate(selectedMilestoneId);
+  };
+
+  // Handle milestone unlinking
+  const handleUnlinkFromMilestone = (taskMilestoneId: number) => {
+    unlinkFromMilestoneMutation.mutate(taskMilestoneId);
+  };
+
+  // Get available milestones (not already linked)
+  const availableMilestones = projectMilestones.filter(
+    (milestone: any) => !taskMilestones.some((tm: any) => tm.milestoneId === milestone.id)
+  );
   
   // Check if current user is the assignee
   const isAssignee = user && task?.assignedUserId === user.id;
@@ -365,6 +475,85 @@ const TaskDetailDialog: React.FC<TaskDetailDialogProps> = ({ taskId, isOpen, onC
                   </div>
                 </div>
               )}
+
+              {/* Milestones Section */}
+              <div className="mt-6 space-y-4">
+                <h3 className="font-medium text-lg flex items-center gap-2">
+                  <Flag className="w-5 h-5" />
+                  {t("linkedMilestones")}
+                </h3>
+                
+                {/* Existing linked milestones */}
+                <div className="space-y-2">
+                  {taskMilestones.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">{t("noLinkedMilestones")}</p>
+                  ) : (
+                    taskMilestones.map((tm: any) => (
+                      <div key={tm.id} className="flex items-center justify-between p-3 bg-muted rounded-md">
+                        <div className="flex items-center gap-2">
+                          <Flag className="w-4 h-4 text-blue-600" />
+                          <span className="font-medium">{tm.milestone?.title}</span>
+                          {tm.milestone?.deadline && (
+                            <Badge variant="outline" className="text-xs">
+                              {format(new Date(tm.milestone.deadline), "MMM d, yyyy")}
+                            </Badge>
+                          )}
+                        </div>
+                        {canUpdateTask && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleUnlinkFromMilestone(tm.id)}
+                            disabled={unlinkFromMilestoneMutation.isPending}
+                          >
+                            <X className="w-4 h-4" />
+                          </Button>
+                        )}
+                      </div>
+                    ))
+                  )}
+                </div>
+
+                {/* Link to new milestone */}
+                {canUpdateTask && availableMilestones.length > 0 && (
+                  <div className="border rounded-md p-4 bg-muted/30">
+                    <h4 className="font-medium mb-3">{t("linkToMilestone")}</h4>
+                    <div className="flex gap-2">
+                      <Select
+                        value={selectedMilestoneId?.toString() || undefined}
+                        onValueChange={(value: string) => setSelectedMilestoneId(parseInt(value))}
+                      >
+                        <SelectTrigger className="flex-1">
+                          <SelectValue placeholder={t("selectMilestone")} />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {availableMilestones.map((milestone: any) => (
+                            <SelectItem key={milestone.id} value={milestone.id.toString()}>
+                              {milestone.title}
+                              {milestone.deadline && (
+                                <span className="text-xs text-muted-foreground ml-2">
+                                  ({format(new Date(milestone.deadline), "MMM d")})
+                                </span>
+                              )}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <Button
+                        onClick={handleLinkToMilestone}
+                        disabled={!selectedMilestoneId || linkToMilestoneMutation.isPending}
+                        size="sm"
+                      >
+                        {linkToMilestoneMutation.isPending ? (
+                          <Spinner className="w-4 h-4" />
+                        ) : (
+                          <Plus className="w-4 h-4" />
+                        )}
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </div>
 
               {/* Comments section */}
               <div className="mt-6 space-y-4">

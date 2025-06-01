@@ -59,7 +59,7 @@ export default function AnalyticsDashboard() {
   const [selectedChart, setSelectedChart] = useState('projects');
   
   // Fetch data for analytics
-  const { data: projects, isLoading: isLoadingProjects } = useQuery<Project[]>({
+  const { data: projects, isLoading: isLoadingProjects, error: projectsError } = useQuery<Project[]>({
     queryKey: ['/api/projects'],
   });
   
@@ -75,19 +75,85 @@ export default function AnalyticsDashboard() {
     queryKey: ['/api/risks-issues'],
   });
 
+  // Show loading state while data is being fetched
+  if (isLoadingProjects) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-32 w-32 border-t-2 border-b-2 border-qatar-maroon"></div>
+      </div>
+    );
+  }
+
+  // Show error state if there's an issue fetching data
+  if (projectsError) {
+    return (
+      <div className="flex items-center justify-center h-64 text-red-600">
+        <div className="text-center">
+          <p>Error loading projects data:</p>
+          <p className="text-sm">{projectsError.message}</p>
+        </div>
+      </div>
+    );
+  }
+
   // Calculate metrics
   const totalProjects = projects?.length || 0;
   const activeProjects = projects?.filter(p => p.status === 'InProgress').length || 0;
   const completedProjects = projects?.filter(p => p.status === 'Completed').length || 0;
   const atRiskProjects = projects?.filter(p => p.priority === 'High' && p.status !== 'Completed').length || 0;
   
-  // Total budget calculation
-  const totalBudget = projects?.reduce((sum, project) => sum + (project.budget || 0), 0) || 0;
-  const totalSpend = totalBudget * 0.65; // Mock data - 65% spent
+  // Debug logging
+  console.log('Analytics Debug:', {
+    projectsLength: projects?.length,
+    firstFewProjects: projects?.slice(0, 3)?.map(p => ({ 
+      id: p.id, 
+      budget: p.budget, 
+      budgetType: typeof p.budget,
+      actualCost: p.actualCost, 
+      actualCostType: typeof p.actualCost 
+    })),
+    isLoadingProjects
+  });
+  
+  // Total budget calculation with data validation and string handling
+  const totalBudget = projects?.reduce((sum, project) => {
+    let budget = project.budget || 0;
+    
+    // Handle string values from database
+    if (typeof budget === 'string') {
+      budget = parseFloat(budget) || 0;
+    }
+    
+    console.log('Processing project budget:', { id: project.id, budget, originalBudget: project.budget, type: typeof budget, valid: typeof budget === 'number' && !isNaN(budget) && budget >= 0 });
+    
+    // Filter out invalid/corrupted budget values
+    if (typeof budget !== 'number' || isNaN(budget) || budget < 0) {
+      return sum;
+    }
+    return sum + budget;
+  }, 0) || 0;
+  
+  const totalSpend = projects?.reduce((sum, project) => {
+    let actualCost = project.actualCost || 0;
+    
+    // Handle string values from database
+    if (typeof actualCost === 'string') {
+      actualCost = parseFloat(actualCost) || 0;
+    }
+    
+    // Filter out invalid/corrupted cost values
+    if (typeof actualCost !== 'number' || isNaN(actualCost) || actualCost < 0) {
+      return sum;
+    }
+    return sum + actualCost;
+  }, 0) || 0;
+  
+  console.log('Budget calculations:', { totalBudget, totalSpend, projectCount: totalProjects });
+  
   const remainingBudget = totalBudget - totalSpend;
   
-  // Budget percentage calculation
-  const spendPercentage = totalBudget ? (totalSpend / totalBudget) * 100 : 0;
+  // Budget percentage calculation with safety checks
+  const spendPercentage = totalBudget > 0 ? Math.min((totalSpend / totalBudget) * 100, 100) : 0;
   
   // Project status distribution data for pie chart
   const projectStatusData = [
@@ -223,7 +289,7 @@ export default function AnalyticsDashboard() {
             <div className="flex items-center justify-between">
               <div className="text-3xl font-bold">{activeProjects}</div>
               <Badge variant="outline" className="bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300">
-                {((activeProjects / totalProjects) * 100).toFixed(0)}%
+                {totalProjects > 0 ? ((activeProjects / totalProjects) * 100).toFixed(0) : 0}%
               </Badge>
             </div>
             <p className="text-xs text-muted-foreground mt-1">
@@ -240,7 +306,7 @@ export default function AnalyticsDashboard() {
             <div className="flex items-center justify-between">
               <div className="text-3xl font-bold">{completedProjects}</div>
               <Badge variant="outline" className="bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-300">
-                +{((completedProjects / totalProjects) * 100).toFixed(0)}%
+                +{totalProjects > 0 ? ((completedProjects / totalProjects) * 100).toFixed(0) : 0}%
               </Badge>
             </div>
             <div className="flex items-center text-xs text-muted-foreground mt-1">
@@ -265,7 +331,7 @@ export default function AnalyticsDashboard() {
                 ) : (
                   <ArrowDownRight className="h-3 w-3 mr-1" />
                 )}
-                {((atRiskProjects / totalProjects) * 100).toFixed(0)}%
+                {totalProjects > 0 ? ((atRiskProjects / totalProjects) * 100).toFixed(0) : 0}%
               </Badge>
             </div>
             <p className="text-xs text-muted-foreground mt-1">
@@ -281,7 +347,7 @@ export default function AnalyticsDashboard() {
           <CardContent>
             <div className="flex flex-col gap-2">
               <div className="flex items-center justify-between">
-                <div className="text-3xl font-bold">${formatCurrency(totalBudget)}</div>
+                <div className="text-2xl font-bold">${formatCurrency(totalBudget)}</div>
                 <Badge variant="outline" className="bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300">
                   {t('total')}
                 </Badge>
@@ -289,9 +355,13 @@ export default function AnalyticsDashboard() {
               <div className="space-y-1">
                 <div className="flex items-center justify-between text-xs">
                   <span className="text-muted-foreground">{t('spent')}: ${formatCurrency(totalSpend)}</span>
-                  <span className="font-medium">{spendPercentage.toFixed(0)}%</span>
+                  <span className="font-medium">{isNaN(spendPercentage) ? 0 : spendPercentage.toFixed(0)}%</span>
                 </div>
-                <Progress value={spendPercentage} className="h-1" />
+                <Progress value={isNaN(spendPercentage) ? 0 : spendPercentage} className="h-1" />
+                <div className="flex items-center justify-between text-xs text-muted-foreground">
+                  <span>{t('remaining')}: ${formatCurrency(remainingBudget)}</span>
+                  <span>{totalProjects} {t('projects')}</span>
+                </div>
               </div>
             </div>
           </CardContent>
@@ -602,22 +672,36 @@ export default function AnalyticsDashboard() {
 
 // Helper function to format currency values
 function formatCurrency(value: number): string {
-  if (value >= 1000000) {
+  // Handle invalid values
+  if (!value || isNaN(value) || value < 0) {
+    return '0';
+  }
+  
+  if (value >= 1000000000) {
+    return (value / 1000000000).toFixed(1) + 'B';
+  } else if (value >= 1000000) {
     return (value / 1000000).toFixed(1) + 'M';
   } else if (value >= 1000) {
     return (value / 1000).toFixed(0) + 'K';
   } else {
-    return value.toString();
+    return Math.round(value).toLocaleString();
   }
 }
 
 // Format Y-axis values for currency
 function formatYAxisCurrency(value: number): string {
-  if (value >= 1000000) {
+  // Handle invalid values
+  if (!value || isNaN(value) || value < 0) {
+    return '$0';
+  }
+  
+  if (value >= 1000000000) {
+    return `$${(value / 1000000000).toFixed(0)}B`;
+  } else if (value >= 1000000) {
     return `$${(value / 1000000).toFixed(0)}M`;
   } else if (value >= 1000) {
     return `$${(value / 1000).toFixed(0)}K`;
   } else {
-    return `$${value}`;
+    return `$${Math.round(value)}`;
   }
 }

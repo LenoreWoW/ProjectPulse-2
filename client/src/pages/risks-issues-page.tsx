@@ -33,6 +33,7 @@ import {
   Clock,
   User
 } from "lucide-react";
+import { PermissionGate } from "@/hooks/use-permissions";
 
 interface RisksIssuesData {
   risks: RiskIssue[];
@@ -173,15 +174,17 @@ export default function RisksIssuesPage() {
     <>
       {/* Page Title */}
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{t("risksAndIssues")}</h1>
-        {canCreate && (
-          <Link href="/risks-issues/new">
-            <Button className="bg-qatar-maroon hover:bg-maroon-800 text-white">
-              <Plus className="mr-2 h-4 w-4" />
-              <span>{t("newRiskIssue")}</span>
-            </Button>
-          </Link>
-        )}
+        <h1 className="text-2xl font-bold text-contrast dark:text-white">{t("risksAndIssues")}</h1>
+        <PermissionGate permission="canCreateRiskIssue">
+          {canCreate && (
+            <Link href="/risks-issues/new">
+              <Button className="bg-qatar-maroon hover:bg-maroon-800 text-white">
+                <Plus className="mr-2 h-4 w-4" />
+                <span>{t("newRiskIssue")}</span>
+              </Button>
+            </Link>
+          )}
+        </PermissionGate>
       </div>
       
       {/* Filters */}

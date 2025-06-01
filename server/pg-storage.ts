@@ -39,9 +39,30 @@ function formatJsonDates(obj: any): any {
   // Clone the object to avoid modifying the original
   const result = { ...obj };
   
-  // Convert PostgreSQL timestamp strings to JavaScript Date objects
+  // Convert PostgreSQL timestamp strings and Date objects to ISO strings
   Object.keys(result).forEach(key => {
     const value = result[key];
+    
+    // Skip null or undefined values
+    if (value === null || value === undefined) {
+      return;
+    }
+    
+    // Handle Date objects (from PostgreSQL driver)
+    if (value instanceof Date) {
+      if (!isNaN(value.getTime())) {
+        result[key] = value.toISOString();
+      } else {
+        result[key] = null;
+      }
+      return;
+    }
+    
+    // Handle empty objects that might be malformed dates
+    if (typeof value === 'object' && !Array.isArray(value) && Object.keys(value).length === 0) {
+      result[key] = null;
+      return;
+    }
     
     // Check if the value is a string that looks like a date
     if (typeof value === 'string' && 
@@ -51,13 +72,14 @@ function formatJsonDates(obj: any): any {
         const date = new Date(value);
         // Ensure it's a valid date before replacing
         if (!isNaN(date.getTime())) {
-          result[key] = date;
+          result[key] = date.toISOString();
         }
       } catch (e) {
         // Keep the original value if date parsing fails
+        console.warn('Failed to parse date:', value);
       }
-    } else if (value && typeof value === 'object') {
-      // Recursively process nested objects
+    } else if (value && typeof value === 'object' && !Array.isArray(value)) {
+      // Recursively process nested objects (but not arrays)
       result[key] = formatJsonDates(value);
     }
   });
@@ -196,17 +218,99 @@ export class PgStorage implements IStorage {
   // User methods
   // ------------------------------------------------------------------------
   async getUser(id: number): Promise<User | undefined> {
-    return this.getEntityById<User>('users', id);
+    const result = await this.pool.query(`
+      SELECT 
+        id,
+        name,
+        email,
+        phonenumber as phone,
+        username,
+        password,
+        role,
+        status,
+        departmentid as "departmentId",
+        title,
+        createdat as "createdAt",
+        updatedat as "updatedAt"
+      FROM users 
+      WHERE id = $1
+    `, [id]);
+    
+    if (result.rows.length === 0) return undefined;
+    
+    const user = result.rows[0];
+    return {
+      ...user,
+      roles: [user.role], // Convert single role to array
+      isActive: user.status === 'Active', // Convert status to boolean
+      position: user.title, // Use title as position
+      avatarUrl: null, // Not in database
+      preferredLanguage: 'en', // Default value
+    };
   }
 
   async getUserByUsername(username: string): Promise<User | undefined> {
-    const result = await this.query<User>('SELECT * FROM users WHERE username = $1', [username]);
-    return result.length > 0 ? result[0] : undefined;
+    const result = await this.pool.query(`
+      SELECT 
+        id,
+        name,
+        email,
+        phonenumber as phone,
+        username,
+        password,
+        role,
+        status,
+        departmentid as "departmentId",
+        title,
+        createdat as "createdAt",
+        updatedat as "updatedAt"
+      FROM users 
+      WHERE username = $1
+    `, [username]);
+    
+    if (result.rows.length === 0) return undefined;
+    
+    const user = result.rows[0];
+    return {
+      ...user,
+      roles: [user.role], // Convert single role to array
+      isActive: user.status === 'Active', // Convert status to boolean
+      position: user.title, // Use title as position
+      avatarUrl: null, // Not in database
+      preferredLanguage: 'en', // Default value
+    };
   }
 
   async getUserByEmail(email: string): Promise<User | undefined> {
-    const result = await this.query<User>('SELECT * FROM users WHERE email = $1', [email]);
-    return result.length > 0 ? result[0] : undefined;
+    const result = await this.pool.query(`
+      SELECT 
+        id,
+        name,
+        email,
+        phonenumber as phone,
+        username,
+        password,
+        role,
+        status,
+        departmentid as "departmentId",
+        title,
+        createdat as "createdAt",
+        updatedat as "updatedAt"
+      FROM users 
+      WHERE email = $1
+    `, [email]);
+    
+    if (result.rows.length === 0) return undefined;
+    
+    const user = result.rows[0];
+    return {
+      ...user,
+      roles: [user.role], // Convert single role to array
+      isActive: user.status === 'Active', // Convert status to boolean
+      position: user.title, // Use title as position
+      avatarUrl: null, // Not in database
+      preferredLanguage: 'en', // Default value
+    };
   }
 
   async createUser(user: InsertUser): Promise<User> {
@@ -218,15 +322,89 @@ export class PgStorage implements IStorage {
   }
 
   async getUsers(): Promise<User[]> {
-    return this.query<User>('SELECT * FROM users');
+    const result = await this.pool.query(`
+      SELECT 
+        id,
+        name,
+        email,
+        phonenumber as phone,
+        username,
+        password,
+        role,
+        status,
+        departmentid as "departmentId",
+        title,
+        createdat as "createdAt",
+        updatedat as "updatedAt"
+      FROM users
+    `);
+    
+    return result.rows.map(user => ({
+      ...user,
+      roles: [user.role], // Convert single role to array
+      isActive: user.status === 'Active', // Convert status to boolean
+      position: user.title, // Use title as position
+      avatarUrl: null, // Not in database
+      preferredLanguage: 'en', // Default value
+    }));
   }
 
   async getUsersByRole(role: string): Promise<User[]> {
-    return this.query<User>('SELECT * FROM users WHERE role = $1', [role]);
+    const result = await this.pool.query(`
+      SELECT 
+        id,
+        name,
+        email,
+        phonenumber as phone,
+        username,
+        password,
+        role,
+        status,
+        departmentid as "departmentId",
+        title,
+        createdat as "createdAt",
+        updatedat as "updatedAt"
+      FROM users 
+      WHERE role = $1
+    `, [role]);
+    
+    return result.rows.map(user => ({
+      ...user,
+      roles: [user.role], // Convert single role to array
+      isActive: user.status === 'Active', // Convert status to boolean
+      position: user.title, // Use title as position
+      avatarUrl: null, // Not in database
+      preferredLanguage: 'en', // Default value
+    }));
   }
 
   async getUsersByDepartment(departmentId: number): Promise<User[]> {
-    return this.query<User>('SELECT * FROM users WHERE "departmentId" = $1', [departmentId]);
+    const result = await this.pool.query(`
+      SELECT 
+        id,
+        name,
+        email,
+        phonenumber as phone,
+        username,
+        password,
+        role,
+        status,
+        departmentid as "departmentId",
+        title,
+        createdat as "createdAt",
+        updatedat as "updatedAt"
+      FROM users 
+      WHERE departmentid = $1
+    `, [departmentId]);
+    
+    return result.rows.map(user => ({
+      ...user,
+      roles: [user.role], // Convert single role to array
+      isActive: user.status === 'Active', // Convert status to boolean
+      position: user.title, // Use title as position
+      avatarUrl: null, // Not in database
+      preferredLanguage: 'en', // Default value
+    }));
   }
 
   // ------------------------------------------------------------------------
@@ -257,23 +435,174 @@ export class PgStorage implements IStorage {
   // Project methods
   // ------------------------------------------------------------------------
   async getProject(id: number): Promise<Project | undefined> {
-    return this.getEntityById<Project>('projects', id);
+    const results = await this.query<Project>(`
+      SELECT 
+        id,
+        title,
+        description,
+        manageruserid as "managerUserId",
+        departmentid as "departmentId",
+        client,
+        budget,
+        priority,
+        CASE 
+          WHEN startdate IS NOT NULL THEN startdate::text
+          ELSE NULL 
+        END as "startDate",
+        CASE 
+          WHEN deadline IS NOT NULL THEN deadline::text
+          ELSE NULL 
+        END as deadline,
+        status,
+        actualcost as "actualCost",
+        CASE 
+          WHEN createdat IS NOT NULL THEN createdat::text
+          ELSE NULL 
+        END as "createdAt",
+        CASE 
+          WHEN updatedat IS NOT NULL THEN updatedat::text
+          ELSE NULL 
+        END as "updatedAt"
+      FROM projects 
+      WHERE id = $1
+    `, [id]);
+    
+    return results.length > 0 ? results[0] : undefined;
   }
 
   async getProjects(): Promise<Project[]> {
-    return this.query<Project>('SELECT * FROM projects');
+    return this.query<Project>(`
+      SELECT 
+        id,
+        title,
+        description,
+        manageruserid as "managerUserId",
+        departmentid as "departmentId",
+        client,
+        budget,
+        priority,
+        CASE 
+          WHEN startdate IS NOT NULL THEN startdate::text
+          ELSE NULL 
+        END as "startDate",
+        CASE 
+          WHEN deadline IS NOT NULL THEN deadline::text
+          ELSE NULL 
+        END as deadline,
+        status,
+        actualcost as "actualCost",
+        CASE 
+          WHEN createdat IS NOT NULL THEN createdat::text
+          ELSE NULL 
+        END as "createdAt",
+        CASE 
+          WHEN updatedat IS NOT NULL THEN updatedat::text
+          ELSE NULL 
+        END as "updatedAt"
+      FROM projects
+    `);
   }
 
   async getProjectsByDepartment(departmentId: number): Promise<Project[]> {
-    return this.query<Project>('SELECT * FROM projects WHERE "departmentId" = $1', [departmentId]);
+    return this.query<Project>(`
+      SELECT 
+        id,
+        title,
+        description,
+        manageruserid as "managerUserId",
+        departmentid as "departmentId",
+        client,
+        budget,
+        priority,
+        CASE 
+          WHEN startdate IS NOT NULL THEN startdate::text
+          ELSE NULL 
+        END as "startDate",
+        CASE 
+          WHEN deadline IS NOT NULL THEN deadline::text
+          ELSE NULL 
+        END as deadline,
+        status,
+        actualcost as "actualCost",
+        CASE 
+          WHEN createdat IS NOT NULL THEN createdat::text
+          ELSE NULL 
+        END as "createdAt",
+        CASE 
+          WHEN updatedat IS NOT NULL THEN updatedat::text
+          ELSE NULL 
+        END as "updatedAt"
+      FROM projects 
+      WHERE departmentid = $1
+    `, [departmentId]);
   }
 
   async getProjectsByManager(managerUserId: number): Promise<Project[]> {
-    return this.query<Project>('SELECT * FROM projects WHERE "managerUserId" = $1', [managerUserId]);
+    return this.query<Project>(`
+      SELECT 
+        id,
+        title,
+        description,
+        manageruserid as "managerUserId",
+        departmentid as "departmentId",
+        client,
+        budget,
+        priority,
+        CASE 
+          WHEN startdate IS NOT NULL THEN startdate::text
+          ELSE NULL 
+        END as "startDate",
+        CASE 
+          WHEN deadline IS NOT NULL THEN deadline::text
+          ELSE NULL 
+        END as deadline,
+        status,
+        actualcost as "actualCost",
+        CASE 
+          WHEN createdat IS NOT NULL THEN createdat::text
+          ELSE NULL 
+        END as "createdAt",
+        CASE 
+          WHEN updatedat IS NOT NULL THEN updatedat::text
+          ELSE NULL 
+        END as "updatedAt"
+      FROM projects 
+      WHERE manageruserid = $1
+    `, [managerUserId]);
   }
 
   async getProjectsByStatus(status: string): Promise<Project[]> {
-    return this.query<Project>('SELECT * FROM projects WHERE status = $1', [status]);
+    return this.query<Project>(`
+      SELECT 
+        id,
+        title,
+        description,
+        manageruserid as "managerUserId",
+        departmentid as "departmentId",
+        client,
+        budget,
+        priority,
+        CASE 
+          WHEN startdate IS NOT NULL THEN startdate::text
+          ELSE NULL 
+        END as "startDate",
+        CASE 
+          WHEN deadline IS NOT NULL THEN deadline::text
+          ELSE NULL 
+        END as deadline,
+        status,
+        actualcost as "actualCost",
+        CASE 
+          WHEN createdat IS NOT NULL THEN createdat::text
+          ELSE NULL 
+        END as "createdAt",
+        CASE 
+          WHEN updatedat IS NOT NULL THEN updatedat::text
+          ELSE NULL 
+        END as "updatedAt"
+      FROM projects 
+      WHERE status = $1
+    `, [status]);
   }
 
   async createProject(project: InsertProject): Promise<Project> {
@@ -292,7 +621,7 @@ export class PgStorage implements IStorage {
   }
 
   async getProjectGoals(projectId: number): Promise<ProjectGoal[]> {
-    return this.query<ProjectGoal>('SELECT * FROM project_goals WHERE "projectId" = $1', [projectId]);
+    return this.query<ProjectGoal>('SELECT * FROM project_goals WHERE projectid = $1', [projectId]);
   }
 
   // ------------------------------------------------------------------------
@@ -303,7 +632,7 @@ export class PgStorage implements IStorage {
   }
 
   async getProjectDependencies(projectId: number): Promise<ProjectDependency[]> {
-    return this.query<ProjectDependency>('SELECT * FROM project_dependencies WHERE "projectId" = $1', [projectId]);
+    return this.query<ProjectDependency>('SELECT * FROM project_dependencies WHERE projectid = $1', [projectId]);
   }
 
   // ------------------------------------------------------------------------
@@ -314,15 +643,60 @@ export class PgStorage implements IStorage {
   }
 
   async getTasksByProject(projectId: number): Promise<Task[]> {
-    return this.query<Task>('SELECT * FROM tasks WHERE "projectId" = $1', [projectId]);
+    return this.query<Task>(`
+      SELECT 
+        id,
+        status,
+        title,
+        description,
+        deadline,
+        projectid as "projectId",
+        assigneduserid as "assignedUserId",
+        priority,
+        createdbyuserid as "createdByUserId",
+        createdat as "createdAt",
+        updatedat as "updatedAt"
+      FROM tasks 
+      WHERE projectid = $1
+    `, [projectId]);
   }
 
   async getTasksByAssignee(assignedUserId: number): Promise<Task[]> {
-    return this.query<Task>('SELECT * FROM tasks WHERE "assignedUserId" = $1', [assignedUserId]);
+    return this.query<Task>(`
+      SELECT 
+        id,
+        status,
+        title,
+        description,
+        deadline,
+        projectid as "projectId",
+        assigneduserid as "assignedUserId",
+        priority,
+        createdbyuserid as "createdByUserId",
+        createdat as "createdAt",
+        updatedat as "updatedAt"
+      FROM tasks 
+      WHERE assigneduserid = $1
+    `, [assignedUserId]);
   }
 
   async getTasksByCreator(createdByUserId: number): Promise<Task[]> {
-    return this.query<Task>('SELECT * FROM tasks WHERE "createdByUserId" = $1', [createdByUserId]);
+    return this.query<Task>(`
+      SELECT 
+        id,
+        status,
+        title,
+        description,
+        deadline,
+        projectid as "projectId",
+        assigneduserid as "assignedUserId",
+        priority,
+        createdbyuserid as "createdByUserId",
+        createdat as "createdAt",
+        updatedat as "updatedAt"
+      FROM tasks 
+      WHERE createdbyuserid = $1
+    `, [createdByUserId]);
   }
 
   async createTask(task: InsertTask): Promise<Task> {
@@ -341,7 +715,7 @@ export class PgStorage implements IStorage {
   }
 
   async getChangeRequestsByProject(projectId: number): Promise<ChangeRequest[]> {
-    return this.query<ChangeRequest>('SELECT * FROM change_requests WHERE "projectId" = $1', [projectId]);
+    return this.query<ChangeRequest>('SELECT * FROM change_requests WHERE projectid = $1', [projectId]);
   }
 
   async getChangeRequestsByStatus(status: string): Promise<ChangeRequest[]> {
@@ -368,11 +742,11 @@ export class PgStorage implements IStorage {
   }
 
   async getStrategicGoals(): Promise<Goal[]> {
-    return this.query<Goal>('SELECT * FROM goals WHERE "isStrategic" = TRUE');
+    return this.query<Goal>('SELECT * FROM goals WHERE isstrategic = TRUE');
   }
 
   async getAnnualGoals(): Promise<Goal[]> {
-    return this.query<Goal>('SELECT * FROM goals WHERE "isStrategic" = FALSE');
+    return this.query<Goal>('SELECT * FROM goals WHERE isstrategic = FALSE');
   }
 
   async createGoal(goal: InsertGoal): Promise<Goal> {
@@ -391,7 +765,7 @@ export class PgStorage implements IStorage {
   }
 
   async getRiskIssuesByProject(projectId: number): Promise<RiskIssue[]> {
-    return this.query<RiskIssue>('SELECT * FROM risks_issues WHERE "projectId" = $1', [projectId]);
+    return this.query<RiskIssue>('SELECT * FROM risks_issues WHERE projectid = $1', [projectId]);
   }
 
   async getRisks(): Promise<RiskIssue[]> {
@@ -418,7 +792,7 @@ export class PgStorage implements IStorage {
   }
 
   async getNotificationsByUser(userId: number): Promise<Notification[]> {
-    return this.query<Notification>('SELECT * FROM notifications WHERE "userId" = $1 ORDER BY "createdAt" DESC', [userId]);
+    return this.query<Notification>('SELECT * FROM notifications WHERE userid = $1 ORDER BY createdat DESC', [userId]);
   }
 
   async createNotification(notification: InsertNotification): Promise<Notification> {
@@ -430,7 +804,7 @@ export class PgStorage implements IStorage {
   }
 
   async getPendingApprovalNotifications(): Promise<Notification[]> {
-    return this.query<Notification>('SELECT * FROM notifications WHERE "requiresApproval" = TRUE AND "isRead" = FALSE');
+    return this.query<Notification>('SELECT * FROM notifications WHERE requiresapproval = TRUE AND isread = FALSE');
   }
 
   async updateNotificationReminderSent(id: number): Promise<Notification | undefined> {
@@ -443,9 +817,9 @@ export class PgStorage implements IStorage {
     
     return this.query<Notification>(
       `SELECT * FROM notifications
-       WHERE "requiresApproval" = TRUE
-       AND "isRead" = FALSE
-       AND ("lastReminderSent" IS NULL OR "lastReminderSent" < $1)`,
+       WHERE requiresapproval = TRUE
+       AND isread = FALSE
+       AND (lastremindersent IS NULL OR lastremindersent < $1)`,
       [thresholdTime]
     );
   }
@@ -458,11 +832,11 @@ export class PgStorage implements IStorage {
   }
 
   async getAssignmentsByAssignee(assignedToUserId: number): Promise<Assignment[]> {
-    return this.query<Assignment>('SELECT * FROM assignments WHERE "assignedToUserId" = $1', [assignedToUserId]);
+    return this.query<Assignment>('SELECT * FROM assignments WHERE assignedtouserid = $1', [assignedToUserId]);
   }
 
   async getAssignmentsByAssigner(assignedByUserId: number): Promise<Assignment[]> {
-    return this.query<Assignment>('SELECT * FROM assignments WHERE "assignedByUserId" = $1', [assignedByUserId]);
+    return this.query<Assignment>('SELECT * FROM assignments WHERE assignedbyuserid = $1', [assignedByUserId]);
   }
 
   async createAssignment(assignment: InsertAssignment): Promise<Assignment> {
@@ -481,11 +855,11 @@ export class PgStorage implements IStorage {
   }
 
   async getActionItemsByMeeting(meetingId: number): Promise<ActionItem[]> {
-    return this.query<ActionItem>('SELECT * FROM action_items WHERE "meetingId" = $1', [meetingId]);
+    return this.query<ActionItem>('SELECT * FROM action_items WHERE meetingid = $1', [meetingId]);
   }
 
   async getActionItemsByAssignee(assignedToUserId: number): Promise<ActionItem[]> {
-    return this.query<ActionItem>('SELECT * FROM action_items WHERE "userId" = $1', [assignedToUserId]);
+    return this.query<ActionItem>('SELECT * FROM action_items WHERE userid = $1', [assignedToUserId]);
   }
 
   async createActionItem(actionItem: InsertActionItem): Promise<ActionItem> {
@@ -504,7 +878,7 @@ export class PgStorage implements IStorage {
   }
 
   async getWeeklyUpdatesByProject(projectId: number): Promise<WeeklyUpdate[]> {
-    return this.query<WeeklyUpdate>('SELECT * FROM weekly_updates WHERE "projectId" = $1', [projectId]);
+    return this.query<WeeklyUpdate>('SELECT * FROM weekly_updates WHERE projectid = $1', [projectId]);
   }
 
   async createWeeklyUpdate(weeklyUpdate: InsertWeeklyUpdate): Promise<WeeklyUpdate> {
@@ -519,7 +893,7 @@ export class PgStorage implements IStorage {
   }
 
   async getProjectCostHistoryByProject(projectId: number): Promise<ProjectCostHistory[]> {
-    return this.query<ProjectCostHistory>('SELECT * FROM project_cost_history WHERE "projectId" = $1', [projectId]);
+    return this.query<ProjectCostHistory>('SELECT * FROM project_cost_history WHERE projectid = $1', [projectId]);
   }
 
   async createProjectCostHistory(projectCostHistory: InsertProjectCostHistory): Promise<ProjectCostHistory> {
@@ -534,7 +908,7 @@ export class PgStorage implements IStorage {
   }
 
   async getMilestonesByProject(projectId: number): Promise<Milestone[]> {
-    return this.query<Milestone>('SELECT * FROM milestones WHERE "projectId" = $1', [projectId]);
+    return this.query<Milestone>('SELECT * FROM milestones WHERE projectid = $1', [projectId]);
   }
 
   async createMilestone(milestone: InsertMilestone): Promise<Milestone> {
@@ -558,11 +932,11 @@ export class PgStorage implements IStorage {
   }
 
   async getTaskMilestonesByTask(taskId: number): Promise<TaskMilestone[]> {
-    return this.query<TaskMilestone>('SELECT * FROM task_milestones WHERE "taskId" = $1', [taskId]);
+    return this.query<TaskMilestone>('SELECT * FROM task_milestones WHERE taskid = $1', [taskId]);
   }
 
   async getTaskMilestonesByMilestone(milestoneId: number): Promise<TaskMilestone[]> {
-    return this.query<TaskMilestone>('SELECT * FROM task_milestones WHERE "milestoneId" = $1', [milestoneId]);
+    return this.query<TaskMilestone>('SELECT * FROM task_milestones WHERE milestoneid = $1', [milestoneId]);
   }
 
   async createTaskMilestone(taskMilestone: InsertTaskMilestone): Promise<TaskMilestone> {
@@ -699,11 +1073,54 @@ export class PgStorage implements IStorage {
   // Audit Log methods
   // ------------------------------------------------------------------------
   async createAuditLog(auditLog: InsertAuditLog): Promise<AuditLog> {
-    return this.createEntity<InsertAuditLog, AuditLog>('audit_logs', auditLog);
+    // Map camelCase properties to database column names - but the database actually uses camelCase
+    const dbAuditLog = {
+      userId: auditLog.userId,
+      action: auditLog.action,
+      entityType: auditLog.entityType,
+      entityId: auditLog.entityId,
+      details: auditLog.details,
+      ipAddress: auditLog.ipAddress,
+      userAgent: auditLog.userAgent,
+      departmentId: auditLog.departmentId,
+      createdAt: auditLog.createdAt || new Date()
+    };
+
+    // Filter out undefined values
+    const cleanEntity = Object.entries(dbAuditLog)
+      .filter(([_, value]) => value !== undefined)
+      .reduce((acc, [key, value]) => ({ ...acc, [key]: value }), {});
+    
+    const keys = Object.keys(cleanEntity);
+    const placeholders = keys.map((_, i) => `$${i + 1}`).join(', ');
+    const values = Object.values(cleanEntity);
+    const columns = keys.join(', ');
+    
+    const query = `INSERT INTO audit_logs (${columns}) VALUES (${placeholders}) RETURNING *`;
+    const result = await this.query<AuditLog>(query, values);
+    
+    // The query method already handles the camelCase conversion, so direct return
+    return result[0];
   }
 
   async getAuditLog(id: number): Promise<AuditLog | undefined> {
-    return this.getEntityById<AuditLog>('audit_logs', id);
+    const result = await this.query<AuditLog>(`
+      SELECT 
+        id,
+        userId,
+        action,
+        entityType,
+        entityId,
+        details,
+        ipAddress,
+        userAgent,
+        departmentId,
+        createdAt
+      FROM audit_logs 
+      WHERE id = $1
+    `, [id]);
+    
+    return result.length > 0 ? result[0] : undefined;
   }
 
   async getAuditLogs(options: {
@@ -717,64 +1134,177 @@ export class PgStorage implements IStorage {
     endDate?: Date;
     departmentId?: number;
   }): Promise<AuditLog[]> {
+    const {
+      limit = 50,
+      offset = 0,
+      userId,
+      entityType,
+      entityId,
+      action,
+      startDate,
+      endDate,
+      departmentId
+    } = options;
+
+    let query = `
+      SELECT 
+        al.id,
+        al.userId as "userId",
+        u.name as "userName",
+        al.action,
+        al.entityType as "entityType",
+        al.entityId as "entityId",
+        al.details,
+        al.ipAddress as "ipAddress",
+        al.userAgent as "userAgent",
+        al.createdAt as "createdAt",
+        al.departmentId as "departmentId",
+        d.name as "departmentName"
+      FROM audit_logs al
+      LEFT JOIN users u ON al.userId = u.id
+      LEFT JOIN departments d ON al.departmentId = d.id
+    `;
+    
+    const whereClauses: string[] = [];
     const params: any[] = [];
-    let query = 'SELECT * FROM audit_logs WHERE 1=1';
-    
-    if (options.userId !== undefined) {
-      params.push(options.userId);
-      query += ` AND user_id = $${params.length}`;
+    let paramIndex = 1;
+
+    if (userId) {
+      whereClauses.push(`al.userId = $${paramIndex++}`);
+      params.push(userId);
     }
-    
-    if (options.entityType !== undefined) {
-      params.push(options.entityType);
-      query += ` AND entity_type = $${params.length}`;
+    if (entityType) {
+      whereClauses.push(`al.entityType = $${paramIndex++}`);
+      params.push(entityType);
     }
-    
-    if (options.entityId !== undefined) {
-      params.push(options.entityId);
-      query += ` AND entity_id = $${params.length}`;
+    if (entityId) {
+      whereClauses.push(`al.entityId = $${paramIndex++}`);
+      params.push(entityId);
     }
-    
-    if (options.action !== undefined) {
-      params.push(options.action);
-      query += ` AND action = $${params.length}`;
+    if (action) {
+      whereClauses.push(`al.action = $${paramIndex++}`);
+      params.push(action);
     }
-    
-    if (options.startDate !== undefined) {
-      params.push(options.startDate);
-      query += ` AND created_at >= $${params.length}`;
+    if (startDate) {
+      whereClauses.push(`al.createdAt >= $${paramIndex++}`);
+      params.push(startDate);
     }
-    
-    if (options.endDate !== undefined) {
-      params.push(options.endDate);
-      query += ` AND created_at <= $${params.length}`;
+    if (endDate) {
+      whereClauses.push(`al.createdAt <= $${paramIndex++}`);
+      params.push(endDate);
     }
-    
-    if (options.departmentId !== undefined) {
-      params.push(options.departmentId);
-      query += ` AND department_id = $${params.length}`;
+    if (departmentId) {
+      whereClauses.push(`al.departmentId = $${paramIndex++}`);
+      params.push(departmentId);
     }
-    
-    // Add ordering
-    query += ' ORDER BY created_at DESC';
-    
-    // Add pagination
-    if (options.limit !== undefined) {
-      params.push(options.limit);
-      query += ` LIMIT $${params.length}`;
-    } else {
-      query += ' LIMIT 100'; // Default limit
+
+    if (whereClauses.length > 0) {
+      query += ` WHERE ${whereClauses.join(' AND ')}`;
     }
+
+    query += ` ORDER BY al.createdAt DESC LIMIT $${paramIndex++} OFFSET $${paramIndex++}`;
+    params.push(limit, offset);
     
-    if (options.offset !== undefined) {
-      params.push(options.offset);
-      query += ` OFFSET $${params.length}`;
+    console.log('PgStorage.getAuditLogs - About to execute query:');
+    console.log('Query:', query);
+    console.log('Params:', params);
+    console.log('Options passed:', options);
+
+    try {
+      // Use the internal query method that handles row formatting
+      const result = await this.query<AuditLog>(query, params);
+      
+      console.log('PgStorage.getAuditLogs - Query executed successfully, rows returned:', result.length);
+      
+      // The this.query method already maps and formats, so direct return
+      return result;
+    } catch (error) {
+      console.error('PgStorage.getAuditLogs - Query failed:');
+      console.error('Error:', error);
+      console.error('Query that failed:', query);
+      console.error('Params for failed query:', params);
+      throw error;
     }
-    
-    return this.query<AuditLog>(query, params);
   }
 
-  async getAuditLogsByUser(userId: number, limit?: number, offset?: number): Promise<AuditLog[]> {
+  async getAuditLogsByUser(userId: number, limit: number = 50, offset: number = 0): Promise<AuditLog[]> {
     return this.getAuditLogs({ userId, limit, offset });
   }
-} 
+
+  // Goal Relationships
+  async createGoalRelationship(relationship: InsertGoalRelationship): Promise<GoalRelationship> {
+    return this.createEntity<InsertGoalRelationship, GoalRelationship>('goal_relationships', relationship);
+  }
+
+  async getGoalRelationshipsByParent(parentGoalId: number): Promise<GoalRelationship[]> {
+    const result = await this.query<GoalRelationship>(`
+      SELECT 
+        id,
+        "parentGoalId",
+        "childGoalId",
+        weight,
+        "createdAt",
+        "updatedAt"
+      FROM goal_relationships 
+      WHERE "parentGoalId" = $1
+    `, [parentGoalId]);
+    return result;
+  }
+
+  async getGoalRelationshipsByChild(childGoalId: number): Promise<GoalRelationship[]> {
+    const result = await this.query<GoalRelationship>(`
+      SELECT 
+        id,
+        "parentGoalId",
+        "childGoalId",
+        weight,
+        "createdAt",
+        "updatedAt"
+      FROM goal_relationships 
+      WHERE "childGoalId" = $1
+    `, [childGoalId]);
+    return result;
+  }
+
+  async deleteGoalRelationship(id: number): Promise<boolean> {
+    try {
+      const result = await this.query(`
+        DELETE FROM goal_relationships 
+        WHERE id = $1
+      `, [id]);
+      return true;
+    } catch (error) {
+      console.error('Error deleting goal relationship:', error);
+      return false;
+    }
+  }
+
+  // Project-Goal Relationships
+  async getProjectGoalsByGoal(goalId: number): Promise<ProjectGoal[]> {
+    const result = await this.query<ProjectGoal>(`
+      SELECT 
+        id,
+        "projectId",
+        "goalId",
+        weight,
+        "createdAt",
+        "updatedAt"
+      FROM project_goals 
+      WHERE "goalId" = $1
+    `, [goalId]);
+    return result;
+  }
+
+  async deleteProjectGoal(id: number): Promise<boolean> {
+    try {
+      const result = await this.query(`
+        DELETE FROM project_goals 
+        WHERE id = $1
+      `, [id]);
+      return true;
+    } catch (error) {
+      console.error('Error deleting project goal:', error);
+      return false;
+    }
+  }
+}

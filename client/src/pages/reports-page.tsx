@@ -69,10 +69,10 @@ const COLORS = ["#e53e3e", "#ed8936", "#38a169", "#3182ce"];
 const RISK_COLORS = ["#8A1538", "#f97316", "#22c55e"];
 
 interface BudgetSummary {
-  totalBudget: number;
-  actualCost: number;
-  remainingBudget: number;
-  variance: number;
+  totalBudget: number | null;
+  actualCost: number | null;
+  remainingBudget: number | null;
+  variance: number | null;
 }
 
 export default function ReportsPage() {
@@ -84,6 +84,15 @@ export default function ReportsPage() {
     queryKey: ["/api/budget-summary"],
   });
   
+  // Helper function to safely format numbers
+  const formatCurrency = (value: number | null | undefined): string => {
+    return (value ?? 0).toLocaleString();
+  };
+
+  const formatPercentage = (value: number | null | undefined): number => {
+    return value ?? 0;
+  };
+
   const reportCategories = [
     {
       id: "financial",
@@ -189,9 +198,18 @@ export default function ReportsPage() {
   
   return (
     <div className="container mx-auto py-6 space-y-6">
+      <div className="space-y-6">
+        {/* Page Title */}
+        <div className="flex items-center justify-between mb-6">
+          <h1 className="text-2xl font-bold text-contrast dark:text-white">{t("reports")}</h1>
+        </div>
+
+        {/* Tabs for different report types */}
+      </div>
+      
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">{t("reports")}</h1>
+          {/* <h1 className="text-3xl font-bold tracking-tight">{t("reports")}</h1> */}
           <p className="text-gray-500 dark:text-gray-400 mt-1">{t("reportsDescription")}</p>
         </div>
         
@@ -208,7 +226,7 @@ export default function ReportsPage() {
             <CardTitle className="text-sm font-medium">{t("totalBudget")}</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">${budgetSummary.totalBudget.toLocaleString()}</div>
+            <div className="text-2xl font-bold">${formatCurrency(budgetSummary.totalBudget)}</div>
             <p className="text-xs text-gray-500 dark:text-gray-400">{t("allProjects")}</p>
           </CardContent>
         </Card>
@@ -218,7 +236,7 @@ export default function ReportsPage() {
             <CardTitle className="text-sm font-medium">{t("actualCost")}</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">${budgetSummary.actualCost.toLocaleString()}</div>
+            <div className="text-2xl font-bold">${formatCurrency(budgetSummary.actualCost)}</div>
             <p className="text-xs text-gray-500 dark:text-gray-400">{t("spentToDate")}</p>
           </CardContent>
         </Card>
@@ -228,7 +246,7 @@ export default function ReportsPage() {
             <CardTitle className="text-sm font-medium">{t("remainingBudget")}</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">${budgetSummary.remainingBudget.toLocaleString()}</div>
+            <div className="text-2xl font-bold">${formatCurrency(budgetSummary.remainingBudget)}</div>
             <p className="text-xs text-gray-500 dark:text-gray-400">{t("budgetRemaining")}</p>
           </CardContent>
         </Card>
@@ -238,11 +256,11 @@ export default function ReportsPage() {
             <CardTitle className="text-sm font-medium">{t("variancePercentage")}</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className={`text-2xl font-bold ${budgetSummary.variance > 0 ? 'text-green-600' : 'text-red-600'}`}>
-              {budgetSummary.variance}%
+            <div className={`text-2xl font-bold ${formatPercentage(budgetSummary.variance) > 0 ? 'text-green-600' : 'text-red-600'}`}>
+              {formatPercentage(budgetSummary.variance)}%
             </div>
             <p className="text-xs text-gray-500 dark:text-gray-400">
-              {budgetSummary.variance > 0 ? t("underBudget") : t("overBudget")}
+              {formatPercentage(budgetSummary.variance) > 0 ? t("underBudget") : t("overBudget")}
             </p>
           </CardContent>
         </Card>
@@ -307,7 +325,7 @@ export default function ReportsPage() {
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="department" />
                   <YAxis />
-                  <Tooltip formatter={(value: number) => [`$${value.toLocaleString()}`, '']} />
+                  <Tooltip formatter={(value: number) => [`$${formatCurrency(value)}`, '']} />
                   <Legend />
                   <Bar dataKey="budget" name={t("budgetAllocated")} fill="#8A1538" />
                   <Bar dataKey="actual" name={t("actualSpend")} fill="#f59e0b" />

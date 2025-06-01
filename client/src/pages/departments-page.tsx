@@ -61,8 +61,10 @@ import {
   Plus, 
   Pencil, 
   Trash, 
-  User as UserIcon
+  User as UserIcon,
+  MoreHorizontal
 } from "lucide-react";
+import { PermissionGate } from "@/hooks/use-permissions";
 
 // Form schema for adding or editing departments
 const departmentFormSchema = z.object({
@@ -275,7 +277,7 @@ export default function DepartmentsPage() {
     <div className="container mx-auto py-6 space-y-6">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">{t("departments")}</h1>
+          <h1 className="text-3xl font-bold tracking-tight text-contrast dark:text-white">{t("departments")}</h1>
           <p className="text-gray-500 dark:text-gray-400 mt-1">{t("manageDepartments")}</p>
         </div>
         
@@ -369,7 +371,7 @@ export default function DepartmentsPage() {
                               <SelectContent>
                                 <SelectItem value="none">{t("notAssigned")}</SelectItem>
                                 {users
-                                  .filter((u) => u.roles?.includes("DepartmentDirector") || u.roles?.includes("Executive"))
+                                  .filter((u) => u.role?.includes("DepartmentDirector") || u.role?.includes("Executive"))
                                   .map((user) => (
                                     <SelectItem key={user.id} value={user.id.toString()}>
                                       {user.name}
@@ -544,7 +546,7 @@ export default function DepartmentsPage() {
                             <SelectContent>
                               <SelectItem value="none">{t("notAssigned")}</SelectItem>
                               {users
-                                .filter((u) => u.roles?.includes("DepartmentDirector") || u.roles?.includes("Executive"))
+                                .filter((u) => u.role?.includes("DepartmentDirector") || u.role?.includes("Executive"))
                                 .map((user) => (
                                   <SelectItem key={user.id} value={user.id.toString()}>
                                     {user.name}

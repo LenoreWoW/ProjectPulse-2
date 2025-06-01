@@ -1,7 +1,7 @@
 import express from 'express';
 import { Express, Request, Response, NextFunction } from 'express';
 import { registerRoutes } from './routes';
-import { setupVite } from './vite';
+import { registerVite } from './vite';
 import { serveStatic } from './vite';
 import { Server as HttpServer } from 'http';
 import { reminderService } from './reminder-service';
@@ -125,7 +125,7 @@ async function startServer(): Promise<void> {
     if (process.env.NODE_ENV !== 'production') {
       try {
         console.log("Setting up Vite for development mode...");
-        await setupVite(app, server);
+        await registerVite(app);
       } catch (error) {
         console.error("Error setting up Vite:", error);
         throw error;

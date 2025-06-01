@@ -22,7 +22,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Plus, Search, Calendar, LayoutList } from "lucide-react";
+import { Plus, Search, Calendar, LayoutList, User } from "lucide-react";
 import { Link } from "wouter";
 
 export default function ProjectsPage() {
@@ -39,6 +39,11 @@ export default function ProjectsPage() {
 
   const { data: departments } = useQuery<any[]>({
     queryKey: ["/api/departments"],
+  });
+
+  // Fetch users to get project manager names
+  const { data: users } = useQuery<any[]>({
+    queryKey: ["/api/users"],
   });
   
   // Use permissions hook for role-based permissions
@@ -63,6 +68,13 @@ export default function ProjectsPage() {
     
     return true;
   });
+
+  // Helper function to get user name
+  const getUserName = (userId: number | null) => {
+    if (!userId || !users) return t("noManager");
+    const user = users.find(u => u.id === userId);
+    return user ? user.name : t("noManager");
+  };
 
   // Get color for status badge
   const getStatusClasses = (status: string | null) => {
@@ -132,7 +144,7 @@ export default function ProjectsPage() {
     <>
       {/* Page Title */}
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{t("projects")}</h1>
+        <h1 className="text-2xl font-bold text-contrast dark:text-white">{t("projects")}</h1>
         <PermissionGate permission="canCreateProject">
           <Link href="/projects/new">
             <Button className="bg-qatar-maroon hover:bg-maroon-800 text-white">
@@ -287,6 +299,10 @@ export default function ProjectsPage() {
                               <div className="text-sm font-medium text-gray-500 dark:text-gray-400">
                                 {t("actualCost")}: {formatBudget(project.actualCost || null)} QAR
                               </div>
+                              <div className="flex items-center gap-2 text-sm font-medium text-gray-500 dark:text-gray-400">
+                                <User className="h-4 w-4" />
+                                <span>{t("manager")}: {getUserName(project.managerUserId)}</span>
+                              </div>
                             </div>
                             <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusClasses(project.status || null)}`}>
                               {formatStatus(project.status || null)}
@@ -349,6 +365,12 @@ export default function ProjectsPage() {
                                   {project.description}
                                 </p>
                               )}
+                              <div className="space-y-2 mb-4">
+                                <div className="flex items-center gap-2 text-sm font-medium text-gray-500 dark:text-gray-400">
+                                  <User className="h-4 w-4" />
+                                  <span>{t("manager")}: {getUserName(project.managerUserId)}</span>
+                                </div>
+                              </div>
                               <div className="flex justify-between items-center mt-auto">
                                 <div className="space-y-1">
                                   <div className="text-sm font-medium">

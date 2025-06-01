@@ -160,13 +160,12 @@ export default function ApprovalsPage() {
   };
   
   // Get status badge based on request status
-  const getStatusBadge = (status: string | null) => {
+  const getStatusBadge = (status: string | null | undefined) => {
     if (!status) return null;
-    
     switch (status) {
       case 'Pending':
         return (
-          <span className="px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300">
+          <span className="px-2 py-1 bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300 text-xs rounded-full">
             {t("pending")}
           </span>
         );
@@ -178,13 +177,13 @@ export default function ApprovalsPage() {
         );
       case 'Approved':
         return (
-          <span className="px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300">
+          <span className="px-2 py-1 bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300 text-xs rounded-full">
             {t("approved")}
           </span>
         );
       case 'Rejected':
         return (
-          <span className="px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300">
+          <span className="px-2 py-1 bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300 text-xs rounded-full">
             {t("rejected")}
           </span>
         );
@@ -202,7 +201,7 @@ export default function ApprovalsPage() {
         );
       default:
         return (
-          <span className="px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300">
+          <span className="px-2 py-1 bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200 text-xs rounded-full">
             {status}
           </span>
         );
@@ -276,10 +275,10 @@ export default function ApprovalsPage() {
   };
   
   return (
-    <>
+    <div className="space-y-6">
       {/* Page Title */}
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{t("approvals")}</h1>
+        <h1 className="text-2xl font-bold text-contrast dark:text-white">{t("approvals")}</h1>
       </div>
       
       {/* Approvals Content */}
@@ -627,6 +626,6 @@ export default function ApprovalsPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </>
+    </div>
   );
 }

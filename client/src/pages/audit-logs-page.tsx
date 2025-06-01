@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { AuditLog } from "@shared/schema";
+import { AuditLog } from "@/lib/schema-types";
 import { useI18n } from "@/hooks/use-i18n-new";
 import { useAuth } from "@/hooks/use-auth";
 import {
@@ -64,7 +64,35 @@ export default function AuditLogsPage() {
   // Fetch audit logs with filters
   const { data, isLoading, error } = useQuery<AuditLog[]>({
     queryKey: [`/api/audit-logs?${queryParams.toString()}`],
+    queryFn: async () => {
+      if (!user) throw new Error("User not authenticated");
+      const response = await fetch(`/api/audit-logs?${queryParams.toString()}`, {
+        credentials: 'include'
+      });
+      if (!response.ok) {
+        if (response.status === 401) {
+          throw new Error("Unauthorized");
+        }
+        throw new Error("Failed to fetch audit logs");
+      }
+      return await response.json();
+    },
+    enabled: !!user, // Only run query if user is authenticated
   });
+
+  // If user is not authenticated, show appropriate message
+  if (!user) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <Card className="w-full max-w-md">
+          <CardHeader>
+            <CardTitle>{t("authenticationRequired")}</CardTitle>
+            <CardDescription>{t("pleaseLoginToViewAuditLogs")}</CardDescription>
+          </CardHeader>
+        </Card>
+      </div>
+    );
+  }
 
   // Format date for display
   const formatDate = (dateString: string | Date | null) => {
@@ -110,9 +138,10 @@ export default function AuditLogsPage() {
   ];
 
   return (
-    <>
+    <div className="space-y-6">
+      {/* Page Title */}
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{t("auditLogs")}</h1>
+        <h1 className="text-2xl font-bold text-contrast dark:text-white">{t("auditLogs")}</h1>
       </div>
 
       {/* Filters */}
@@ -126,14 +155,14 @@ export default function AuditLogsPage() {
             <div>
               <label className="block text-sm font-medium mb-1">{t("entityType")}</label>
               <Select
-                value={filters.entityType || ""}
-                onValueChange={(value) => handleFilterChange("entityType", value || undefined)}
+                value={filters.entityType || "all"}
+                onValueChange={(value: string) => handleFilterChange("entityType", value === "all" ? undefined : value)}
               >
                 <SelectTrigger>
                   <SelectValue placeholder={t("allEntityTypes")} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">{t("allEntityTypes")}</SelectItem>
+                  <SelectItem value="all">{t("allEntityTypes")}</SelectItem>
                   {entityTypes.map((type) => (
                     <SelectItem key={type.value} value={type.value}>
                       {type.label}
@@ -146,14 +175,14 @@ export default function AuditLogsPage() {
             <div>
               <label className="block text-sm font-medium mb-1">{t("action")}</label>
               <Select
-                value={filters.action || ""}
-                onValueChange={(value) => handleFilterChange("action", value || undefined)}
+                value={filters.action || "all"}
+                onValueChange={(value: string) => handleFilterChange("action", value === "all" ? undefined : value)}
               >
                 <SelectTrigger>
                   <SelectValue placeholder={t("allActions")} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">{t("allActions")}</SelectItem>
+                  <SelectItem value="all">{t("allActions")}</SelectItem>
                   {actionTypes.map((action) => (
                     <SelectItem key={action.value} value={action.value}>
                       {action.label}
@@ -168,7 +197,7 @@ export default function AuditLogsPage() {
               <Input
                 type="number"
                 value={filters.entityId || ""}
-                onChange={(e) => handleFilterChange("entityId", e.target.value ? parseInt(e.target.value) : undefined)}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleFilterChange("entityId", e.target.value ? parseInt(e.target.value) : undefined)}
                 placeholder={t("enterEntityId")}
               />
             </div>
@@ -198,7 +227,7 @@ export default function AuditLogsPage() {
               <Input
                 type="number"
                 value={filters.userId || ""}
-                onChange={(e) => handleFilterChange("userId", e.target.value ? parseInt(e.target.value) : undefined)}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleFilterChange("userId", e.target.value ? parseInt(e.target.value) : undefined)}
                 placeholder={t("enterUserId")}
               />
             </div>
@@ -307,6 +336,6 @@ export default function AuditLogsPage() {
           )}
         </CardContent>
       </Card>
-    </>
+    </div>
   );
 } 

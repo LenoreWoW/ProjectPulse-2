@@ -36,7 +36,8 @@ import {
   X,
   Trello,
   List,
-  InfoIcon
+  InfoIcon,
+  FlagIcon
 } from "lucide-react";
 import { useI18n } from "@/hooks/use-i18n-new";
 import { useAuth } from "@/hooks/use-auth";
@@ -106,6 +107,19 @@ export default function ProjectDetailsPage() {
   // Tasks Tab
   const [taskViewMode, setTaskViewMode] = useState<'list' | 'kanban'>('list');
   
+  // State for milestone creation
+  const [isAddMilestoneOpen, setIsAddMilestoneOpen] = useState(false);
+  const [milestoneTitle, setMilestoneTitle] = useState('');
+  const [milestoneDescription, setMilestoneDescription] = useState('');
+  const [milestoneDeadline, setMilestoneDeadline] = useState('');
+  const [selectedTasks, setSelectedTasks] = useState<number[]>([]);
+  const [isCreatingMilestone, setIsCreatingMilestone] = useState(false);
+  
+  // State for milestone form field validation errors
+  const [milestoneTitleError, setMilestoneTitleError] = useState('');
+  const [milestoneDescriptionError, setMilestoneDescriptionError] = useState('');
+  const [milestoneDeadlineError, setMilestoneDeadlineError] = useState('');
+  
   const queryClient = useQueryClient();
   
   // Fetch project details
@@ -164,6 +178,12 @@ export default function ProjectDetailsPage() {
     enabled: !!projectId,
   });
   
+  // Fetch project milestones
+  const { data: milestones, isLoading: isLoadingMilestones } = useQuery<any[]>({
+    queryKey: [`/api/projects/${projectId}/milestones`],
+    enabled: !!projectId,
+  });
+  
   // Create change request mutation
   const createChangeRequest = useMutation({
     mutationFn: async (changeRequest: any) => {
@@ -201,73 +221,73 @@ export default function ProjectDetailsPage() {
   
   // Create task mutation
   const createTask = useMutation({
-    mutationFn: async (task: any) => {
-      try {
-        const response = await fetch(`/api/projects/${projectId}/tasks`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(task),
-        });
-        
-        if (!response.ok) {
-          const errorData = await response.json().catch(() => ({ message: 'Failed to create task' }));
-          if (errorData.errors && errorData.errors.length > 0) {
-            // More detailed error message if available
-            const errorMessages = errorData.errors.map((err: any) => err.message || err.path).join(', ');
-            throw new Error(`Validation failed: ${errorMessages}`);
-          }
-          throw new Error(errorData.message || 'Failed to create task');
-        }
-        
-        const createdTask = await response.json();
-        
-        // Create notification for assignee if one is set
-        if (task.assignedUserId) {
-          try {
-            // Create notification for the assignee
-            await fetch('/api/notifications', {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify({
-                userId: task.assignedUserId,
-                relatedEntity: 'Task',
-                relatedEntityId: createdTask.id,
-                message: `You have been assigned a new task: "${task.title}" in project "${project?.title}"`,
-              }),
-            });
-          } catch (error) {
-            console.error('Failed to create notification:', error);
-            // Don't fail the whole operation if notification creation fails
-          }
-        }
-        
-        return createdTask;
-      } catch (error) {
-        console.error('Error creating task:', error);
-        throw error;
+    mutationFn: async (taskData: any) => {
+      const response = await fetch(`/api/projects/${projectId}/tasks`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(taskData),
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to create task');
       }
+      
+      return response.json();
     },
     onSuccess: () => {
-      // Invalidate and refetch tasks
       queryClient.invalidateQueries({ queryKey: [`/api/projects/${projectId}/tasks`] });
       setIsAddTaskOpen(false);
       resetTaskForm();
       toast({
-        title: t("taskCreated"),
-        description: t("taskCreatedDescription"),
+        title: t("success"),
+        description: t("taskCreatedSuccessfully"),
       });
     },
-    onError: (error: Error) => {
+    onError: (error) => {
+      console.error('Error creating task:', error);
       toast({
         title: t("error"),
-        description: error.message || t("failedToCreateTask"),
+        description: t("failedToCreateTask"),
         variant: "destructive",
       });
-    }
+    },
+  });
+  
+  const createMilestone = useMutation({
+    mutationFn: async (milestoneData: any) => {
+      const response = await fetch(`/api/projects/${projectId}/milestones`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(milestoneData),
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to create milestone');
+      }
+      
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [`/api/projects/${projectId}/milestones`] });
+      setIsAddMilestoneOpen(false);
+      resetMilestoneForm();
+      toast({
+        title: t("success"),
+        description: t("milestoneCreatedSuccessfully"),
+      });
+    },
+    onError: (error) => {
+      console.error('Error creating milestone:', error);
+      toast({
+        title: t("error"),
+        description: t("failedToCreateMilestone"),
+        variant: "destructive",
+      });
+    },
   });
   
   const resetChangeRequestForm = () => {
@@ -339,18 +359,26 @@ export default function ProjectDetailsPage() {
     createChangeRequest.mutate(changeRequest);
   };
   
-  // Reset task form
   const resetTaskForm = () => {
     setTaskTitle('');
     setTaskDescription('');
     setTaskDeadline('');
     setTaskPriority('Medium');
     setTaskAssignee('');
-    // Clear any error states
     setTaskTitleError('');
     setTaskDescriptionError('');
     setTaskDeadlineError('');
     setTaskPriorityError('');
+  };
+  
+  const resetMilestoneForm = () => {
+    setMilestoneTitle('');
+    setMilestoneDescription('');
+    setMilestoneDeadline('');
+    setSelectedTasks([]);
+    setMilestoneTitleError('');
+    setMilestoneDescriptionError('');
+    setMilestoneDeadlineError('');
   };
   
   const handleTaskSubmit = () => {
@@ -451,6 +479,100 @@ export default function ProjectDetailsPage() {
         });
       }
     });
+  };
+  
+  const handleMilestoneSubmit = async () => {
+    // Reset previous errors
+    setMilestoneTitleError('');
+    setMilestoneDescriptionError('');
+    setMilestoneDeadlineError('');
+    
+    // Validate form
+    let hasErrors = false;
+    
+    if (!milestoneTitle.trim()) {
+      setMilestoneTitleError(t("titleRequired"));
+      hasErrors = true;
+    }
+    
+    if (!milestoneDescription.trim()) {
+      setMilestoneDescriptionError(t("descriptionRequired"));
+      hasErrors = true;
+    }
+    
+    if (!milestoneDeadline) {
+      setMilestoneDeadlineError(t("deadlineRequired"));
+      hasErrors = true;
+    }
+    
+    if (hasErrors) {
+      return;
+    }
+    
+    setIsCreatingMilestone(true);
+    
+    try {
+      // Create milestone data
+      const milestoneData = {
+        title: milestoneTitle,
+        description: milestoneDescription,
+        deadline: milestoneDeadline,
+        projectId: projectId,
+        createdByUserId: user?.id,
+      };
+      
+      // Create the milestone first
+      const response = await fetch(`/api/projects/${projectId}/milestones`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(milestoneData),
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to create milestone');
+      }
+      
+      const newMilestone = await response.json();
+      
+      // Link selected tasks to the milestone
+      if (selectedTasks.length > 0) {
+        const linkPromises = selectedTasks.map(taskId => 
+          fetch(`/api/tasks/${taskId}/milestones`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              milestoneId: newMilestone.id,
+              weight: 1 // Default weight
+            }),
+          })
+        );
+        
+        await Promise.all(linkPromises);
+      }
+      
+      // Invalidate queries and show success
+      queryClient.invalidateQueries({ queryKey: [`/api/projects/${projectId}/milestones`] });
+      setIsAddMilestoneOpen(false);
+      resetMilestoneForm();
+      toast({
+        title: t("success"),
+        description: t("milestoneCreatedSuccessfully"),
+      });
+      
+    } catch (error) {
+      console.error('Error creating milestone:', error);
+      toast({
+        title: t("error"),
+        description: t("failedToCreateMilestone"),
+        variant: "destructive",
+      });
+    } finally {
+      setIsCreatingMilestone(false);
+    }
   };
   
   const formatDate = (date: string | Date | null) => {
@@ -610,20 +732,12 @@ export default function ProjectDetailsPage() {
   return (
     <>
       {/* Page Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-        <div>
-          <div className="flex items-center gap-2 mb-2">
-            <Link href="/projects">
-              <Button variant="ghost" size="icon" className="h-8 w-8">
-                <ArrowLeftIcon className="h-4 w-4" />
-              </Button>
-            </Link>
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{project.title}</h1>
-            <Badge className={getStatusBadgeClass(project.status || null)}>{t(project.status?.toLowerCase() || "")}</Badge>
-          </div>
-          <div className="text-gray-500 dark:text-gray-400">
-            {getDepartmentName(project.departmentId)} • {t("managedBy")}: {getUserName(project.managerUserId)}
-          </div>
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6">
+        <div className="flex-1">
+          <h1 className="text-2xl font-bold text-contrast dark:text-white mb-1">
+            {project.title}
+          </h1>
+          <Badge className={getStatusBadgeClass(project.status || null)}>{t(project.status?.toLowerCase() || "")}</Badge>
         </div>
         
         <div className="flex gap-2">
@@ -884,6 +998,7 @@ export default function ProjectDetailsPage() {
         <TabsList className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
           <TabsTrigger value="overview">{t("overview")}</TabsTrigger>
           <TabsTrigger value="tasks">{t("tasks")}</TabsTrigger>
+          <TabsTrigger value="milestones">{t("milestones")}</TabsTrigger>
           <TabsTrigger value="team">{t("team")}</TabsTrigger>
           <TabsTrigger value="updates">{t("weeklyUpdates")}</TabsTrigger>
           <TabsTrigger value="files">{t("files")}</TabsTrigger>
@@ -893,16 +1008,16 @@ export default function ProjectDetailsPage() {
         {/* Overview Tab */}
         <TabsContent value="overview" className="space-y-6">
           {/* Project Info Card */}
-          <Card>
+          <Card className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700">
             <CardHeader>
-              <CardTitle>{t("projectDetails")}</CardTitle>
+              <CardTitle className="text-gray-900 dark:text-white">{t("projectDetails")}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-8">
               {/* Basic Info */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                   <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">{t("client")}</h3>
-                  <p className="mt-1 text-base">{(project as any).client || "-"}</p>
+                  <p className="mt-1 text-base text-gray-900 dark:text-white">{(project as any).client || "-"}</p>
                 </div>
                 <div>
                   <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">{t("priority")}</h3>
@@ -914,25 +1029,25 @@ export default function ProjectDetailsPage() {
                 </div>
                 <div>
                   <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">{t("startDate")}</h3>
-                  <p className="mt-1 text-base flex items-center">
+                  <p className="mt-1 text-base flex items-center text-gray-900 dark:text-white">
                     <CalendarIcon className="mr-2 h-4 w-4 text-gray-400" />
                     {formatDate(project.startDate)}
                   </p>
                 </div>
                 <div>
                   <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">{t("deadline")}</h3>
-                  <p className="mt-1 text-base flex items-center">
+                  <p className="mt-1 text-base flex items-center text-gray-900 dark:text-white">
                     <CalendarIcon className="mr-2 h-4 w-4 text-gray-400" />
                     {formatDate(project.endDate || null)}
                   </p>
                 </div>
                 <div>
                   <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">{t("budget")}</h3>
-                  <p className="mt-1 text-base">{formatCurrency(project.budget || null)} QAR</p>
+                  <p className="mt-1 text-base text-gray-900 dark:text-white">{formatCurrency(project.budget || null)} QAR</p>
                 </div>
                 <div>
                   <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">{t("actualCost")}</h3>
-                  <p className="mt-1 text-base">{formatCurrency(project.actualCost || null)} QAR</p>
+                  <p className="mt-1 text-base text-gray-900 dark:text-white">{formatCurrency(project.actualCost || null)} QAR</p>
                 </div>
               </div>
               
@@ -941,14 +1056,14 @@ export default function ProjectDetailsPage() {
               {/* Project Description */}
               <div>
                 <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">{t("description")}</h3>
-                <p className="text-base whitespace-pre-line">{project.description || t("noDescription")}</p>
+                <p className="text-base whitespace-pre-line text-gray-900 dark:text-white">{project.description || t("noDescription")}</p>
               </div>
               
               {/* Project Progress */}
               <div>
                 <div className="flex justify-between items-center mb-2">
                   <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">{t("progress")}</h3>
-                  <span className="text-sm font-medium">{calculateProgress()}%</span>
+                  <span className="text-sm font-medium text-gray-900 dark:text-white">{calculateProgress()}%</span>
                 </div>
                 <div className="w-full bg-gray-200 rounded-full h-2.5 dark:bg-gray-700">
                   <div 
@@ -1461,6 +1576,361 @@ export default function ProjectDetailsPage() {
               ) : (
                 <div className="text-center py-4">
                   <p className="text-gray-500 dark:text-gray-400">{t("noTasks")}</p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+        
+        {/* Milestones Tab */}
+        <TabsContent value="milestones" className="space-y-6">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between">
+              <CardTitle>{t("projectMilestones")}</CardTitle>
+              
+              {/* Add Milestone Button - Show if user has general create milestone permission */}
+              <PermissionGate permission="canCreateTask">
+                <Dialog open={isAddMilestoneOpen} onOpenChange={setIsAddMilestoneOpen}>
+                  <DialogTrigger asChild>
+                    <Button className="bg-qatar-maroon hover:bg-maroon-800 text-white">
+                      <FlagIcon className="mr-2 h-4 w-4" />
+                      {t("addMilestone")}
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="sm:max-w-[500px]">
+                    <DialogHeader>
+                      <DialogTitle>{t("addNewMilestone")}</DialogTitle>
+                      <DialogDescription>
+                        {t("addNewMilestoneDescription")}
+                      </DialogDescription>
+                    </DialogHeader>
+                    <div className="grid gap-4 py-4">
+                      <div className="grid grid-cols-4 items-center gap-4">
+                        <Label htmlFor="milestone-title" className="text-right">
+                          {t("title")}
+                        </Label>
+                        <div className="col-span-3">
+                          <Input
+                            id="milestone-title"
+                            value={milestoneTitle}
+                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setMilestoneTitle(e.target.value)}
+                            placeholder={t("enterMilestoneTitle")}
+                            className={milestoneTitleError ? "border-red-500" : ""}
+                          />
+                          {milestoneTitleError && (
+                            <p className="text-red-500 text-sm mt-1">{milestoneTitleError}</p>
+                          )}
+                        </div>
+                      </div>
+                      
+                      <div className="grid grid-cols-4 items-center gap-4">
+                        <Label htmlFor="milestone-description" className="text-right">
+                          {t("description")}
+                        </Label>
+                        <div className="col-span-3">
+                          <Textarea
+                            id="milestone-description"
+                            value={milestoneDescription}
+                            onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setMilestoneDescription(e.target.value)}
+                            placeholder={t("enterMilestoneDescription")}
+                            rows={3}
+                            className={milestoneDescriptionError ? "border-red-500" : ""}
+                          />
+                          {milestoneDescriptionError && (
+                            <p className="text-red-500 text-sm mt-1">{milestoneDescriptionError}</p>
+                          )}
+                        </div>
+                      </div>
+                      
+                      <div className="grid grid-cols-4 items-center gap-4">
+                        <Label htmlFor="milestone-deadline" className="text-right">
+                          {t("deadline")}
+                        </Label>
+                        <div className="col-span-3">
+                          <Input
+                            id="milestone-deadline"
+                            type="date"
+                            value={milestoneDeadline}
+                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setMilestoneDeadline(e.target.value)}
+                            className={milestoneDeadlineError ? "border-red-500" : ""}
+                          />
+                          {milestoneDeadlineError && (
+                            <p className="text-red-500 text-sm mt-1">{milestoneDeadlineError}</p>
+                          )}
+                        </div>
+                      </div>
+                      
+                      <div className="grid grid-cols-4 items-center gap-4">
+                        <Label htmlFor="milestone-tasks" className="text-right">
+                          {t("linkTasks")}
+                        </Label>
+                        <div className="col-span-3">
+                          <div className="space-y-2">
+                            <p className="text-sm text-gray-600 dark:text-gray-400">
+                              {t("selectTasksToLink")}
+                            </p>
+                            <div className="max-h-32 overflow-y-auto border rounded-md p-2 space-y-1">
+                              {tasks && tasks.length > 0 ? (
+                                tasks.map((task) => (
+                                  <div key={task.id} className="flex items-center space-x-2">
+                                    <input
+                                      type="checkbox"
+                                      id={`task-${task.id}`}
+                                      checked={selectedTasks.includes(task.id)}
+                                      onChange={(e) => {
+                                        if (e.target.checked) {
+                                          setSelectedTasks([...selectedTasks, task.id]);
+                                        } else {
+                                          setSelectedTasks(selectedTasks.filter(id => id !== task.id));
+                                        }
+                                      }}
+                                      className="rounded border-gray-300"
+                                    />
+                                    <label 
+                                      htmlFor={`task-${task.id}`} 
+                                      className="text-sm cursor-pointer flex-1"
+                                    >
+                                      {task.title}
+                                    </label>
+                                  </div>
+                                ))
+                              ) : (
+                                <p className="text-sm text-gray-500">{t("noTasksAvailable")}</p>
+                              )}
+                            </div>
+                            {selectedTasks.length > 0 && (
+                              <p className="text-xs text-gray-500">
+                                {t("selectedTasks", { count: selectedTasks.length })}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    <DialogFooter>
+                      <Button 
+                        variant="outline" 
+                        onClick={() => {
+                          setIsAddMilestoneOpen(false);
+                          resetMilestoneForm();
+                        }}
+                      >
+                        {t("cancel")}
+                      </Button>
+                      <Button 
+                        type="submit" 
+                        onClick={handleMilestoneSubmit}
+                        className="bg-qatar-maroon hover:bg-maroon-800 text-white"
+                        disabled={isCreatingMilestone}
+                      >
+                        {isCreatingMilestone ? t("creating") : t("createMilestone")}
+                      </Button>
+                    </DialogFooter>
+                  </DialogContent>
+                </Dialog>
+              </PermissionGate>
+              
+              {/* Project manager specific milestone control */}
+              <ProjectOwnershipGate 
+                projectId={projectId} 
+                managerId={project.managerUserId}
+                requiredPermission="canManageOwnProjectTasks"
+              >
+                <Dialog open={isAddMilestoneOpen} onOpenChange={setIsAddMilestoneOpen}>
+                  <DialogTrigger asChild>
+                    <Button className="bg-qatar-maroon hover:bg-maroon-800 text-white">
+                      <FlagIcon className="mr-2 h-4 w-4" />
+                      {t("addMilestone")}
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="sm:max-w-[500px]">
+                    <DialogHeader>
+                      <DialogTitle>{t("addNewMilestone")}</DialogTitle>
+                      <DialogDescription>
+                        {t("addNewMilestoneDescription")}
+                      </DialogDescription>
+                    </DialogHeader>
+                    <div className="grid gap-4 py-4">
+                      <div className="grid grid-cols-4 items-center gap-4">
+                        <Label htmlFor="milestone-title" className="text-right">
+                          {t("title")}
+                        </Label>
+                        <div className="col-span-3">
+                          <Input
+                            id="milestone-title"
+                            value={milestoneTitle}
+                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setMilestoneTitle(e.target.value)}
+                            placeholder={t("enterMilestoneTitle")}
+                            className={milestoneTitleError ? "border-red-500" : ""}
+                          />
+                          {milestoneTitleError && (
+                            <p className="text-red-500 text-sm mt-1">{milestoneTitleError}</p>
+                          )}
+                        </div>
+                      </div>
+                      
+                      <div className="grid grid-cols-4 items-center gap-4">
+                        <Label htmlFor="milestone-description" className="text-right">
+                          {t("description")}
+                        </Label>
+                        <div className="col-span-3">
+                          <Textarea
+                            id="milestone-description"
+                            value={milestoneDescription}
+                            onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setMilestoneDescription(e.target.value)}
+                            placeholder={t("enterMilestoneDescription")}
+                            rows={3}
+                            className={milestoneDescriptionError ? "border-red-500" : ""}
+                          />
+                          {milestoneDescriptionError && (
+                            <p className="text-red-500 text-sm mt-1">{milestoneDescriptionError}</p>
+                          )}
+                        </div>
+                      </div>
+                      
+                      <div className="grid grid-cols-4 items-center gap-4">
+                        <Label htmlFor="milestone-deadline" className="text-right">
+                          {t("deadline")}
+                        </Label>
+                        <div className="col-span-3">
+                          <Input
+                            id="milestone-deadline"
+                            type="date"
+                            value={milestoneDeadline}
+                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setMilestoneDeadline(e.target.value)}
+                            className={milestoneDeadlineError ? "border-red-500" : ""}
+                          />
+                          {milestoneDeadlineError && (
+                            <p className="text-red-500 text-sm mt-1">{milestoneDeadlineError}</p>
+                          )}
+                        </div>
+                      </div>
+                      
+                      <div className="grid grid-cols-4 items-center gap-4">
+                        <Label htmlFor="milestone-tasks" className="text-right">
+                          {t("linkTasks")}
+                        </Label>
+                        <div className="col-span-3">
+                          <div className="space-y-2">
+                            <p className="text-sm text-gray-600 dark:text-gray-400">
+                              {t("selectTasksToLink")}
+                            </p>
+                            <div className="max-h-32 overflow-y-auto border rounded-md p-2 space-y-1">
+                              {tasks && tasks.length > 0 ? (
+                                tasks.map((task) => (
+                                  <div key={task.id} className="flex items-center space-x-2">
+                                    <input
+                                      type="checkbox"
+                                      id={`task-${task.id}`}
+                                      checked={selectedTasks.includes(task.id)}
+                                      onChange={(e) => {
+                                        if (e.target.checked) {
+                                          setSelectedTasks([...selectedTasks, task.id]);
+                                        } else {
+                                          setSelectedTasks(selectedTasks.filter(id => id !== task.id));
+                                        }
+                                      }}
+                                      className="rounded border-gray-300"
+                                    />
+                                    <label 
+                                      htmlFor={`task-${task.id}`} 
+                                      className="text-sm cursor-pointer flex-1"
+                                    >
+                                      {task.title}
+                                    </label>
+                                  </div>
+                                ))
+                              ) : (
+                                <p className="text-sm text-gray-500">{t("noTasksAvailable")}</p>
+                              )}
+                            </div>
+                            {selectedTasks.length > 0 && (
+                              <p className="text-xs text-gray-500">
+                                {t("selectedTasks", { count: selectedTasks.length })}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    <DialogFooter>
+                      <Button 
+                        variant="outline" 
+                        onClick={() => {
+                          setIsAddMilestoneOpen(false);
+                          resetMilestoneForm();
+                        }}
+                      >
+                        {t("cancel")}
+                      </Button>
+                      <Button 
+                        type="submit" 
+                        onClick={handleMilestoneSubmit}
+                        className="bg-qatar-maroon hover:bg-maroon-800 text-white"
+                        disabled={isCreatingMilestone}
+                      >
+                        {isCreatingMilestone ? t("creating") : t("createMilestone")}
+                      </Button>
+                    </DialogFooter>
+                  </DialogContent>
+                </Dialog>
+              </ProjectOwnershipGate>
+            </CardHeader>
+            
+            <CardContent>
+              {isLoadingMilestones ? (
+                <div className="space-y-3">
+                  <Skeleton className="h-12 w-full" />
+                  <Skeleton className="h-12 w-full" />
+                  <Skeleton className="h-12 w-full" />
+                </div>
+              ) : milestones && milestones.length > 0 ? (
+                <div className="space-y-4">
+                  {milestones.map((milestone) => (
+                    <Card key={milestone.id} className="bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
+                      <CardHeader className="pb-3">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center space-x-3">
+                            <FlagIcon className="h-5 w-5 text-qatar-maroon" />
+                            <div>
+                              <CardTitle className="text-lg text-gray-900 dark:text-white">{milestone.title}</CardTitle>
+                              <p className="text-sm text-gray-500 dark:text-gray-400">
+                                {t("deadline")}: {formatDate(milestone.deadline)}
+                              </p>
+                            </div>
+                          </div>
+                          <Badge className={getStatusBadgeClass(milestone.status || null)}>
+                            {t(milestone.status?.toLowerCase() || "")}
+                          </Badge>
+                        </div>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="space-y-3">
+                          <p className="text-gray-700 dark:text-gray-300">{milestone.description}</p>
+                          
+                          <div className="flex items-center justify-between">
+                            <span className="text-sm text-gray-500 dark:text-gray-400">{t("progress")}</span>
+                            <span className="text-sm font-medium text-gray-900 dark:text-white">
+                              {Math.round(milestone.completionPercentage || 0)}%
+                            </span>
+                          </div>
+                          
+                          <div className="w-full bg-gray-200 rounded-full h-2 dark:bg-gray-700">
+                            <div 
+                              className="bg-qatar-maroon h-2 rounded-full transition-all duration-300" 
+                              style={{ width: `${milestone.completionPercentage || 0}%` }}
+                            ></div>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-8">
+                  <FlagIcon className="mx-auto h-12 w-12 text-gray-400" />
+                  <h3 className="mt-2 text-sm font-medium text-gray-900 dark:text-white">{t("noMilestones")}</h3>
+                  <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">{t("noMilestonesDescription")}</p>
                 </div>
               )}
             </CardContent>

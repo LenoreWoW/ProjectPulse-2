@@ -44,5 +44,7 @@
   "task": "Task",
   "changeRequest": "Change Request",
   "goal": "Goal",
-  "riskIssue": "Risk/Issue"
+  "riskIssue": "Risk/Issue",
+  "manager": "Manager",
+  "noManager": "No Manager"
 } 

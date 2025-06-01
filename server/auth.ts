@@ -4,26 +4,27 @@ import { Strategy as LocalStrategy } from "passport-local";
 import { Strategy as LDAPStrategy } from "passport-ldapauth";
 import { Express, Request, Response, NextFunction } from "express";
 import session from "express-session";
-import { scrypt, randomBytes, timingSafeEqual } from "crypto";
-import { promisify } from "util";
+import bcrypt from "bcrypt";
+import { randomBytes } from "crypto";
 // @ts-ignore - Ignoring missing type declarations for jsonwebtoken
 import jwt from "jsonwebtoken";
-import { storage } from "./storage";
+import { PgStorage } from "./pg-storage";
 import { User as SelectUser, insertUserSchema, InsertUser } from "@shared/schema";
 import { z } from "zod";
 import { sendRegistrationAcceptedEmail, sendRegistrationRejectedEmail } from "./email";
 
+// Create storage instance
+const storage = new PgStorage();
+
 declare global {
   namespace Express {
     interface User extends SelectUser {
-      role?: string; // Adding role to match the actual usage
-      status?: string; // Adding status to match the actual usage
+      // Removed roles array since we're using role string instead
     }
   }
 }
 
 const JWT_SECRET = process.env.JWT_SECRET || "pmo-jwt-secret-key";
-const scryptAsync = promisify(scrypt);
 
 // Define JWT payload interface
 interface JwtPayload {
@@ -72,22 +73,18 @@ export function authenticateToken(req: Request, res: Response, next: NextFunctio
   });
 }
 
-// Hash password with scrypt
+// Hash password with bcrypt
 export async function hashPassword(password: string): Promise<string> {
-  const salt = randomBytes(16).toString("hex");
-  const derivedKey = (await scryptAsync(password, salt, 64)) as Buffer;
-  return salt + "." + derivedKey.toString("hex");
+  const saltRounds = 10;
+  return bcrypt.hash(password, saltRounds);
 }
 
-// Compare a password with a hash
+// Compare a password with a hash using bcrypt
 export async function comparePasswords(
   providedPassword: string,
   storedHash: string
 ): Promise<boolean> {
-  const [salt, key] = storedHash.split(".");
-  const derivedKey = (await scryptAsync(providedPassword, salt, 64)) as Buffer;
-  const keyBuffer = Buffer.from(key, "hex");
-  return timingSafeEqual(derivedKey, keyBuffer);
+  return bcrypt.compare(providedPassword, storedHash);
 }
 
 // Authentication middleware
@@ -160,6 +157,7 @@ async function ensureHoldDepartmentExists(): Promise<number> {
     // Create Hold department if it doesn't exist
     const newDepartment = await storage.createDepartment({
       name: "Hold",
+      code: "HOLD-001",
       description: "Temporary department for new LDAP users",
       isActive: true
     });
@@ -238,11 +236,10 @@ export function setupAuth(app: Express) {
             email,
             name,
             password: hashedPassword,
-            roles: ['User'], // Using roles array instead of role string
+            role: 'User',
             status: 'Active',
             departmentId: holdDepartmentId,
-            preferredLanguage: 'ar', // Default to Arabic
-            isActive: true
+            preferredLanguage: 'ar' // Default to Arabic
           } as InsertUser);
           
           return done(null, newUser);
@@ -269,7 +266,7 @@ export function setupAuth(app: Express) {
     }
   });
 
-  app.post("/api/register", async (req, res, next) => {
+  app.post("/api/register", async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       // Parse and validate the request data
       const validatedData = registerSchema.parse(req.body);
@@ -279,14 +276,16 @@ export function setupAuth(app: Express) {
       if (existingUserByUsername) {
         // Send rejection email
         await sendRegistrationRejectedEmail(validatedData.email);
-        return res.status(400).json({ message: "Username already exists" });
+        res.status(400).json({ message: "Username already exists" });
+        return;
       }
       
       const existingUserByEmail = await storage.getUserByEmail(validatedData.email);
       if (existingUserByEmail) {
         // Send rejection email
         await sendRegistrationRejectedEmail(validatedData.email);
-        return res.status(400).json({ message: "Email already exists" });
+        res.status(400).json({ message: "Email already exists" });
+        return;
       }
       
       // Verify email domain
@@ -294,9 +293,10 @@ export function setupAuth(app: Express) {
       if (emailDomain !== 'qaf.mil.qa' && emailDomain !== 'mod.gov.qa') {
         // Send rejection email for unauthorized domain
         await sendRegistrationRejectedEmail(validatedData.email);
-        return res.status(400).json({ 
+        res.status(400).json({ 
           message: "Only email addresses from @qaf.mil.qa or @mod.gov.qa domains are allowed" 
         });
+        return;
       }
       
       // Create the user with hashed password
@@ -327,53 +327,43 @@ export function setupAuth(app: Express) {
           await sendRegistrationRejectedEmail(req.body.email);
         }
         
-        return res.status(400).json({ 
+        res.status(400).json({ 
           message: "Validation failed", 
           errors: error.errors 
         });
+        return;
       }
       next(error);
     }
   });
 
   app.post("/api/login", (req, res, next) => {
-    // Try LDAP authentication first
-    passport.authenticate("ldap", { session: false }, (ldapErr: Error, ldapUser: Express.User | false, ldapInfo: { message: string }) => {
-      if (ldapUser) {
-        // LDAP authentication succeeded
-        console.log("LDAP Authentication successful for user:", (ldapUser as any).username);
-        req.login(ldapUser, (loginErr) => {
-          if (loginErr) {
-            console.error("Session login error:", loginErr);
-            return res.status(500).json({ message: "Failed to establish session" });
-          }
-          return res.status(200).json(ldapUser);
-        });
-      } else {
-        // LDAP authentication failed, try local authentication
-        passport.authenticate("local", (err: Error, user: Express.User | false, info: { message: string }) => {
-          console.log("Local authentication attempt:", req.body.username);
-          
-          if (err) {
-            console.error("Login error:", err);
-            return res.status(401).json({ message: "Invalid username or password" });
-          }
-          if (!user) {
-            console.log("Authentication failed:", info.message);
-            return res.status(401).json({ message: info.message || "Authentication failed" });
-          }
-          
-          console.log("Local authentication successful for user:", (user as any).id);
-          req.login(user, (loginErr) => {
-            if (loginErr) {
-              console.error("Session login error:", loginErr);
-              return res.status(500).json({ message: "Failed to establish session" });
-            }
-            console.log("Session established for user:", (user as any).id);
-            return res.status(200).json(user);
-          });
-        })(req, res, next);
+    passport.authenticate("local", (err: any, user: any, info: any) => {
+      if (err) {
+        console.error("Authentication error:", err);
+        return res.status(500).json({ message: "Internal server error" });
       }
+      if (!user) {
+        console.log("Authentication failed:", info?.message || "Invalid credentials");
+        return res.status(401).json({ message: info?.message || "Authentication failed" });
+      }
+      
+      console.log("Local authentication successful for user:", user.id);
+      req.login(user, (loginErr) => {
+        if (loginErr) {
+          console.error("Session login error:", loginErr);
+          return res.status(500).json({ message: "Failed to establish session" });
+        }
+        console.log("Session established for user:", user.id);
+        
+        // Check if response has already been sent
+        if (res.headersSent) {
+          console.warn("Headers already sent, skipping response");
+          return;
+        }
+        
+        return res.status(200).json(user);
+      });
     })(req, res, next);
   });
 
@@ -384,22 +374,26 @@ export function setupAuth(app: Express) {
     });
   });
 
-  app.get("/api/user", (req, res) => {
+  app.get("/api/user", (req: Request, res: Response): void => {
     if (req.isAuthenticated()) {
-      return res.json(req.user);
+      res.json(req.user);
+      return;
     }
-    return res.status(401).json({ message: "Not authenticated" });
+    res.status(401).json({ message: "Not authenticated" });
   });
   
   // Update user profile
-  app.put("/api/user", async (req, res, next) => {
-    if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+  app.put("/api/user", async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    if (!req.isAuthenticated()) {
+      res.status(401).json({ message: "Unauthorized" });
+      return;
+    }
     
     try {
       const updateData = req.body;
       
       // Don't allow updating role or status from this endpoint
-      delete updateData.role;
+      delete updateData.roles;
       delete updateData.status;
       
       // If password is being updated, hash it
@@ -409,7 +403,8 @@ export function setupAuth(app: Express) {
       
       const updatedUser = await storage.updateUser(req.user.id, updateData);
       if (!updatedUser) {
-        return res.status(404).json({ message: "User not found" });
+        res.status(404).json({ message: "User not found" });
+        return;
       }
       
       res.json(updatedUser);
@@ -419,13 +414,15 @@ export function setupAuth(app: Express) {
   });
   
   // Admin endpoint to update user roles/status
-  app.put("/api/users/:id", async (req, res, next) => {
-    if (!req.isAuthenticated()) return res.status(401).json({ message: "Unauthorized" });
+  app.put("/api/users/:id", async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    if (!req.isAuthenticated()) {
+      res.status(401).json({ message: "Unauthorized" });
+      return;
+    }
     
-    if (req.user.role !== "Administrator" && 
-        req.user.role !== "MainPMO" && 
-        req.user.role !== "DepartmentDirector") {
-      return res.status(403).json({ message: "Forbidden: Insufficient permissions" });
+    if (req.user.role !== "Administrator" && req.user.role !== "MainPMO" && req.user.role !== "DepartmentDirector") {
+      res.status(403).json({ message: "Forbidden: Insufficient permissions" });
+      return;
     }
     
     try {
@@ -436,18 +433,21 @@ export function setupAuth(app: Express) {
       if (req.user.role === "DepartmentDirector") {
         const user = await storage.getUser(userId);
         if (!user || user.departmentId !== req.user.departmentId) {
-          return res.status(403).json({ message: "Forbidden: User is not in your department" });
+          res.status(403).json({ message: "Forbidden: User is not in your department" });
+          return;
         }
         
         // Department Directors cannot promote to Admin or MainPMO
-        if (updateData.role === "Administrator" || updateData.role === "MainPMO") {
-          return res.status(403).json({ message: "Forbidden: Cannot assign this role" });
+        if (updateData.role && (updateData.role === "Administrator" || updateData.role === "MainPMO")) {
+          res.status(403).json({ message: "Forbidden: Cannot assign this role" });
+          return;
         }
       }
       
       const updatedUser = await storage.updateUser(userId, updateData);
       if (!updatedUser) {
-        return res.status(404).json({ message: "User not found" });
+        res.status(404).json({ message: "User not found" });
+        return;
       }
       
       res.json(updatedUser);

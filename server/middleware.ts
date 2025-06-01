@@ -121,10 +121,10 @@ export const hasRole: HasRoleMiddleware = (roles) => {
       return res.status(401).json({ message: 'Unauthorized' });
     }
 
-    const userRoles = req.user?.roles || [];
+    const userRole = req.user?.role;
 
     // Check if the user has any of the required roles
-    const hasRequiredRole = roles.some(role => userRoles.includes(role));
+    const hasRequiredRole = userRole && roles.includes(userRole);
 
     if (hasRequiredRole) {
       return next();

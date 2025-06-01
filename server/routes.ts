@@ -30,13 +30,11 @@ import http from 'http';
 // Create a new instance of the PostgreSQL storage
 export const storage = new PgStorage();
 
-// Add a type declaration to extend Express.User
+// Add a type declaration to extend Express.Request
 declare global {
   namespace Express {
-    interface User {
-      id: number;
-      role: string | null;
-      departmentId: number | null;
+    interface Request {
+      currentUser?: Express.User;
     }
   }
 }
@@ -177,55 +175,25 @@ function transformProjectDates(req: Request, res: Response, next: NextFunction) 
   next();
 }
 
-// Helper function to validate request body with Zod schema
-function validateBody<T>(schema: z.Schema<T>) {
-  return (req: Request, res: Response, next: NextFunction) => {
-    try {
-      // Pre-process dates before schema validation
-      if (req.path.includes('/api/projects')) {
-        transformProjectDates(req, res, () => {});
-      }
-      
-      // Log detailed information about request for debugging
-      console.log(`Validating request body for path: ${req.path}`);
-      console.log('Request body:', JSON.stringify(req.body, null, 2));
-      console.log('Schema description:', schema.description || 'No schema description available');
-      
-      // Parse with safe mode first to get validation errors if any
-      const result = schema.safeParse(req.body);
-      if (!result.success) {
-        console.error('Validation failed with errors:', result.error.errors);
-        console.error('Validation error format issues:', JSON.stringify(result.error.format(), null, 2));
-        
-        return res.status(400).json({ 
-          message: "Validation failed", 
-          errors: result.error.errors 
-        });
-      }
-      
-      // Assign the validated data to req.body
-      req.body = result.data;
-      next();
-    } catch (error) {
-      console.error('Unexpected error during validation:', error);
-      if (error instanceof z.ZodError) {
-        console.error('Zod validation errors:', error.errors);
-        res.status(400).json({ 
-          message: "Validation failed", 
-          errors: error.errors 
-        });
-        return;
-      }
-      res.status(500).json({
-        message: "Server error during validation",
-        error: error instanceof Error ? error.message : "Unknown error"
+// Helper function to wrap route handlers and ensure they return void
+function wrapHandler<T extends any[]>(
+  handler: (...args: T) => any
+): (...args: T) => void {
+  return (...args: T): void => {
+    const result = handler(...args);
+    // If the result is a Promise, we don't need to do anything special
+    // If it's a Response object, we just ignore the return value
+    if (result instanceof Promise) {
+      result.catch((error) => {
+        // Handle any unhandled promise rejections
+        console.error('Unhandled promise rejection in route handler:', error);
       });
     }
   };
 }
 
 // Helper function to check if user is authenticated
-function isAuthenticated(req: Request, res: Response, next: NextFunction) {
+function isAuthenticated(req: Request, res: Response, next: NextFunction): void {
   if (req.isAuthenticated()) {
     return next();
   }
@@ -233,20 +201,31 @@ function isAuthenticated(req: Request, res: Response, next: NextFunction) {
 }
 
 // Advanced authenticated function with typed user object
-function hasAuth(handler: (req: Request & { currentUser: Express.User }, res: Response, next: NextFunction) => void) {
-  return (req: Request, res: Response, next: NextFunction) => {
+function hasAuth(handler: (req: Request & { currentUser: Express.User }, res: Response, next: NextFunction) => Promise<void> | void) {
+  return async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     if (!req.isAuthenticated || !req.isAuthenticated()) {
-      return res.status(401).json({ message: "Unauthorized" });
+      res.status(401).json({ message: "Unauthorized" });
+      return;
     }
-    handler(req as Request & { currentUser: Express.User }, res, next);
+    
+    // Set currentUser to the authenticated user
+    const reqWithUser = req as Request & { currentUser: Express.User };
+    reqWithUser.currentUser = req.user as Express.User;
+    
+    try {
+      await handler(reqWithUser, res, next);
+    } catch (error) {
+      next(error);
+    }
   };
 }
 
 // Helper function to check if user has required role(s)
 function hasRole(roles: string[]) {
-  return (req: Request, res: Response, next: NextFunction) => {
+  return (req: Request, res: Response, next: NextFunction): void => {
     if (!req.isAuthenticated() || !req.user) {
-      return res.status(401).json({ message: "Unauthorized" });
+      res.status(401).json({ message: "Unauthorized" });
+      return;
     }
     
     const userRole = req.user.role || '';
@@ -260,9 +239,10 @@ function hasRole(roles: string[]) {
 
 // Helper to check if user has role and is in the same department as the resource
 function hasDepartmentAccess() {
-  return async (req: Request, res: Response, next: NextFunction) => {
+  return async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     if (!req.isAuthenticated() || !req.user) {
-      return res.status(401).json({ message: "Unauthorized" });
+      res.status(401).json({ message: "Unauthorized" });
+      return;
     }
     
     const userRole = req.user.role || '';
@@ -290,7 +270,8 @@ function hasDepartmentAccess() {
     }
     
     if (departmentId === undefined) {
-      return res.status(404).json({ message: "Resource not found" });
+      res.status(404).json({ message: "Resource not found" });
+      return;
     }
     
     const userDeptId = req.user.departmentId ?? -1;
@@ -325,8 +306,8 @@ function hasDepartmentAccess() {
 }
 
 // Helper function to combine validation and auth
-function validateAuthBody<T>(schema: z.Schema<T>) {
-  return (req: Request, res: Response, next: NextFunction) => {
+function validateBody(schema: any) {
+  return (req: Request, res: Response, next: NextFunction): void => {
     try {
       // Pre-process dates before schema validation
       if (req.path.includes('/api/projects')) {
@@ -360,6 +341,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // setup auth routes
   setupAuth(app);
   
+  // Register audit log routes EARLY to avoid conflicts
+  const auditLogRouter = express.Router();
+  registerAuditLogRoutes(auditLogRouter, storage);
+  app.use(auditLogRouter);
+  
+  // Health check endpoint
+  app.get("/api/health", (req: Request, res: Response) => {
+    res.status(200).json({ status: "ok", timestamp: new Date().toISOString() });
+  });
+  
   // Add date transformation middleware for API requests
   app.use('/api', (req: Request, res: Response, next: NextFunction) => {
     if (req.method === 'POST' || req.method === 'PUT') {
@@ -371,7 +362,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   // Departments Routes
-  app.get("/api/departments", isAuthenticated, async (req: Request, res: Response) => {
+  app.get("/api/departments", isAuthenticated, async (req: Request, res: Response, next: NextFunction) => {
     try {
       const departments = await storage.getDepartments();
       res.json(departments);
@@ -380,13 +371,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  app.get("/api/departments/:id", isAuthenticated, async (req: Request, res: Response) => {
+  app.get("/api/departments/:id", isAuthenticated, async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const departmentId = parseInt(req.params.id);
       const department = await storage.getDepartment(departmentId);
       
       if (!department) {
-        return res.status(404).json({ message: "Department not found" });
+        res.status(404).json({ message: "Department not found" });
+        return;
       }
       
       res.json(department);
@@ -397,10 +389,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   app.post(
     "/api/departments", 
-    isAuthenticated, 
-    hasRole(["Administrator", "MainPMO"]), 
-    validateBody(insertDepartmentSchema), 
-    async (req, res) => {
+    isAuthenticated,
+    hasRole(["Administrator", "MainPMO"]),
+    validateBody(insertDepartmentSchema),
+    async (req: Request, res: Response, next: NextFunction): Promise<void> => {
       try {
         console.log("Creating department with data:", JSON.stringify(req.body, null, 2));
         const newDepartment = await storage.createDepartment(req.body);
@@ -421,13 +413,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     "/api/departments/:id", 
     isAuthenticated, 
     hasRole(["Administrator", "MainPMO"]), 
-    async (req, res) => {
+    async (req: Request, res: Response, next: NextFunction): Promise<void> => {
       try {
         const departmentId = parseInt(req.params.id);
         const updatedDepartment = await storage.updateDepartment(departmentId, req.body);
         
         if (!updatedDepartment) {
-          return res.status(404).json({ message: "Department not found" });
+          res.status(404).json({ message: "Department not found" });
+          return;
         }
         
         res.json(updatedDepartment);
@@ -438,7 +431,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   );
   
   // Users Routes (Admin)
-  app.get("/api/users", hasAuth(async (req, res) => {
+  app.get("/api/users", hasAuth(async (req, res): Promise<void> => {
     try {
       const users = await storage.getUsers();
       
@@ -452,10 +445,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Sub-PMO can only see users in their department
         filteredUsers = users.filter(user => user.departmentId === req.currentUser.departmentId);
       } else if (!["Administrator", "MainPMO", "Executive"].includes(req.currentUser.role || '')) {
-        // Other roles can only see active users in their department
+        // Other roles can only see users in their department
         filteredUsers = users.filter(user => 
-          user.departmentId === req.currentUser.departmentId && 
-          user.status === "Active"
+          user.departmentId === req.currentUser.departmentId
         );
       }
       
@@ -471,13 +463,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   }));
   
-  app.get("/api/user/:id", hasAuth(async (req, res) => {
+  app.get("/api/user/:id", hasAuth(async (req, res): Promise<void> => {
     try {
       const userId = parseInt(req.params.id);
       const user = await storage.getUser(userId);
       
       if (!user) {
-        return res.status(404).json({ message: "User not found" });
+        res.status(404).json({ message: "User not found" });
+        return;
       }
       
       // Users can only view users in their department unless they're admins
@@ -488,7 +481,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         req.currentUser.departmentId !== user.departmentId && 
         req.currentUser.id !== userId
       ) {
-        return res.status(403).json({ message: "Forbidden: Cannot view user from different department" });
+        res.status(403).json({ message: "Forbidden: Cannot view user from different department" });
+        return;
       }
       
       // Remove password field
@@ -501,7 +495,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   }));
   
   // Projects Routes
-  app.get("/api/projects", hasAuth(async (req, res) => {
+  app.get("/api/projects", hasAuth(async (req, res): Promise<void> => {
     try {
       const projects = await storage.getProjects();
       
@@ -531,13 +525,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   }));
   
-  app.get("/api/projects/:id", hasAuth(async (req, res) => {
+  app.get("/api/projects/:id", hasAuth(async (req, res): Promise<void> => {
     try {
       const projectId = parseInt(req.params.id);
       const project = await storage.getProject(projectId);
       
       if (!project) {
-        return res.status(404).json({ message: "Project not found" });
+        res.status(404).json({ message: "Project not found" });
+        return;
       }
       
       // Check if user has access to this project
@@ -548,7 +543,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         req.currentUser.departmentId !== project.departmentId && 
         req.currentUser.id !== project.managerUserId
       ) {
-        return res.status(403).json({ message: "Forbidden: Cannot view project from different department" });
+        res.status(403).json({ message: "Forbidden: Cannot view project from different department" });
+        return;
       }
       
       res.json(project);
@@ -562,14 +558,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
     isAuthenticated, 
     hasRole(["Administrator", "MainPMO", "SubPMO", "ProjectManager", "DepartmentDirector"]), 
     validateBody(insertProjectSchema), 
-    hasAuth(async (req, res) => {
+    hasAuth(async (req, res): Promise<void> => {
       try {
         // Project Managers can only create projects in their department
         if (
           req.currentUser.role === "ProjectManager" && 
           req.body.departmentId !== req.currentUser.departmentId
         ) {
-          return res.status(403).json({ message: "Forbidden: Cannot create project in different department" });
+          res.status(403).json({ message: "Forbidden: Cannot create project in different department" });
+          return;
         }
         
         // If creating as Project Manager, set manager to self
@@ -582,7 +579,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           req.currentUser.role === "DepartmentDirector" && 
           req.body.departmentId !== req.currentUser.departmentId
         ) {
-          return res.status(403).json({ message: "Forbidden: Cannot create project in different department" });
+          res.status(403).json({ message: "Forbidden: Cannot create project in different department" });
+          return;
         }
         
         // Sub-PMO can only create projects in their department
@@ -590,7 +588,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           req.currentUser.role === "SubPMO" && 
           req.body.departmentId !== req.currentUser.departmentId
         ) {
-          return res.status(403).json({ message: "Forbidden: Cannot create project in different department" });
+          res.status(403).json({ message: "Forbidden: Cannot create project in different department" });
+          return;
         }
         
         // Extract the project goals and project relationships from request body
@@ -667,13 +666,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     "/api/projects/:id", 
     isAuthenticated, 
     validateBody(updateProjectSchema), 
-    async (req, res) => {
+    async (req: Request, res: Response, next: NextFunction): Promise<void> => {
       try {
         const projectId = parseInt(req.params.id);
         const project = await storage.getProject(projectId);
         
         if (!project) {
-          return res.status(404).json({ message: "Project not found" });
+          res.status(404).json({ message: "Project not found" });
+          return;
         }
         
         // Check permissions for updating the project
@@ -685,7 +685,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           currentUser.role === "ProjectManager" && 
           project.managerUserId !== currentUser.id
         ) {
-          return res.status(403).json({ message: "Forbidden: You are not the manager of this project" });
+          res.status(403).json({ message: "Forbidden: You are not the manager of this project" });
+          return;
         }
         
         // Department Director can only update projects in their department
@@ -694,7 +695,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           currentUser.role === "DepartmentDirector" && 
           project.departmentId !== currentUser.departmentId
         ) {
-          return res.status(403).json({ message: "Forbidden: Project is not in your department" });
+          res.status(403).json({ message: "Forbidden: Project is not in your department" });
+          return;
         }
         
         // Sub-PMO can only update projects in their department
@@ -703,12 +705,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
           currentUser.role === "SubPMO" && 
           project.departmentId !== currentUser.departmentId
         ) {
-          return res.status(403).json({ message: "Forbidden: Project is not in your department" });
+          res.status(403).json({ message: "Forbidden: Project is not in your department" });
+          return;
         }
         
         // Regular users cannot update projects
         if (currentUser && currentUser.role === "User") {
-          return res.status(403).json({ message: "Forbidden: Insufficient permissions to update projects" });
+          res.status(403).json({ message: "Forbidden: Insufficient permissions to update projects" });
+          return;
         }
         
         const updatedProject = await storage.updateProject(projectId, req.body);
@@ -723,13 +727,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     "/api/projects/:id/approve", 
     isAuthenticated,
     hasRole(["Administrator", "MainPMO", "SubPMO", "DepartmentDirector"]),
-    hasAuth(async (req, res) => {
+    hasAuth(async (req, res): Promise<void> => {
       try {
         const projectId = parseInt(req.params.id);
         const project = await storage.getProject(projectId);
         
         if (!project) {
-          return res.status(404).json({ message: "Project not found" });
+          res.status(404).json({ message: "Project not found" });
+          return;
         }
         
         // SubPMO and Department Directors can only approve projects in their department
@@ -739,7 +744,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ) {
           // Check if the project is in their department
           if (project.departmentId !== req.currentUser.departmentId) {
-            return res.status(403).json({ message: "Forbidden: Project is not in your department" });
+            res.status(403).json({ message: "Forbidden: Project is not in your department" });
+            return;
           }
         }
         
@@ -766,7 +772,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           
           res.json(updatedProject);
         } else {
-          return res.status(400).json({ message: "Project is not pending approval" });
+          res.status(400).json({ message: "Project is not pending approval" });
+          return;
         }
       } catch (error) {
         res.status(500).json({ message: "Failed to approve project" });
@@ -778,13 +785,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     "/api/projects/:id/reject", 
     isAuthenticated,
     hasRole(["Administrator", "MainPMO", "SubPMO", "DepartmentDirector"]),
-    hasAuth(async (req, res) => {
+    hasAuth(async (req, res): Promise<void> => {
       try {
         const projectId = parseInt(req.params.id);
         const project = await storage.getProject(projectId);
         
         if (!project) {
-          return res.status(404).json({ message: "Project not found" });
+          res.status(404).json({ message: "Project not found" });
+          return;
         }
         
         // SubPMO and Department Directors can only reject projects in their department
@@ -794,13 +802,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ) {
           // Check if the project is in their department
           if (project.departmentId !== req.currentUser.departmentId) {
-            return res.status(403).json({ message: "Forbidden: Project is not in your department" });
+            res.status(403).json({ message: "Forbidden: Project is not in your department" });
+            return;
           }
         }
         
         // Validation: Rejection reason is required
         if (!req.body.rejectionReason || req.body.rejectionReason.trim() === '') {
-          return res.status(400).json({ message: "Rejection reason is required" });
+          res.status(400).json({ message: "Rejection reason is required" });
+          return;
         }
         
         // If project status is Pending, reject it
@@ -828,7 +838,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           
           res.json(updatedProject);
         } else {
-          return res.status(400).json({ message: "Project is not pending approval" });
+          res.status(400).json({ message: "Project is not pending approval" });
+          return;
         }
       } catch (error) {
         res.status(500).json({ message: "Failed to reject project" });
@@ -837,13 +848,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   );
   
   // Tasks Routes
-  app.get("/api/projects/:projectId/tasks", isAuthenticated, async (req, res) => {
+  app.get("/api/projects/:projectId/tasks", isAuthenticated, async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const projectId = parseInt(req.params.projectId);
       const project = await storage.getProject(projectId);
       
       if (!project) {
-        return res.status(404).json({ message: "Project not found" });
+        res.status(404).json({ message: "Project not found" });
+        return;
       }
       
       // Check if user has access to this project's tasks
@@ -856,7 +868,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         currentUser.departmentId !== project.departmentId && 
         currentUser.id !== project.managerUserId
       ) {
-        return res.status(403).json({ message: "Forbidden: Cannot view tasks from different department's project" });
+        res.status(403).json({ message: "Forbidden: Cannot view tasks from different department's project" });
+        return;
       }
       
       const tasks = await storage.getTasksByProject(projectId);
@@ -866,7 +879,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  app.get("/api/tasks", hasAuth(async (req, res) => {
+  app.get("/api/tasks", hasAuth(async (req, res): Promise<void> => {
     try {
       console.log(`Getting tasks for user ID: ${req.currentUser.id}`);
       const assignedToMe = await storage.getTasksByAssignee(req.currentUser.id);
@@ -891,17 +904,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post(
     "/api/tasks", 
     validateBody(insertTaskSchema), 
-    hasAuth(async (req, res) => {
+    hasAuth(async (req, res): Promise<void> => {
       try {
         const projectId = req.body.projectId;
         if (!projectId) {
-          return res.status(400).json({ message: "Project ID is required" });
+          res.status(400).json({ message: "Project ID is required" });
+          return;
         }
         
         const project = await storage.getProject(projectId);
         
         if (!project) {
-          return res.status(404).json({ message: "Project not found" });
+          res.status(404).json({ message: "Project not found" });
+          return;
         }
         
         // Check if user can create tasks in this project
@@ -911,7 +926,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           req.currentUser.departmentId !== project.departmentId && 
           req.currentUser.id !== project.managerUserId
         ) {
-          return res.status(403).json({ message: "Forbidden: Cannot create tasks in different department's project" });
+          res.status(403).json({ message: "Forbidden: Cannot create tasks in different department's project" });
+          return;
         }
         
         const taskData = {
@@ -948,13 +964,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post(
     "/api/projects/:projectId/tasks", 
     validateBody(insertTaskSchema),
-    hasAuth(async (req, res) => {
+    hasAuth(async (req, res): Promise<void> => {
       try {
         const projectId = parseInt(req.params.projectId);
         const project = await storage.getProject(projectId);
         
         if (!project) {
-          return res.status(404).json({ message: "Project not found" });
+          res.status(404).json({ message: "Project not found" });
+          return;
         }
         
         // Check if user can create tasks in this project
@@ -964,7 +981,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           req.currentUser.departmentId !== project.departmentId && 
           req.currentUser.id !== project.managerUserId
         ) {
-          return res.status(403).json({ message: "Forbidden: Cannot create tasks in different department's project" });
+          res.status(403).json({ message: "Forbidden: Cannot create tasks in different department's project" });
+          return;
         }
         
         const taskData = {
@@ -984,13 +1002,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.put(
     "/api/tasks/:id", 
     validateBody(updateTaskSchema),
-    hasAuth(async (req, res) => {
+    hasAuth(async (req, res): Promise<void> => {
       try {
         const taskId = parseInt(req.params.id);
         const task = await storage.getTask(taskId);
         
         if (!task) {
-          return res.status(404).json({ message: "Task not found" });
+          res.status(404).json({ message: "Task not found" });
+          return;
         }
         
         // Check permissions for updating the task
@@ -1005,7 +1024,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           req.currentUser.role !== "DepartmentDirector" && 
           (req.currentUser.role === "DepartmentDirector" && req.currentUser.departmentId !== project?.departmentId)
         ) {
-          return res.status(403).json({ message: "Forbidden: Insufficient permissions to update this task" });
+          res.status(403).json({ message: "Forbidden: Insufficient permissions to update this task" });
+          return;
         }
         
         const updatedTask = await storage.updateTask(taskId, req.body);
@@ -1017,13 +1037,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   );
   
   // Change Requests Routes
-  app.get("/api/projects/:projectId/change-requests", isAuthenticated, async (req, res) => {
+  app.get("/api/projects/:projectId/change-requests", isAuthenticated, async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const projectId = parseInt(req.params.projectId);
       const project = await storage.getProject(projectId);
       
       if (!project) {
-        return res.status(404).json({ message: "Project not found" });
+        res.status(404).json({ message: "Project not found" });
+        return;
       }
       
       // Check if user has access to this project's change requests
@@ -1036,7 +1057,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         currentUser.departmentId !== project.departmentId && 
         currentUser.id !== project.managerUserId
       ) {
-        return res.status(403).json({ message: "Forbidden: Cannot view change requests from different department's project" });
+        res.status(403).json({ message: "Forbidden: Cannot view change requests from different department's project" });
+        return;
       }
       
       const changeRequests = await storage.getChangeRequestsByProject(projectId);
@@ -1074,13 +1096,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post(
     "/api/projects/:projectId/change-requests", 
     validateBody(insertChangeRequestSchema), 
-    hasAuth(async (req, res) => {
+    hasAuth(async (req, res): Promise<void> => {
       try {
         const projectId = parseInt(req.params.projectId);
         const project = await storage.getProject(projectId);
         
         if (!project) {
-          return res.status(404).json({ message: "Project not found" });
+          res.status(404).json({ message: "Project not found" });
+          return;
         }
         
         // Only project manager or higher roles can create change requests
@@ -1092,7 +1115,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           req.currentUser.id !== project.managerUserId && 
           req.currentUser.role !== "ProjectManager"
         ) {
-          return res.status(403).json({ message: "Forbidden: Insufficient permissions to create change requests" });
+          res.status(403).json({ message: "Forbidden: Insufficient permissions to create change requests" });
+          return;
         }
         
         const changeRequestData = {
@@ -1124,13 +1148,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   app.put(
     "/api/change-requests/:id", 
-    hasAuth(async (req, res) => {
+    hasAuth(async (req, res): Promise<void> => {
       try {
         const changeRequestId = parseInt(req.params.id);
         const changeRequest = await storage.getChangeRequest(changeRequestId);
         
         if (!changeRequest) {
-          return res.status(404).json({ message: "Change request not found" });
+          res.status(404).json({ message: "Change request not found" });
+          return;
         }
         
         // Check if user can approve/reject this change request
@@ -1143,7 +1168,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ) {
           // Check if the project is in their department
           if (project && project.departmentId !== req.currentUser.departmentId) {
-            return res.status(403).json({ message: "Forbidden: Change request is for a project outside your department" });
+            res.status(403).json({ message: "Forbidden: Change request is for a project outside your department" });
+            return;
           }
         }
         
@@ -1177,7 +1203,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         else if (req.body.status === "Rejected") {
           // Validation: Rejection reason is required
           if (!req.body.rejectionReason || req.body.rejectionReason.trim() === '') {
-            return res.status(400).json({ message: "Rejection reason is required" });
+            res.status(400).json({ message: "Rejection reason is required" });
+            return;
           }
           
           // Determine where to return the request based on role and specified returnTo
@@ -1224,9 +1251,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
               break;
               
             case "Schedule":
-              // Update project deadline
+              // Update project deadline (using endDate since deadline doesn't exist in Project type)
               if (req.body.newDeadline) {
-                await storage.updateProject(project.id, { deadline: new Date(req.body.newDeadline) });
+                await storage.updateProject(project.id, { endDate: new Date(req.body.newDeadline) });
               }
               break;
               
@@ -1298,13 +1325,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post(
     "/api/projects/:projectId/cost-history", 
     validateBody(insertProjectCostHistorySchema), 
-    hasAuth(async (req, res) => {
+    hasAuth(async (req, res): Promise<void> => {
       try {
         const projectId = parseInt(req.params.projectId);
         const project = await storage.getProject(projectId);
         
         if (!project) {
-          return res.status(404).json({ message: "Project not found" });
+          res.status(404).json({ message: "Project not found" });
+          return;
         }
         
         // Only project manager or higher roles can update cost
@@ -1315,7 +1343,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           req.currentUser.role !== "DepartmentDirector" && 
           req.currentUser.id !== project.managerUserId
         ) {
-          return res.status(403).json({ message: "Forbidden: Insufficient permissions to update project cost" });
+          res.status(403).json({ message: "Forbidden: Insufficient permissions to update project cost" });
+          return;
         }
         
         const costHistoryData = {
@@ -1332,13 +1361,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     })
   );
   
-  app.get("/api/projects/:projectId/cost-history", isAuthenticated, async (req, res) => {
+  app.get("/api/projects/:projectId/cost-history", isAuthenticated, async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const projectId = parseInt(req.params.projectId);
       const project = await storage.getProject(projectId);
       
       if (!project) {
-        return res.status(404).json({ message: "Project not found" });
+        res.status(404).json({ message: "Project not found" });
+        return;
       }
       
       // Check if user has access to this project's cost history
@@ -1351,7 +1381,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         currentUser.departmentId !== project.departmentId && 
         currentUser.id !== project.managerUserId
       ) {
-        return res.status(403).json({ message: "Forbidden: Cannot view cost history from different department's project" });
+        res.status(403).json({ message: "Forbidden: Cannot view cost history from different department's project" });
+        return;
       }
       
       const costHistory = await storage.getProjectCostHistoryByProject(projectId);
@@ -1362,7 +1393,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   // Budget Summary
-  app.get("/api/budget-summary", isAuthenticated, async (req, res) => {
+  app.get("/api/budget-summary", isAuthenticated, async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const projects = await storage.getProjects();
       
@@ -1385,15 +1416,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Calculate budget summary with null safety
-      const totalBudget = filteredProjects.reduce((sum, project) => sum + (project.budget || 0), 0);
-      const actualCost = filteredProjects.reduce((sum, project) => sum + (project.actualCost || 0), 0);
+      const totalBudget = filteredProjects.reduce((sum, project) => {
+        const budget = typeof project.budget === 'string' ? parseFloat(project.budget) : (project.budget || 0);
+        return sum + budget;
+      }, 0);
+      const actualCost = filteredProjects.reduce((sum, project) => {
+        const cost = typeof project.actualCost === 'string' ? parseFloat(project.actualCost) : (project.actualCost || 0);
+        return sum + cost;
+      }, 0);
       const remainingBudget = totalBudget - actualCost;
       
       // Simplified prediction calculation with null safety
       const predictedCost = filteredProjects.reduce((sum, project) => {
         // Get budget and actualCost with null safety
-        const budget = project.budget || 0;
-        const actualCost = project.actualCost || 0;
+        const budget = typeof project.budget === 'string' ? parseFloat(project.budget) : (project.budget || 0);
+        const actualCost = typeof project.actualCost === 'string' ? parseFloat(project.actualCost) : (project.actualCost || 0);
         
         // Basic prediction: If less than 50% progress but more than 60% spent, predict overrun
         const percentSpent = budget > 0 ? (actualCost / budget) : 0;
@@ -1419,7 +1456,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   // Notifications Routes
-  app.get("/api/notifications", hasAuth(async (req, res) => {
+  app.get("/api/notifications", hasAuth(async (req, res): Promise<void> => {
     try {
       const notifications = await storage.getNotificationsByUser(req.currentUser.id);
       res.json(notifications);
@@ -1428,18 +1465,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   }));
   
-  app.post("/api/notifications/:id/read", hasAuth(async (req, res) => {
+  app.post("/api/notifications/:id/read", hasAuth(async (req, res): Promise<void> => {
     try {
       const notificationId = parseInt(req.params.id);
       const notification = await storage.getNotification(notificationId);
       
       if (!notification) {
-        return res.status(404).json({ message: "Notification not found" });
+        res.status(404).json({ message: "Notification not found" });
+        return;
       }
       
       // Users can only mark their own notifications as read
       if (notification.userId !== req.currentUser.id) {
-        return res.status(403).json({ message: "Forbidden: Not your notification" });
+        res.status(403).json({ message: "Forbidden: Not your notification" });
+        return;
       }
       
       const updatedNotification = await storage.markNotificationAsRead(notificationId);
@@ -1450,7 +1489,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   }));
   
   // Goals Routes
-  app.get("/api/goals", isAuthenticated, async (req, res) => {
+  app.get("/api/goals", isAuthenticated, async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const currentUser = req.user;
       const goals = await storage.getGoals();
@@ -1471,7 +1510,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     "/api/goals", 
     validateBody(insertGoalSchema), 
     hasRole(["Administrator", "MainPMO", "DepartmentDirector", "Executive"]),
-    hasAuth(async (req, res) => {
+    hasAuth(async (req, res): Promise<void> => {
       try {
         const goalData = {
           ...req.body,
@@ -1487,7 +1526,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   );
   
   // Risks & Issues Routes
-  app.get("/api/risks-issues", hasAuth(async (req, res) => {
+  app.get("/api/risks-issues", hasAuth(async (req, res): Promise<void> => {
     try {
       // Get all risks and issues the user has access to
       // Fix the concat operation by properly awaiting the promises
@@ -1522,13 +1561,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post(
     "/api/projects/:projectId/risks-issues", 
     validateBody(insertRiskIssueSchema), 
-    hasAuth(async (req, res) => {
+    hasAuth(async (req, res): Promise<void> => {
       try {
         const projectId = parseInt(req.params.projectId);
         const project = await storage.getProject(projectId);
         
         if (!project) {
-          return res.status(404).json({ message: "Project not found" });
+          res.status(404).json({ message: "Project not found" });
+          return;
         }
         
         // Only project managers or higher roles can create risks/issues
@@ -1539,7 +1579,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           req.currentUser.role !== "DepartmentDirector" && 
           req.currentUser.id !== project.managerUserId
         ) {
-          return res.status(403).json({ message: "Forbidden: Insufficient permissions to create risks/issues" });
+          res.status(403).json({ message: "Forbidden: Insufficient permissions to create risks/issues" });
+          return;
         }
         
         const riskIssueData = {
@@ -1557,7 +1598,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   );
   
   // Assignments Routes
-  app.get("/api/assignments", hasAuth(async (req, res) => {
+  app.get("/api/assignments", hasAuth(async (req, res): Promise<void> => {
     try {
       console.log(`Getting assignments for user ID: ${req.currentUser.id}`);
       const assignedToMe = await storage.getAssignmentsByAssignee(req.currentUser.id);
@@ -1581,7 +1622,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post(
     "/api/assignments", 
     validateBody(insertAssignmentSchema), 
-    hasAuth(async (req, res) => {
+    hasAuth(async (req, res): Promise<void> => {
       try {
         console.log("Creating new assignment:", req.body);
         const assignmentData = {
@@ -1622,13 +1663,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.put(
     "/api/assignments/:id", 
     validateBody(updateAssignmentSchema), 
-    hasAuth(async (req, res) => {
+    hasAuth(async (req, res): Promise<void> => {
       try {
         const assignmentId = parseInt(req.params.id);
         const assignment = await storage.getAssignment(assignmentId);
         
         if (!assignment) {
-          return res.status(404).json({ message: "Assignment not found" });
+          res.status(404).json({ message: "Assignment not found" });
+          return;
         }
         
         // Only the assigner or assignee can update the assignment
@@ -1637,7 +1679,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           req.currentUser.id !== assignment.assignedToUserId && 
           req.currentUser.role !== "Administrator"
         ) {
-          return res.status(403).json({ message: "Forbidden: You cannot modify this assignment" });
+          res.status(403).json({ message: "Forbidden: You cannot modify this assignment" });
+          return;
         }
         
         const updatedAssignment = await storage.updateAssignment(assignmentId, req.body);
@@ -1649,7 +1692,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   );
   
   // Action Items Routes
-  app.get("/api/action-items/user", isAuthenticated, hasAuth(async (req, res) => {
+  app.get("/api/action-items/user", isAuthenticated, hasAuth(async (req, res): Promise<void> => {
     try {
       // Use getActionItemsByAssignee as implemented in the MemStorage class
       const actionItems = await storage.getActionItemsByAssignee(req.currentUser.id);
@@ -1663,7 +1706,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post(
     "/api/action-items", 
     validateBody(insertActionItemSchema), 
-    hasAuth(async (req, res) => {
+    hasAuth(async (req, res): Promise<void> => {
       try {
         const actionItemData = {
           ...req.body,
@@ -1681,18 +1724,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.put(
     "/api/action-items/:id", 
     validateBody(updateActionItemSchema),
-    hasAuth(async (req, res) => {
+    hasAuth(async (req, res): Promise<void> => {
       try {
         const actionItemId = parseInt(req.params.id);
         const actionItem = await storage.getActionItem(actionItemId);
         
         if (!actionItem) {
-          return res.status(404).json({ message: "Action item not found" });
+          res.status(404).json({ message: "Action item not found" });
+          return;
         }
         
         // Users can only update their own action items
         if (actionItem.userId !== req.currentUser.id) {
-          return res.status(403).json({ message: "Forbidden: Not your action item" });
+          res.status(403).json({ message: "Forbidden: Not your action item" });
+          return;
         }
         
         const updatedActionItem = await storage.updateActionItem(actionItemId, req.body);
@@ -1704,13 +1749,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   );
   
   // Weekly Updates Routes
-  app.get("/api/projects/:projectId/weekly-updates", isAuthenticated, async (req, res) => {
+  app.get("/api/projects/:projectId/weekly-updates", isAuthenticated, async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const projectId = parseInt(req.params.projectId);
       const project = await storage.getProject(projectId);
       
       if (!project) {
-        return res.status(404).json({ message: "Project not found" });
+        res.status(404).json({ message: "Project not found" });
+        return;
       }
       
       // Check if user has access to this project's weekly updates
@@ -1723,7 +1769,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         currentUser.departmentId !== project.departmentId && 
         currentUser.id !== project.managerUserId
       ) {
-        return res.status(403).json({ message: "Forbidden: Cannot view weekly updates from different department's project" });
+        res.status(403).json({ message: "Forbidden: Cannot view weekly updates from different department's project" });
+        return;
       }
       
       const weeklyUpdates = await storage.getWeeklyUpdatesByProject(projectId);
@@ -1736,13 +1783,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post(
     "/api/projects/:projectId/weekly-updates", 
     validateBody(insertWeeklyUpdateSchema), 
-    hasAuth(async (req, res) => {
+    hasAuth(async (req, res): Promise<void> => {
       try {
         const projectId = parseInt(req.params.projectId);
         const project = await storage.getProject(projectId);
         
         if (!project) {
-          return res.status(404).json({ message: "Project not found" });
+          res.status(404).json({ message: "Project not found" });
+          return;
         }
         
         // Only project manager can create weekly updates
@@ -1751,7 +1799,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           req.currentUser.role !== "MainPMO" && 
           req.currentUser.id !== project.managerUserId
         ) {
-          return res.status(403).json({ message: "Forbidden: Only project manager can create weekly updates" });
+          res.status(403).json({ message: "Forbidden: Only project manager can create weekly updates" });
+          return;
         }
         
         const weeklyUpdateData = {
@@ -1769,13 +1818,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   );
 
   // Milestone Routes
-  app.get("/api/projects/:projectId/milestones", isAuthenticated, async (req, res) => {
+  app.get("/api/projects/:projectId/milestones", isAuthenticated, async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const projectId = parseInt(req.params.projectId);
       const project = await storage.getProject(projectId);
       
       if (!project) {
-        return res.status(404).json({ message: "Project not found" });
+        res.status(404).json({ message: "Project not found" });
+        return;
       }
       
       // Check if user has access to this project's milestones
@@ -1788,7 +1838,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         currentUser.departmentId !== project.departmentId && 
         currentUser.id !== project.managerUserId
       ) {
-        return res.status(403).json({ message: "Forbidden: Cannot view milestones from different department's project" });
+        res.status(403).json({ message: "Forbidden: Cannot view milestones from different department's project" });
+        return;
       }
       
       const milestones = await storage.getMilestonesByProject(projectId);
@@ -1798,13 +1849,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  app.get("/api/milestones/:id", isAuthenticated, async (req, res) => {
+  app.get("/api/milestones/:id", isAuthenticated, async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const milestoneId = parseInt(req.params.id);
       const milestone = await storage.getMilestone(milestoneId);
       
       if (!milestone) {
-        return res.status(404).json({ message: "Milestone not found" });
+        res.status(404).json({ message: "Milestone not found" });
+        return;
       }
       
       // Check if user has access to this milestone's project
@@ -1820,7 +1872,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         currentUser.departmentId !== project.departmentId && 
         currentUser.id !== project.managerUserId
       ) {
-        return res.status(403).json({ message: "Forbidden: Cannot view milestone from different department's project" });
+        res.status(403).json({ message: "Forbidden: Cannot view milestone from different department's project" });
+        return;
       }
       
       res.json(milestone);
@@ -1832,13 +1885,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post(
     "/api/projects/:projectId/milestones", 
     validateBody(insertMilestoneSchema),
-    hasAuth(async (req, res) => {
+    hasAuth(async (req, res): Promise<void> => {
     try {
       const projectId = parseInt(req.params.projectId);
       const project = await storage.getProject(projectId);
       
       if (!project) {
-        return res.status(404).json({ message: "Project not found" });
+        res.status(404).json({ message: "Project not found" });
+        return;
       }
       
         // Only project manager or higher roles can create milestones
@@ -1849,7 +1903,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           req.currentUser.role !== "DepartmentDirector" && 
           req.currentUser.id !== project.managerUserId
         ) {
-          return res.status(403).json({ message: "Forbidden: Insufficient permissions to create milestones" });
+          res.status(403).json({ message: "Forbidden: Insufficient permissions to create milestones" });
+          return;
         }
         
         const milestoneData = {
@@ -1869,13 +1924,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.put(
     "/api/milestones/:id", 
     validateBody(updateMilestoneSchema),
-    hasAuth(async (req, res) => {
+    hasAuth(async (req, res): Promise<void> => {
       try {
         const milestoneId = parseInt(req.params.id);
         const milestone = await storage.getMilestone(milestoneId);
         
         if (!milestone) {
-          return res.status(404).json({ message: "Milestone not found" });
+          res.status(404).json({ message: "Milestone not found" });
+          return;
         }
         
         // Check if user has permission to update this milestone
@@ -1888,7 +1944,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           (project && req.currentUser.role === "DepartmentDirector" && req.currentUser.departmentId !== project.departmentId) && 
           (project && req.currentUser.id !== project.managerUserId)
         ) {
-          return res.status(403).json({ message: "Forbidden: Insufficient permissions to update this milestone" });
+          res.status(403).json({ message: "Forbidden: Insufficient permissions to update this milestone" });
+          return;
         }
         
         const updatedMilestone = await storage.updateMilestone(milestoneId, req.body);
@@ -1900,13 +1957,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   );
   
   // Task-Milestone Relationship Routes
-  app.get("/api/tasks/:taskId/milestones", isAuthenticated, async (req, res) => {
+  app.get("/api/tasks/:taskId/milestones", isAuthenticated, async (req: Request, res: Response): Promise<void> => {
     try {
       const taskId = parseInt(req.params.taskId);
       const task = await storage.getTask(taskId);
       
       if (!task) {
-        return res.status(404).json({ message: "Task not found" });
+        res.status(404).json({ message: "Task not found" });
+        return;
       }
       
       // Check if user has access to this task's project
@@ -1924,7 +1982,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         currentUser.id !== task.assignedUserId &&
         currentUser.id !== task.createdByUserId
       ) {
-        return res.status(403).json({ message: "Forbidden: Cannot view task-milestone relationships from different department's project" });
+        res.status(403).json({ message: "Forbidden: Cannot view task-milestone relationships from different department's project" });
+        return;
       }
       
       const taskMilestones = await storage.getTaskMilestonesByTask(taskId);
@@ -1946,13 +2005,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  app.get("/api/milestones/:milestoneId/tasks", isAuthenticated, async (req, res) => {
+  app.get("/api/milestones/:milestoneId/tasks", isAuthenticated, async (req: Request, res: Response): Promise<void> => {
     try {
       const milestoneId = parseInt(req.params.milestoneId);
       const milestone = await storage.getMilestone(milestoneId);
       
       if (!milestone) {
-        return res.status(404).json({ message: "Milestone not found" });
+        res.status(404).json({ message: "Milestone not found" });
+        return;
       }
       
       // Check if user has access to this milestone's project
@@ -1968,7 +2028,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         currentUser.departmentId !== project.departmentId && 
         currentUser.id !== project.managerUserId
       ) {
-        return res.status(403).json({ message: "Forbidden: Cannot view milestone-task relationships from different department's project" });
+        res.status(403).json({ message: "Forbidden: Cannot view milestone-task relationships from different department's project" });
+        return;
       }
       
       const taskMilestones = await storage.getTaskMilestonesByMilestone(milestoneId);
@@ -1993,25 +2054,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post(
     "/api/tasks/:taskId/milestones", 
     validateBody(insertTaskMilestoneSchema),
-    hasAuth(async (req, res) => {
+    hasAuth(async (req, res): Promise<void> => {
       try {
         const taskId = parseInt(req.params.taskId);
         const task = await storage.getTask(taskId);
         
         if (!task) {
-          return res.status(404).json({ message: "Task not found" });
+          res.status(404).json({ message: "Task not found" });
+          return;
         }
         
         const milestoneId = req.body.milestoneId;
         const milestone = await storage.getMilestone(milestoneId);
         
         if (!milestone) {
-          return res.status(404).json({ message: "Milestone not found" });
+          res.status(404).json({ message: "Milestone not found" });
+          return;
         }
         
         // Check if task and milestone belong to the same project
         if (task.projectId !== milestone.projectId) {
-          return res.status(400).json({ message: "Task and milestone must belong to the same project" });
+          res.status(400).json({ message: "Task and milestone must belong to the same project" });
+          return;
         }
         
         // Only project manager or higher roles can link tasks to milestones
@@ -2024,7 +2088,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           (project && req.currentUser.role === "DepartmentDirector" && req.currentUser.departmentId !== project.departmentId) && 
           (project && req.currentUser.id !== project.managerUserId)
         ) {
-          return res.status(403).json({ message: "Forbidden: Insufficient permissions to link tasks to milestones" });
+          res.status(403).json({ message: "Forbidden: Insufficient permissions to link tasks to milestones" });
+          return;
         }
         
         const taskMilestoneData = {
@@ -2042,20 +2107,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   app.put(
     "/api/task-milestones/:id", 
-    hasAuth(async (req, res) => {
+    hasAuth(async (req, res): Promise<void> => {
       try {
         const taskMilestoneId = parseInt(req.params.id);
         const taskMilestone = await storage.getTaskMilestone(taskMilestoneId);
         
         if (!taskMilestone) {
-          return res.status(404).json({ message: "Task-milestone relationship not found" });
+          res.status(404).json({ message: "Task-milestone relationship not found" });
+          return;
         }
         
         // Check if user has permission to update this relationship
         const task = await storage.getTask(taskMilestone.taskId);
         
         if (!task) {
-          return res.status(404).json({ message: "Task not found" });
+          res.status(404).json({ message: "Task not found" });
+          return;
         }
         
         const project = await storage.getProject(task.projectId);
@@ -2067,7 +2134,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           (project && req.currentUser.role === "DepartmentDirector" && req.currentUser.departmentId !== project.departmentId) && 
           (project && req.currentUser.id !== project.managerUserId)
         ) {
-          return res.status(403).json({ message: "Forbidden: Insufficient permissions to update task-milestone relationship" });
+          res.status(403).json({ message: "Forbidden: Insufficient permissions to update task-milestone relationship" });
+          return;
         }
         
         // Only allow updating the weight property
@@ -2081,23 +2149,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
     })
   );
-  
+
   app.delete(
     "/api/task-milestones/:id", 
-    hasAuth(async (req, res) => {
+    hasAuth(async (req, res): Promise<void> => {
       try {
         const taskMilestoneId = parseInt(req.params.id);
         const taskMilestone = await storage.getTaskMilestone(taskMilestoneId);
         
         if (!taskMilestone) {
-          return res.status(404).json({ message: "Task-milestone relationship not found" });
+          res.status(404).json({ message: "Task-milestone relationship not found" });
+          return;
         }
         
         // Check if user has permission to delete this relationship
         const task = await storage.getTask(taskMilestone.taskId);
         
         if (!task) {
-          return res.status(404).json({ message: "Task not found" });
+          res.status(404).json({ message: "Task not found" });
+          return;
         }
         
         const project = await storage.getProject(task.projectId);
@@ -2109,18 +2179,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
           (project && req.currentUser.role === "DepartmentDirector" && req.currentUser.departmentId !== project.departmentId) && 
           (project && req.currentUser.id !== project.managerUserId)
         ) {
-          return res.status(403).json({ message: "Forbidden: Insufficient permissions to delete task-milestone relationship" });
+          res.status(403).json({ message: "Forbidden: Insufficient permissions to delete task-milestone relationship" });
+          return;
         }
         
-        // Add a method to delete the task milestone and update milestone progress
-        // This will be implemented in the storage class
-        const deleted = await storage.deleteTaskMilestone(taskMilestoneId);
-        
-        if (!deleted) {
-          return res.status(500).json({ message: "Failed to delete task-milestone relationship" });
-        }
-        
-        res.status(204).send();
+        await storage.deleteTaskMilestone(taskMilestoneId);
+        res.json({ message: "Task-milestone relationship deleted successfully" });
       } catch (error) {
         res.status(500).json({ message: "Failed to delete task-milestone relationship" });
       }
@@ -2128,7 +2192,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   );
 
   // API Routes for Dashboard
-  app.get("/api/dashboard", isAuthenticated, hasAuth(async (req, res) => {
+  app.get("/api/dashboard", isAuthenticated, hasAuth(async (req, res): Promise<void> => {
     try {
       // Simplified dashboard data for the prototype
       const projects = await storage.getProjectsByManager(req.currentUser.id);
@@ -2184,11 +2248,104 @@ export async function registerRoutes(app: Express): Promise<Server> {
   const analyticsRouter = express.Router();
   registerAnalyticsRoutes(analyticsRouter);
   app.use(analyticsRouter);
-  
-  // Register audit log routes 
-  const auditLogRouter = express.Router();
-  registerAuditLogRoutes(auditLogRouter, storage);
   app.use(auditLogRouter);
+  
+  // Goal relationships
+  app.get('/api/goals/:goalId/relationships', isAuthenticated, hasAuth(async (req, res): Promise<void> => {
+    try {
+      const goalId = parseInt(req.params.goalId!);
+      const relationships = await storage.getGoalRelationshipsByParent(goalId);
+      res.json(relationships);
+    } catch (error) {
+      console.error('Error fetching goal relationships:', error);
+      res.status(500).json({ message: 'Failed to fetch goal relationships' });
+    }
+  }));
+
+  app.post('/api/goals/:goalId/relationships', isAuthenticated, validateBody(z.object({
+    childGoalId: z.number(),
+    weight: z.number().optional()
+  })), hasAuth(async (req, res): Promise<void> => {
+    try {
+      const goalId = parseInt(req.params.goalId!);
+      const { childGoalId, weight } = req.body;
+      
+      // Check if user has permission to manage goals
+      if (!req.currentUser.role || !['Administrator', 'Project Manager'].includes(req.currentUser.role)) {
+        res.status(403).json({ message: 'Insufficient permissions' });
+        return;
+      }
+      
+      const relationship = await storage.createGoalRelationship({
+        parentGoalId: goalId,
+        childGoalId,
+        weight
+      });
+      
+      res.json(relationship);
+    } catch (error) {
+      console.error('Error creating goal relationship:', error);
+      res.status(500).json({ message: 'Failed to create goal relationship' });
+    }
+  }));
+
+  app.delete('/api/goal-relationships/:id', isAuthenticated, hasAuth(async (req, res): Promise<void> => {
+    try {
+      const relationshipId = parseInt(req.params.id!);
+      
+      // Check if user has permission to manage goals
+      if (!req.currentUser.role || !['Administrator', 'Project Manager'].includes(req.currentUser.role)) {
+        res.status(403).json({ message: 'Insufficient permissions' });
+        return;
+      }
+      
+      const success = await storage.deleteGoalRelationship(relationshipId);
+      
+      if (success) {
+        res.json({ message: 'Goal relationship deleted successfully' });
+      } else {
+        res.status(404).json({ message: 'Goal relationship not found' });
+      }
+    } catch (error) {
+      console.error('Error deleting goal relationship:', error);
+      res.status(500).json({ message: 'Failed to delete goal relationship' });
+    }
+  }));
+
+  // Project-goal relationships
+  app.get('/api/goals/:goalId/projects', isAuthenticated, hasAuth(async (req, res): Promise<void> => {
+    try {
+      const goalId = parseInt(req.params.goalId!);
+      const projectGoals = await storage.getProjectGoalsByGoal(goalId);
+      res.json(projectGoals);
+    } catch (error) {
+      console.error('Error fetching goal projects:', error);
+      res.status(500).json({ message: 'Failed to fetch goal projects' });
+    }
+  }));
+
+  app.delete('/api/project-goals/:id', isAuthenticated, hasAuth(async (req, res): Promise<void> => {
+    try {
+      const id = parseInt(req.params.id!);
+      
+      // Check if user has permission to manage goals
+      if (!req.currentUser.role || !['Administrator', 'Project Manager'].includes(req.currentUser.role)) {
+        res.status(403).json({ message: 'Insufficient permissions' });
+        return;
+      }
+      
+      const success = await storage.deleteProjectGoal(id);
+      
+      if (success) {
+        res.json({ message: 'Project-goal relationship deleted successfully' });
+      } else {
+        res.status(404).json({ message: 'Project-goal relationship not found' });
+      }
+    } catch (error) {
+      console.error('Error deleting project-goal relationship:', error);
+      res.status(500).json({ message: 'Failed to delete project-goal relationship' });
+    }
+  }));
   
   // Create the HTTP server from the Express app
   // Note: The server will be started in server/index.ts with the proper port

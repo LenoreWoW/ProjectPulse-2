@@ -3,7 +3,7 @@ import { useLocation } from "wouter";
 import { format } from "date-fns";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm, useFieldArray, SubmitHandler } from "react-hook-form";
+import { useForm, SubmitHandler, useFieldArray } from "react-hook-form";
 import { z } from "zod";
 import { CalendarIcon, Loader2, Plus, Trash2 } from "lucide-react";
 
@@ -205,8 +205,9 @@ export default function NewGoalPage() {
     // Filter out invalid projects and goals before submission
     const cleanedValues = {
       ...values,
-      relatedProjects: values.relatedProjects?.filter(p => p.projectId > 0) || [],
-      relatedGoals: values.relatedGoals?.filter(g => g.goalId > 0) || []
+      createdByUserId: user?.id || 0,
+      relatedProjects: values.relatedProjects?.filter((p: any) => p.projectId > 0) || [],
+      relatedGoals: values.relatedGoals?.filter((g: any) => g.goalId > 0) || []
     };
     createGoalMutation.mutate(cleanedValues);
   };
@@ -252,11 +253,11 @@ export default function NewGoalPage() {
                 <FormField
                   control={form.control}
                   name="title"
-                  render={({ field }) => (
+                  render={({ field }: any) => (
                     <FormItem>
                       <FormLabel>{t("title")}</FormLabel>
                       <FormControl>
-                        <Input placeholder={t("enterGoalTitle")} {...field} />
+                        <Input placeholder={t("enterTitle")} {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -266,14 +267,11 @@ export default function NewGoalPage() {
                 <FormField
                   control={form.control}
                   name="priority"
-                  render={({ field }) => (
+                  render={({ field }: any) => (
                     <FormItem>
                       <FormLabel>{t("priority")}</FormLabel>
                       <FormControl>
-                        <Select
-                          value={field.value}
-                          onValueChange={field.onChange}
-                        >
+                        <Select onValueChange={field.onChange} value={field.value}>
                           <SelectTrigger>
                             <SelectValue placeholder={t("selectPriority")} />
                           </SelectTrigger>
@@ -293,23 +291,23 @@ export default function NewGoalPage() {
                 <FormField
                   control={form.control}
                   name="deadline"
-                  render={({ field }) => (
+                  render={({ field }: any) => (
                     <FormItem className="flex flex-col">
                       <FormLabel>{t("deadline")}</FormLabel>
                       <Popover>
                         <PopoverTrigger asChild>
                           <FormControl>
                             <Button
-                              variant="outline"
+                              variant={"outline"}
                               className={cn(
-                                "pl-3 text-left font-normal",
+                                "w-full pl-3 text-left font-normal",
                                 !field.value && "text-muted-foreground"
                               )}
                             >
                               {field.value ? (
                                 format(field.value, "PPP")
                               ) : (
-                                <span>{t("selectDate")}</span>
+                                <span>{t("pickDate")}</span>
                               )}
                               <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
                             </Button>
@@ -320,6 +318,9 @@ export default function NewGoalPage() {
                             mode="single"
                             selected={field.value}
                             onSelect={field.onChange}
+                            disabled={(date: Date) =>
+                              date < new Date() || date < new Date("1900-01-01")
+                            }
                             initialFocus
                           />
                         </PopoverContent>
@@ -333,7 +334,7 @@ export default function NewGoalPage() {
                   <FormField
                     control={form.control}
                     name="isStrategic"
-                    render={({ field }) => (
+                    render={({ field }: any) => (
                       <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
                         <FormControl>
                           <Checkbox
@@ -342,9 +343,11 @@ export default function NewGoalPage() {
                           />
                         </FormControl>
                         <div className="space-y-1 leading-none">
-                          <FormLabel>{t("isStrategic")}</FormLabel>
+                          <FormLabel>
+                            {t("strategicGoal")}
+                          </FormLabel>
                           <FormDescription>
-                            Strategic goals span multiple years
+                            {t("strategicGoalDescription")}
                           </FormDescription>
                         </div>
                       </FormItem>
@@ -354,7 +357,7 @@ export default function NewGoalPage() {
                   <FormField
                     control={form.control}
                     name="isAnnual"
-                    render={({ field }) => (
+                    render={({ field }: any) => (
                       <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
                         <FormControl>
                           <Checkbox
@@ -363,9 +366,11 @@ export default function NewGoalPage() {
                           />
                         </FormControl>
                         <div className="space-y-1 leading-none">
-                          <FormLabel>{t("isAnnual")}</FormLabel>
+                          <FormLabel>
+                            {t("annualGoal")}
+                          </FormLabel>
                           <FormDescription>
-                            Annual goals are completed within one year
+                            {t("annualGoalDescription")}
                           </FormDescription>
                         </div>
                       </FormItem>
@@ -398,13 +403,13 @@ export default function NewGoalPage() {
               <FormField
                 control={form.control}
                 name="description"
-                render={({ field }) => (
+                render={({ field }: any) => (
                   <FormItem>
                     <FormLabel>{t("description")}</FormLabel>
                     <FormControl>
                       <Textarea
-                        placeholder={t("enterGoalDescription")}
-                        className="resize-y"
+                        placeholder={t("enterDescription")}
+                        className="resize-none"
                         {...field}
                       />
                     </FormControl>
@@ -440,7 +445,7 @@ export default function NewGoalPage() {
                         <div className="flex-1">
                           <Select
                             value={(field as ProjectFieldType).projectId.toString()}
-                            onValueChange={(value) => {
+                            onValueChange={(value: string) => {
                               const updatedProjects = [...form.getValues().relatedProjects || []];
                               updatedProjects[index] = {
                                 ...updatedProjects[index],
@@ -477,7 +482,7 @@ export default function NewGoalPage() {
                               min="1"
                               max="10"
                               value={(field as ProjectFieldType).weight}
-                              onChange={(e) => {
+                              onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
                                 const updatedProjects = [...form.getValues().relatedProjects || []];
                                 updatedProjects[index] = {
                                   ...updatedProjects[index],
@@ -529,7 +534,7 @@ export default function NewGoalPage() {
                         <div className="flex-1">
                           <Select
                             value={(field as GoalFieldType).goalId.toString()}
-                            onValueChange={(value) => {
+                            onValueChange={(value: string) => {
                               const updatedGoals = [...form.getValues().relatedGoals || []];
                               updatedGoals[index] = {
                                 ...updatedGoals[index],
@@ -566,7 +571,7 @@ export default function NewGoalPage() {
                               min="1"
                               max="10"
                               value={(field as GoalFieldType).weight}
-                              onChange={(e) => {
+                              onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
                                 const updatedGoals = [...form.getValues().relatedGoals || []];
                                 updatedGoals[index] = {
                                   ...updatedGoals[index],

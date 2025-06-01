@@ -1,6 +1,6 @@
 import { useAuth } from "./use-auth";
 
-type Permission = {
+export type Permission = {
   // General role-based permissions
   canCreateProject: boolean;
   canEditProject: boolean;
@@ -21,6 +21,11 @@ type Permission = {
   canEditOwnProject: boolean;
   canManageOwnProjectTasks: boolean;
   canUpdateOwnProjectCosts: boolean;
+  
+  // Additional permissions for goals, assignments, and risks/issues
+  canCreateGoal: boolean;
+  canCreateAssignment: boolean;
+  canCreateRiskIssue: boolean;
 };
 
 /**
@@ -50,6 +55,9 @@ export function usePermissions(): Permission {
       canEditOwnProject: false,
       canManageOwnProjectTasks: false,
       canUpdateOwnProjectCosts: false,
+      canCreateGoal: false,
+      canCreateAssignment: false,
+      canCreateRiskIssue: false,
     };
   }
   
@@ -74,6 +82,9 @@ export function usePermissions(): Permission {
     canEditOwnProject: false,
     canManageOwnProjectTasks: false,
     canUpdateOwnProjectCosts: false,
+    canCreateGoal: false,
+    canCreateAssignment: false,
+    canCreateRiskIssue: false,
   };
   
   // Always grant project managers control over their own projects' tasks and costs
@@ -110,6 +121,9 @@ export function usePermissions(): Permission {
       permissions.canEditOwnProject = true;
       permissions.canManageOwnProjectTasks = true;
       permissions.canUpdateOwnProjectCosts = true;
+      permissions.canCreateGoal = true;
+      permissions.canCreateAssignment = true;
+      permissions.canCreateRiskIssue = true;
       break;
       
     case "SubPMO":
@@ -125,6 +139,9 @@ export function usePermissions(): Permission {
       permissions.canEditOwnProject = true;
       permissions.canManageOwnProjectTasks = true;
       permissions.canUpdateOwnProjectCosts = true;
+      permissions.canCreateGoal = true;
+      permissions.canCreateAssignment = true;
+      permissions.canCreateRiskIssue = true;
       break;
       
     case "DepartmentDirector":
@@ -140,6 +157,9 @@ export function usePermissions(): Permission {
       permissions.canEditOwnProject = true;
       permissions.canManageOwnProjectTasks = true;
       permissions.canUpdateOwnProjectCosts = true;
+      permissions.canCreateGoal = true;
+      permissions.canCreateAssignment = true;
+      permissions.canCreateRiskIssue = true;
       break;
       
     case "ProjectManager":
@@ -148,6 +168,9 @@ export function usePermissions(): Permission {
       permissions.canSubmitChangeRequest = true;
       permissions.canCreateTask = true;
       permissions.canAssignTask = true;
+      permissions.canCreateGoal = true;
+      permissions.canCreateAssignment = true;
+      permissions.canCreateRiskIssue = true;
       break;
       
     case "Executive":
@@ -155,11 +178,17 @@ export function usePermissions(): Permission {
       permissions.canViewAllDepartments = true;
       permissions.canViewReports = true;
       permissions.canViewAnalytics = true;
+      permissions.canCreateGoal = true;
+      permissions.canCreateAssignment = true;
+      permissions.canCreateRiskIssue = true;
       break;
       
     case "User":
       // Regular users have minimal permissions
       permissions.canSubmitChangeRequest = true;
+      permissions.canCreateGoal = false; // Users cannot create goals
+      permissions.canCreateAssignment = true;
+      permissions.canCreateRiskIssue = true;
       break;
   }
   

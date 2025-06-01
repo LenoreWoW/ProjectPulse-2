@@ -114,6 +114,7 @@ async function createOrUpdateDeadlineRisk(project: Project) {
   const riskData = {
     projectId: project.id,
     type: "Risk" as const,
+    title: `Project Deadline Risk - ${project.title}`,
     description: `Project "${project.title}" is approaching its deadline (${deadlineDate})`,
     priority: "High" as const,
     status: "Open" as const,
@@ -180,6 +181,7 @@ async function convertRiskToIssueOrCreateNew(project: Project) {
     const issueData = {
       projectId: project.id,
       type: "Issue" as const,
+      title: `Project Deadline Issue - ${project.title}`,
       description: `Project "${project.title}" has missed its deadline (${deadlineDate})`,
       priority: "Critical" as const,
       status: "Open" as const,
@@ -223,6 +225,7 @@ async function createOrUpdateTaskDeadlineRisk(task: Task) {
   const riskData = {
     projectId: task.projectId,
     type: "Risk" as const,
+    title: `Task Deadline Risk - ${task.title}`,
     description: `Task "${task.title}" is approaching its deadline (${deadlineDate})`,
     priority: "Medium" as const,
     status: "Open" as const,
@@ -291,6 +294,7 @@ async function convertTaskRiskToIssueOrCreateNew(task: Task) {
     const issueData = {
       projectId: task.projectId,
       type: "Issue" as const,
+      title: `Task Deadline Issue - ${task.title}`,
       description: `Task "${task.title}" has missed its deadline (${deadlineDate})`,
       priority: "High" as const,
       status: "Open" as const,

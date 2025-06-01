@@ -28,6 +28,7 @@ export const departments = pgTable('departments', {
   location: text('location'),
   phone: text('phone'),
   email: text('email'),
+  isActive: boolean('is_active').default(true),
   createdAt: timestamp('created_at').defaultNow(),
   updatedAt: timestamp('updated_at').defaultNow(),
 });
@@ -49,6 +50,8 @@ export const users = pgTable('users', {
   passportImage: text('passport_image'),
   idCardImage: text('id_card_image'),
   preferredLanguage: text('preferred_language').default('en'),
+  createdAt: timestamp('created_at').defaultNow(),
+  updatedAt: timestamp('updated_at').defaultNow(),
 });
 
 // Project
@@ -64,6 +67,7 @@ export const projects = pgTable('projects', {
   budget: doublePrecision('budget').default(0),
   priority: priorityEnum('priority').default('Medium'),
   startDate: timestamp('start_date').defaultNow(),
+  endDate: timestamp('end_date'),
   deadline: timestamp('deadline'),
   status: projectStatusEnum('status').default('Pending'),
   actualCost: doublePrecision('actual_cost').default(0),
@@ -91,8 +95,9 @@ export const projectCostHistory = pgTable('project_cost_history', {
   projectId: integer('project_id').notNull(),
   amount: doublePrecision('amount').notNull(),
   updatedByUserId: integer('updated_by_user_id').notNull(),
-  updatedAt: timestamp('updated_at').defaultNow(),
   notes: text('notes'),
+  createdAt: timestamp('created_at').defaultNow(),
+  updatedAt: timestamp('updated_at').defaultNow(),
 });
 
 // Task
@@ -120,6 +125,7 @@ export const taskComments = pgTable('task_comments', {
   userId: integer('user_id').notNull(),
   content: text('content').notNull(),
   createdAt: timestamp('created_at').defaultNow(),
+  updatedAt: timestamp('updated_at').defaultNow(),
 });
 
 // Assignment Comments
@@ -129,6 +135,7 @@ export const assignmentComments = pgTable('assignment_comments', {
   userId: integer('user_id').notNull(),
   content: text('content').notNull(),
   createdAt: timestamp('created_at').defaultNow(),
+  updatedAt: timestamp('updated_at').defaultNow(),
 });
 
 // Change Requests
@@ -146,6 +153,8 @@ export const changeRequests = pgTable('change_requests', {
   rejectionReason: text('rejection_reason'),
   returnTo: varchar('return_to', { length: 50 }),
   comments: text('comments'),
+  createdAt: timestamp('created_at').defaultNow(),
+  updatedAt: timestamp('updated_at').defaultNow(),
 });
 
 // Goals
@@ -171,6 +180,8 @@ export const projectGoals = pgTable('project_goals', {
   projectId: integer('project_id').notNull(),
   goalId: integer('goal_id').notNull(),
   weight: doublePrecision('weight').default(1),
+  createdAt: timestamp('created_at').defaultNow(),
+  updatedAt: timestamp('updated_at').defaultNow(),
 });
 
 // Goal-to-Goal relationships (with weight)
@@ -179,6 +190,8 @@ export const goalRelationships = pgTable('goal_relationships', {
   parentGoalId: integer('parent_goal_id').notNull(),
   childGoalId: integer('child_goal_id').notNull(),
   weight: doublePrecision('weight').default(1),
+  createdAt: timestamp('created_at').defaultNow(),
+  updatedAt: timestamp('updated_at').defaultNow(),
 });
 
 // Risks & Issues
@@ -186,6 +199,7 @@ export const risksIssues = pgTable('risks_issues', {
   id: serial('id').primaryKey(),
   projectId: integer('project_id').notNull(),
   type: riskTypeEnum('type').notNull(),
+  title: text('title').notNull(),
   description: text('description').notNull(),
   descriptionAr: text('description_ar'),
   priority: priorityEnum('priority').default('Medium'),
@@ -207,6 +221,7 @@ export const notifications = pgTable('notifications', {
   requiresApproval: boolean('requires_approval').default(false),
   lastReminderSent: timestamp('last_reminder_sent'),
   createdAt: timestamp('created_at').defaultNow(),
+  updatedAt: timestamp('updated_at').defaultNow(),
 });
 
 // Assignments
@@ -249,6 +264,7 @@ export const weeklyUpdates = pgTable('weekly_updates', {
   commentsAr: text('comments_ar'),
   createdByUserId: integer('created_by_user_id').notNull(),
   createdAt: timestamp('created_at').defaultNow(),
+  updatedAt: timestamp('updated_at').defaultNow(),
 });
 
 // Milestones
@@ -273,6 +289,8 @@ export const taskMilestones = pgTable('task_milestones', {
   taskId: integer('task_id').notNull(),
   milestoneId: integer('milestone_id').notNull(),
   weight: doublePrecision('weight').default(1), // Weight for milestone completion calculation
+  createdAt: timestamp('created_at').defaultNow(),
+  updatedAt: timestamp('updated_at').defaultNow(),
 });
 
 // Audit Logs
@@ -294,11 +312,18 @@ export const auditLogs = pgTable('audit_logs', {
 export const insertUserSchema = createInsertSchema(users).omit({ id: true });
 export const insertProjectSchema = createInsertSchema(projects)
   .omit({ id: true, createdAt: true, updatedAt: true })
-  .transform((data: InsertProject) => {
-    // Convert date strings to Date objects
+  .refine((data: any) => {
+    // Ensure startDate is provided when creating a project
+    return data.startDate !== null && data.startDate !== undefined;
+  }, {
+    message: "Start date is required for new projects",
+    path: ["startDate"]
+  })
+  .transform((data: any) => {
+    // Convert date strings to Date objects, ensuring startDate is always a Date
     return {
       ...data,
-      startDate: data.startDate ? new Date(data.startDate) : data.startDate,
+      startDate: data.startDate ? new Date(data.startDate) : new Date(),
       endDate: data.endDate ? new Date(data.endDate) : data.endDate,
     };
   });
@@ -321,7 +346,7 @@ export const updateProjectSchema = z.object({
   actualCost: z.number().optional().nullable(),
   createdAt: z.date().optional(),
   updatedAt: z.date().optional()
-}).transform((data) => {
+}).transform((data: any) => {
   // Ensure date fields are properly converted
   return {
     ...data,
@@ -336,7 +361,7 @@ export const insertGoalSchema = createInsertSchema(goals).omit({ id: true, creat
 
 export const insertTaskSchema = createInsertSchema(tasks)
   .omit({ id: true, createdAt: true, updatedAt: true })
-  .transform((data: InsertTask) => {
+  .transform((data: any) => {
     // Convert date strings to Date objects
     return {
       ...data,
@@ -350,7 +375,7 @@ export const insertNotificationSchema = createInsertSchema(notifications).omit({
 
 export const insertAssignmentSchema = createInsertSchema(assignments)
   .omit({ id: true, createdAt: true, updatedAt: true })
-  .transform((data: InsertAssignment) => {
+  .transform((data: any) => {
     // Convert date strings to Date objects
     return {
       ...data,
@@ -374,7 +399,7 @@ export const insertProjectDependencySchema = createInsertSchema(projectDependenc
 
 export const insertMilestoneSchema = createInsertSchema(milestones)
   .omit({ id: true, createdAt: true, updatedAt: true, completionPercentage: true })
-  .transform((data: InsertMilestone) => {
+  .transform((data: any) => {
     // Convert date strings to Date objects
     return {
       ...data,
@@ -410,25 +435,27 @@ export type InsertUser = {
   phone?: string | null;
   username: string;
   password: string;
-  roles: string[];
+  role?: "User" | "ProjectManager" | "SubPMO" | "MainPMO" | "DepartmentDirector" | "Executive" | "Administrator" | null;
+  status?: "Pending" | "Active" | "Inactive" | "Rejected" | null;
   departmentId?: number | null;
-  isActive: boolean;
-  position?: string | null;
-  avatarUrl?: string | null;
+  passportImage?: string | null;
+  idCardImage?: string | null;
   preferredLanguage?: string | null;
 };
 
 export type InsertDepartment = {
-  location?: string | null;
   name: string;
-  email?: string | null;
-  phone?: string | null;
-  fax?: string | null;
+  nameAr?: string | null;
+  code: string;
   description?: string | null;
   descriptionAr?: string | null;
-  isActive?: boolean;
-  parentDepartmentId?: number | null;
+  directorUserId?: number | null;
   headUserId?: number | null;
+  budget?: number | null;
+  location?: string | null;
+  phone?: string | null;
+  email?: string | null;
+  isActive?: boolean;
 };
 
 export type InsertProject = {
@@ -441,6 +468,7 @@ export type InsertProject = {
   startDate: Date;
   endDate?: Date | null;
   departmentId: number;
+  client: string;
   priority?: "Low" | "Medium" | "High" | "Critical" | null;
   budget?: number | null;
   actualCost?: number | null;
@@ -475,15 +503,19 @@ export type InsertChangeRequest = {
 };
 
 export type InsertGoal = {
-  departmentId?: number | null;
   title: string;
   titleAr?: string | null;
   description?: string | null;
   descriptionAr?: string | null;
-  targetDate?: Date | null;
-  priority?: 'Low' | 'Medium' | 'High' | 'Critical' | null;
+  createdByUserId: number;
   isStrategic?: boolean;
   isAnnual?: boolean;
+  departmentId?: number | null;
+  startDate?: Date | null;
+  deadline?: Date | null;
+  status?: 'Active' | 'Completed' | 'OnHold' | 'Cancelled' | null;
+  priority?: 'Low' | 'Medium' | 'High' | 'Critical' | null;
+  progress?: number;
 };
 
 export type InsertRiskIssue = {
@@ -607,11 +639,11 @@ export type LoginData = z.infer<typeof loginSchema>;
 export const updateTaskSchema = z.object({
   id: z.number().optional(),
   projectId: z.number().optional(),
+  assignedUserId: z.number().optional().nullable(),
   title: z.string().optional(),
   titleAr: z.string().optional().nullable(),
   description: z.string().optional().nullable(),
   descriptionAr: z.string().optional().nullable(),
-  assignedUserId: z.number().optional().nullable(),
   deadline: z.date().optional().nullable(),
   priority: z.enum(['Low', 'Medium', 'High', 'Critical']).optional(),
   status: z.enum(['Todo', 'InProgress', 'Review', 'Completed', 'OnHold']).optional(),
@@ -619,7 +651,7 @@ export const updateTaskSchema = z.object({
   priorityOrder: z.number().optional().nullable(),
   createdAt: z.date().optional(),
   updatedAt: z.date().optional()
-}).transform((data) => {
+}).transform((data: any) => {
   // Ensure date fields are properly converted
   return {
     ...data,
@@ -656,7 +688,7 @@ export const updateAssignmentSchema = z.object({
   status: z.enum(['Todo', 'InProgress', 'Review', 'Completed', 'OnHold']).optional(),
   createdAt: z.date().optional(),
   updatedAt: z.date().optional()
-}).transform((data) => {
+}).transform((data: any) => {
   // Ensure date fields are properly converted
   return {
     ...data,
@@ -676,7 +708,7 @@ export const updateActionItemSchema = z.object({
   status: z.enum(['Todo', 'InProgress', 'Review', 'Completed', 'OnHold']).optional(),
   createdAt: z.date().optional(),
   updatedAt: z.date().optional()
-}).transform((data) => {
+}).transform((data: any) => {
   // Ensure date fields are properly converted
   return {
     ...data,
@@ -693,7 +725,7 @@ export const updateWeeklyUpdateSchema = z.object({
   createdByUserId: z.number().optional(),
   createdAt: z.date().optional(),
   updatedAt: z.date().optional()
-}).transform((data) => {
+}).transform((data: any) => {
   // Ensure date fields are properly converted
   return {
     ...data,
@@ -715,7 +747,7 @@ export const updateMilestoneSchema = z.object({
   createdByUserId: z.number().optional(),
   createdAt: z.date().optional(),
   updatedAt: z.date().optional()
-}).transform((data) => {
+}).transform((data: any) => {
   // Ensure date fields are properly converted
   return {
     ...data,
@@ -740,11 +772,11 @@ export type User = {
   phone?: string | null;
   username: string;
   password: string;
-  roles: string[];
+  role?: string | null;
+  status?: string | null;
   departmentId?: number | null;
-  isActive: boolean;
-  position?: string | null;
-  avatarUrl?: string | null;
+  passportImage?: string | null;
+  idCardImage?: string | null;
   preferredLanguage?: string | null;
   createdAt: Date;
   updatedAt: Date;
@@ -752,16 +784,18 @@ export type User = {
 
 export type Department = {
   id: number;
-  location?: string | null;
   name: string;
-  email?: string | null;
-  phone?: string | null;
-  fax?: string | null;
+  nameAr?: string | null;
+  code: string;
   description?: string | null;
   descriptionAr?: string | null;
-  isActive: boolean;
-  parentDepartmentId?: number | null;
+  directorUserId?: number | null;
   headUserId?: number | null;
+  budget?: number | null;
+  location?: string | null;
+  phone?: string | null;
+  email?: string | null;
+  isActive: boolean;
   createdAt: Date;
   updatedAt: Date;
 };
@@ -776,7 +810,9 @@ export type Project = {
   descriptionAr?: string | null;
   startDate: Date;
   endDate?: Date | null;
+  deadline?: Date | null;
   departmentId: number;
+  client: string;
   priority?: string | null;
   budget?: number | null;
   actualCost?: number | null;
@@ -821,15 +857,19 @@ export type ChangeRequest = {
 
 export type Goal = {
   id: number;
-  departmentId?: number | null;
   title: string;
   titleAr?: string | null;
   description?: string | null;
   descriptionAr?: string | null;
-  targetDate?: Date | null;
-  priority?: string | null;
+  createdByUserId: number;
   isStrategic: boolean;
   isAnnual: boolean;
+  departmentId?: number | null;
+  startDate?: Date | null;
+  deadline?: Date | null;
+  status?: string | null;
+  priority?: string | null;
+  progress: number;
   createdAt: Date;
   updatedAt: Date;
 };

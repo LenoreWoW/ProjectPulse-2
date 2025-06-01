@@ -67,10 +67,10 @@ export function Sidebar() {
     <li key={path}>
       <Link 
         href={path}
-        className={`flex items-center p-2 ${
+        className={`nav-link flex items-center p-2 ${
           isActive(path)
-            ? "text-white bg-white/20 dark:bg-gray-700"
-            : "text-white hover:bg-white/10 dark:text-gray-200 dark:hover:bg-gray-700"
+            ? "text-white bg-white/20"
+            : "text-white hover:bg-white/10"
         } rounded-lg transition-colors duration-200`}
       >
         <Icon className={`h-5 w-5 ${isRtl ? 'ml-3' : 'mr-3'} rtl-mirror`} />
@@ -83,12 +83,12 @@ export function Sidebar() {
     <aside 
       className={`${
         collapsed ? "w-20" : "w-64"
-      } hidden md:flex flex-col bg-qatar-maroon dark:bg-gray-800 shadow-lg transition-all duration-300 ease-in-out z-20 shrink-0 border-r border-qatar-maroon/20 dark:border-gray-700 h-screen`}
+      } hidden md:flex flex-col sidebar-maroon shadow-lg transition-all duration-300 ease-in-out z-20 shrink-0 border-r border-qatar-maroon/20 h-screen`}
     >
-      <div className="p-4 flex items-center justify-between border-b border-qatar-maroon/20 dark:border-gray-700">
+      <div className="p-4 flex items-center justify-between border-b border-qatar-maroon/20">
         <Logo hideText={collapsed} />
         <button
-          className="p-1 rounded-full text-white hover:bg-qatar-maroon/80 dark:text-gray-200 dark:hover:bg-gray-700"
+          className="p-1 rounded-full text-white hover:bg-qatar-maroon/80"
           onClick={() => setCollapsed(!collapsed)}
         >
           {isRtl ? (
@@ -135,7 +135,7 @@ export function Sidebar() {
             {renderNavItem({ icon: Building, label: t("departments"), path: "/departments" })}
           </PermissionGate>
 
-          <div className="pt-4 mt-4 border-t border-qatar-maroon/20 dark:border-gray-700">
+          <div className="pt-4 mt-4 border-t border-qatar-maroon/20">
             <PermissionGate permission="canManageUsers">
               {renderNavItem({ icon: ShieldCheck, label: t("userPermissions"), path: "/user-permissions" })}
             </PermissionGate>
@@ -147,25 +147,25 @@ export function Sidebar() {
       </nav>
 
       {!collapsed && (
-        <div className="p-2 border-t border-qatar-maroon/20 dark:border-gray-700">
+        <div className="p-2 border-t border-qatar-maroon/20">
           {/* Discord-style user settings */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <button className="w-full text-start flex items-center p-2 rounded-lg hover:bg-qatar-maroon/80 dark:hover:bg-gray-700 transition-colors duration-200 cursor-pointer">
-                <div className="w-8 h-8 rounded-full bg-white text-qatar-maroon dark:bg-gray-600 dark:text-white flex items-center justify-center font-bold">
+              <button className="w-full text-start flex items-center p-2 rounded-lg hover:bg-qatar-maroon/80 transition-colors duration-200 cursor-pointer">
+                <div className="w-8 h-8 rounded-full bg-white text-qatar-maroon flex items-center justify-center font-bold">
                   {user?.name?.charAt(0).toUpperCase() || "U"}
                 </div>
                 <div className={`${isRtl ? 'mr-3' : 'ml-3'} flex-1`}>
-                  <p className="text-sm font-medium text-white dark:text-gray-200">{user?.name}</p>
-                  <p className="text-xs text-white/70 dark:text-gray-400">{user?.role}</p>
+                  <p className="text-sm font-medium text-white">{user?.name}</p>
+                  <p className="text-xs text-white/70">{user?.role}</p>
                 </div>
                 <div className="flex space-x-1 rtl:space-x-reverse">
                   {theme === "dark" ? (
-                    <Sun className="h-4 w-4 text-white/70 dark:text-gray-400" />
+                    <Sun className="h-4 w-4 text-white/70" />
                   ) : (
-                    <Moon className="h-4 w-4 text-white/70 dark:text-gray-400" />
+                    <Moon className="h-4 w-4 text-white/70" />
                   )}
-                  <span className="text-xs font-bold text-white/70 dark:text-gray-400">
+                  <span className="text-xs font-bold text-white/70">
                     {language === "en" ? "EN" : "AR"}
                   </span>
                 </div>

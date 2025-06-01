@@ -65,6 +65,7 @@ import {
   Building
 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { PermissionGate } from "@/hooks/use-permissions";
 
 // Form schema for adding or editing users
 const userFormSchema = z.object({
@@ -282,7 +283,7 @@ export default function UsersManagementPage() {
     <div className="container mx-auto py-6 space-y-6">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">{t("userManagement")}</h1>
+          <h1 className="text-3xl font-bold tracking-tight text-contrast dark:text-white">{t("userManagement")}</h1>
           <p className="text-gray-500 dark:text-gray-400 mt-1">{t("manageSystemUsers")}</p>
         </div>
         

@@ -122,16 +122,25 @@ export default function RepositoryPage() {
   // Format date for display
   const formatDate = (date: Date | string | null) => {
     if (!date) return '-';
-    return format(new Date(date), 'MMM dd, yyyy');
+    
+    try {
+      const dateObj = new Date(date);
+      // Check if the date is valid
+      if (isNaN(dateObj.getTime())) {
+        return '-';
+      }
+      return format(dateObj, 'MMM dd, yyyy');
+    } catch (error) {
+      console.warn('Invalid date format:', date);
+      return '-';
+    }
   };
 
   return (
-    <div className="space-y-8">
-      <div className="flex flex-col gap-2">
-        <h1 className="text-3xl font-bold">{t('repository')}</h1>
-        <p className="text-muted-foreground">
-          {t('repositoryDescription')}
-        </p>
+    <div className="space-y-6">
+      {/* Page Title */}
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="text-2xl font-bold text-contrast dark:text-white">{t("repository")}</h1>
       </div>
 
       <div className="flex flex-col gap-4">
@@ -144,7 +153,7 @@ export default function RepositoryPage() {
               placeholder={t('searchRepositoryPlaceholder')}
               className="pl-9"
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchQuery(e.target.value)}
             />
           </div>
           <DropdownMenu>
@@ -195,7 +204,7 @@ export default function RepositoryPage() {
                         <CardTitle className="text-xl">{project.title}</CardTitle>
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" className="h-8 w-8 p-0" onClick={(e) => e.stopPropagation()}>
+                            <Button variant="ghost" className="h-8 w-8 p-0" onClick={(e: React.MouseEvent) => e.stopPropagation()}>
                               <MoreHorizontal className="h-4 w-4" />
                             </Button>
                           </DropdownMenuTrigger>
@@ -269,7 +278,7 @@ export default function RepositoryPage() {
                         <CardTitle className="text-xl">{project.title}</CardTitle>
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" className="h-8 w-8 p-0">
+                            <Button variant="ghost" className="h-8 w-8 p-0" onClick={(e: React.MouseEvent) => e.stopPropagation()}>
                               <MoreHorizontal className="h-4 w-4" />
                             </Button>
                           </DropdownMenuTrigger>

@@ -6,7 +6,11 @@ async function throwIfResNotOk(response: Response) {
     if (contentType && contentType.includes('application/json')) {
       try {
         const errorData = await response.json();
-        console.log("API Error:", errorData);
+        
+        // Only log non-auth errors to reduce console spam
+        if (response.status !== 401) {
+          console.log("API Error:", errorData);
+        }
         
         // Enhanced error handling for validation errors
         if (errorData.errors && Array.isArray(errorData.errors)) {
@@ -50,20 +54,28 @@ export async function apiRequest(method: string, url: string, data?: any) {
     // Check response without trying to parse JSON first
     if (!response.ok) {
       const contentType = response.headers.get('content-type');
-      console.error(`API Error: ${response.status} ${response.statusText}`);
       
-      // Log headers in a simpler way to avoid Iterator compatibility issues
-      const headers: Record<string, string> = {};
-      response.headers.forEach((value, key) => {
-        headers[key] = value;
-      });
-      console.error(`Response headers:`, headers);
+      // Only log non-auth errors to reduce console spam
+      if (response.status !== 401) {
+        console.error(`API Error: ${response.status} ${response.statusText}`);
+        
+        // Log headers in a simpler way to avoid Iterator compatibility issues
+        const headers: Record<string, string> = {};
+        response.headers.forEach((value, key) => {
+          headers[key] = value;
+        });
+        console.error(`Response headers:`, headers);
+      }
       
       // Only try to parse as JSON if the content type is application/json
       if (contentType && contentType.includes('application/json')) {
         try {
           const errorData = await response.json();
-          console.error("API Error details:", errorData);
+          
+          // Only log non-auth error details
+          if (response.status !== 401) {
+            console.error("API Error details:", errorData);
+          }
           
           // Enhanced error handling for validation errors
           if (errorData.errors && Array.isArray(errorData.errors)) {
@@ -83,7 +95,9 @@ export async function apiRequest(method: string, url: string, data?: any) {
           // Try to get response text as fallback
           try {
             const text = await response.clone().text();
-            console.error("Response text:", text);
+            if (response.status !== 401) {
+              console.error("Response text:", text);
+            }
             throw new Error(`${response.status}: ${text || response.statusText}`);
           } catch {
             throw new Error(`${response.status}: Failed to parse error response`);
@@ -93,7 +107,9 @@ export async function apiRequest(method: string, url: string, data?: any) {
         // For non-JSON responses, try to get the response text
         try {
           const text = await response.text();
-          console.error("Non-JSON error response:", text);
+          if (response.status !== 401) {
+            console.error("Non-JSON error response:", text);
+          }
           throw new Error(`${response.status}: ${text || response.statusText}`);
         } catch {
           // If we can't get the text, just use statusText
@@ -104,7 +120,10 @@ export async function apiRequest(method: string, url: string, data?: any) {
     
     return response;
   } catch (error) {
-    console.error("API Request failed:", error);
+    // Only log non-auth errors
+    if (!(error instanceof Error && error.message.includes('401'))) {
+      console.error("API Request failed:", error);
+    }
     throw error;
   }
 }
@@ -134,11 +153,33 @@ export const queryClient = new QueryClient({
       refetchInterval: false,
       refetchOnWindowFocus: true, // Enable refetching when window regains focus
       staleTime: 1000 * 60 * 5, // 5 minutes instead of infinite
-      retry: true, // Enable retries
+      retry: (failureCount, error) => {
+        // Don't retry on authentication errors
+        if (error instanceof Error && error.message.includes('401')) {
+          return false;
+        }
+        // Don't retry on client errors (4xx)
+        if (error instanceof Error && error.message.match(/^4\d\d:/)) {
+          return false;
+        }
+        // Retry up to 2 times for other errors
+        return failureCount < 2;
+      },
       retryDelay: 1000, // 1 second between retries
     },
     mutations: {
-      retry: true, // Enable retries for mutations
+      retry: (failureCount, error) => {
+        // Don't retry on authentication errors
+        if (error instanceof Error && error.message.includes('401')) {
+          return false;
+        }
+        // Don't retry on client errors (4xx)
+        if (error instanceof Error && error.message.match(/^4\d\d:/)) {
+          return false;
+        }
+        // Retry up to 1 time for other errors
+        return failureCount < 1;
+      },
       retryDelay: 1000, // 1 second between retries
     },
   },

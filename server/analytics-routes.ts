@@ -1,11 +1,12 @@
-import { Request, Response, Router } from 'express';
+import { Router, Request, Response, NextFunction } from 'express';
 import { storage } from './storage';
 import { Task, RiskIssue, Project } from '@shared/schema';
 
-// Redefine hasAuth middleware since it's not exported from middleware.ts
-const hasAuth = (req: Request, res: Response, next: Function) => {
+// Simple auth middleware for analytics routes
+const hasAuth = (req: Request, res: Response, next: NextFunction): void => {
   if (!req.isAuthenticated()) {
-    return res.status(401).json({ error: 'Unauthorized' });
+    res.status(401).json({ error: 'Unauthorized' });
+    return;
   }
   next();
 };

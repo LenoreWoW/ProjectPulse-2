@@ -23,6 +23,27 @@ import {
 } from "@/components/ui/dialog";
 import TaskDetailDialog from "./task-detail-dialog";
 
+interface TaskCardProps {
+  task: {
+    id: number;
+    title: string;
+    description?: string;
+    status: string;
+    priority: string;
+    dueDate?: string;
+    assignedUserId?: number;
+    createdByUserId: number;
+  };
+  onEdit?: (task: any) => void;
+  onDelete?: (taskId: number) => void;
+  onStatusChange?: (taskId: number, status: string) => void;
+  assigneeMap?: Record<number, { name: string }>;
+  creatorMap?: Record<number, { name: string }>;
+  priorities: Array<{ value: string; label: string }>;
+  disableActions?: boolean;
+  className?: string;
+}
+
 const TaskCard = ({
   task,
   onEdit,
@@ -40,7 +61,7 @@ const TaskCard = ({
 
   const dueDate = task.dueDate ? new Date(task.dueDate) : null;
   const isPastDue = dueDate && dueDate < new Date();
-  const assignee = assigneeMap?.[task.assignedUserId];
+  const assignee = task.assignedUserId ? assigneeMap?.[task.assignedUserId] : undefined;
   const creator = creatorMap?.[task.createdByUserId];
 
   const getPriorityLabel = (priority: string) => {
@@ -104,7 +125,7 @@ const TaskCard = ({
                   variant="ghost"
                   size="icon"
                   className="h-7 w-7"
-                  onClick={(e) => {
+                  onClick={(e: React.MouseEvent) => {
                     e.stopPropagation();
                     onEdit?.(task);
                   }}
@@ -115,7 +136,7 @@ const TaskCard = ({
                   variant="ghost"
                   size="icon"
                   className="h-7 w-7"
-                  onClick={(e) => {
+                  onClick={(e: React.MouseEvent) => {
                     e.stopPropagation();
                     setShowDeleteConfirm(true);
                   }}

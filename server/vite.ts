@@ -4,8 +4,6 @@ import path from "path";
 import { createServer as createViteServer, createLogger, ViteDevServer } from "vite";
 import { type Server } from "http";
 import { nanoid } from "nanoid";
-// Import the vite config directly as before
-import viteConfig from "../vite.config";
 
 // Use process.cwd() to avoid path resolution issues with import.meta
 const projectRoot = process.cwd();
@@ -21,58 +19,30 @@ export function log(message: string, source = "express") {
 /**
  * Set up Vite middleware for development
  */
-export async function setupVite(app: Express, server: Server): Promise<void> {
+export async function registerVite(app: Express): Promise<ViteDevServer | undefined> {
+  if (process.env.NODE_ENV === "production") {
+    app.use(express.static(path.resolve("dist")));
+    return;
+  }
+
   try {
     log("Creating Vite dev server...");
     const vite = await createViteServer({
-      configFile: path.resolve(projectRoot, 'vite.config.ts'),
-      server: {
-        middlewareMode: true,
-        hmr: {
-          server: server
-        }
-      },
-      customLogger: {
-        ...viteLogger,
-        error: (msg: string, options?: any) => {
-          viteLogger.error(msg, options);
-          // Don't exit the process on error, just log it
-          console.error('Vite server error:', msg);
-        }
-      }
+      server: { middlewareMode: true },
+      appType: "spa",
+      logLevel: "info",
+      root: projectRoot
     });
-
+    
+    app.use(vite.ssrFixStacktrace);
     app.use(vite.middlewares);
-    app.use("*", async (req: Request, res: Response, next: NextFunction) => {
-      // Skip problematic URLs that might trigger path-to-regexp issues
-      const url = req.originalUrl;
-      
-      // Skip processing API routes and problematic URLs
-      if (url.startsWith('/api') || url.includes('https://') || url.includes('http://')) {
-        return next();
-      }
-
-      try {
-        // Always read fresh index.html in dev
-        let template = fs.readFileSync(
-          path.resolve(projectRoot, 'client/index.html'),
-          'utf-8'
-        );
-
-        // Apply Vite HTML transforms
-        template = await vite.transformIndexHtml(url, template);
-        
-        res.status(200).set({ 'Content-Type': 'text/html' }).end(template);
-      } catch (e) {
-        console.error(`Error processing ${url}:`, e);
-        next(e);
-      }
-    });
-
-    log("Vite development server set up successfully");
+    
+    console.log("Vite dev server setup complete");
+    return vite;
   } catch (error) {
+    console.error("Vite server error:", error);
     console.error("Failed to set up Vite:", error);
-    throw error;
+    throw error; // Re-throw to prevent server from continuing with broken setup
   }
 }
 

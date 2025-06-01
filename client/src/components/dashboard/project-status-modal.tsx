@@ -33,8 +33,6 @@ interface User {
 
 // Extended project type to include properties that exist in the database
 interface ExtendedProject extends Project {
-  deadline?: string | null;
-  client?: string | null;
   department?: string | null;
 }
 
@@ -89,9 +87,9 @@ export function ProjectStatusModal({
     }
   };
 
-  const formatDate = (dateString: string | null) => {
-    if (!dateString) return t("notSet");
-    return new Date(dateString).toLocaleDateString();
+  const formatDate = (date: Date | null) => {
+    if (!date) return t("notSet");
+    return date.toLocaleDateString();
   };
 
   const handleProjectClick = (projectId: number) => {

@@ -24,6 +24,8 @@ import {
   Building2,
 } from "lucide-react";
 import { Link } from "wouter";
+import { PermissionGate } from "@/hooks/use-permissions";
+import { usePermissions, Permission } from "@/hooks/use-permissions";
 
 interface GoalWithProgress extends Goal {
   progress: number;
@@ -35,6 +37,7 @@ interface GoalWithProgress extends Goal {
 export default function GoalsPage() {
   const { t } = useI18n();
   const { user } = useAuth();
+  const permissions = usePermissions();
   const [mainTab, setMainTab] = useState<string>("general");
   
   // Determine if user can create different types of goals based on role
@@ -62,16 +65,16 @@ export default function GoalsPage() {
     [];
   
   // Format priority badge
-  const getPriorityBadge = (priority: string | null) => {
+  const getPriorityBadge = (priority: string | null | undefined) => {
     if (!priority) return null;
-    switch (priority) {
-      case 'High':
+    switch (priority.toLowerCase()) {
+      case 'high':
         return (
           <span className="px-2 py-1 bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300 text-xs rounded-full">
             {t("high")}
           </span>
         );
-      case 'Medium':
+      case 'medium':
         return (
           <span className="px-2 py-1 bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300 text-xs rounded-full">
             {t("medium")}
@@ -161,17 +164,9 @@ export default function GoalsPage() {
     <>
       {/* Page Title */}
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{t("goals")}</h1>
-        <div className="space-x-2">
-          {canCreateDepartmentGoal && (
-            <Link href="/goals/new?type=department">
-              <Button variant="outline" className="border-qatar-maroon text-qatar-maroon">
-                <Building2 className="mr-2 h-4 w-4" />
-                <span>{t("newDepartmentGoal")}</span>
-              </Button>
-            </Link>
-          )}
-          {canCreateGeneralGoal && (
+        <h1 className="text-2xl font-bold text-contrast dark:text-white">{t("goals")}</h1>
+        <PermissionGate permission={'canCreateGoal' as keyof Permission}>
+          {permissions.canCreateGoal && (
             <Link href="/goals/new">
               <Button className="bg-qatar-maroon hover:bg-maroon-800 text-white">
                 <Plus className="mr-2 h-4 w-4" />
@@ -179,7 +174,7 @@ export default function GoalsPage() {
               </Button>
             </Link>
           )}
-        </div>
+        </PermissionGate>
       </div>
       
       {/* Main Tabs */}

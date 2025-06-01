@@ -30,35 +30,31 @@ interface RiskSummary {
   mitigationRate: number;
 }
 
-// Mock data - would be replaced with actual API data
-const mockRisks = [
-  { id: 1, title: "Data Security Breach", project: "Digital Transformation", status: "Open", severity: "High", impact: "Critical", likelihood: "Medium", mitigation: "Implement encryption and access controls" },
-  { id: 2, title: "Vendor Delays", project: "HR System Upgrade", status: "InProgress", severity: "Medium", impact: "High", likelihood: "High", mitigation: "Create contingency plan and alternative vendors" },
-  { id: 3, title: "Budget Overrun", project: "Office Expansion", status: "Resolved", severity: "Medium", impact: "High", likelihood: "Low", mitigation: "Regular budget reviews and cost controls" },
-  { id: 4, title: "Compliance Failure", project: "Security Compliance", status: "Open", severity: "Critical", impact: "Critical", likelihood: "Low", mitigation: "Regular audits and compliance checks" },
-  { id: 5, title: "Hardware Failure", project: "Data Center Migration", status: "Resolved", severity: "Low", impact: "Medium", likelihood: "Low", mitigation: "Redundant systems and backups" },
-];
-
 export default function RiskAssessmentReportPage() {
   const { t } = useI18n();
   const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'ascending' | 'descending' } | null>(null);
 
-  // Mock API call - would be replaced with actual API endpoint
-  const { data, isLoading } = useQuery({
+  // Fetch risks from API
+  const { data, isLoading, error } = useQuery({
     queryKey: ["/api/reports/risks/assessment"],
     queryFn: async () => {
-      // Simulate API call
-      return {
-        risks: mockRisks,
-        summary: {
-          totalRisks: mockRisks.length,
-          highRisks: mockRisks.filter(r => r.severity === "High" || r.severity === "Critical").length,
-          mediumRisks: mockRisks.filter(r => r.severity === "Medium").length,
-          lowRisks: mockRisks.filter(r => r.severity === "Low").length,
-          resolvedRisks: mockRisks.filter(r => r.status === "Resolved").length,
-          mitigationRate: (mockRisks.filter(r => r.status === "Resolved").length / mockRisks.length) * 100
-        } as RiskSummary
+      const response = await fetch("/api/risks");
+      if (!response.ok) {
+        throw new Error("Failed to fetch risks data");
+      }
+      const risks = await response.json();
+      
+      // Calculate summary statistics
+      const summary: RiskSummary = {
+        totalRisks: risks.length,
+        highRisks: risks.filter((r: any) => r.priority === "High" || r.priority === "Critical").length,
+        mediumRisks: risks.filter((r: any) => r.priority === "Medium").length,
+        lowRisks: risks.filter((r: any) => r.priority === "Low").length,
+        resolvedRisks: risks.filter((r: any) => r.status === "Resolved").length,
+        mitigationRate: risks.length > 0 ? (risks.filter((r: any) => r.status === "Resolved").length / risks.length) * 100 : 0
       };
+      
+      return { risks, summary };
     }
   });
 
@@ -89,8 +85,8 @@ export default function RiskAssessmentReportPage() {
     return 0;
   }) : [];
 
-  const getSeverityBadge = (severity: string) => {
-    switch(severity) {
+  const getSeverityBadge = (priority: string) => {
+    switch(priority) {
       case 'Critical':
         return <Badge className="bg-red-600 hover:bg-red-700">{t("critical")}</Badge>;
       case 'High':
@@ -100,7 +96,7 @@ export default function RiskAssessmentReportPage() {
       case 'Low':
         return <Badge className="bg-green-500 hover:bg-green-600">{t("low")}</Badge>;
       default:
-        return <Badge>{severity}</Badge>;
+        return <Badge>{priority}</Badge>;
     }
   };
 
@@ -133,8 +129,46 @@ export default function RiskAssessmentReportPage() {
   };
 
   const exportReport = () => {
-    alert("Export functionality not implemented yet");
+    if (!data?.risks) return;
+    
+    // Create CSV content
+    const headers = ['ID', 'Title', 'Type', 'Priority', 'Status', 'Impact', 'Mitigation'];
+    const csvContent = [
+      headers.join(','),
+      ...data.risks.map((risk: any) => [
+        risk.id,
+        `"${risk.title}"`,
+        risk.type,
+        risk.priority,
+        risk.status,
+        `"${risk.impact || ''}"`,
+        `"${risk.mitigation || ''}"`
+      ].join(','))
+    ].join('\n');
+    
+    // Download CSV
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'risk-assessment-report.csv';
+    a.click();
+    window.URL.revokeObjectURL(url);
   };
+
+  if (error) {
+    return (
+      <ReportTemplate
+        title={t("riskAssessmentReport")}
+        description={t("riskAssessmentDescription")}
+      >
+        <div className="text-center py-8">
+          <p className="text-red-600 dark:text-red-400">{t("errorLoadingData")}</p>
+          <p className="text-sm text-gray-500 mt-2">{(error as Error).message}</p>
+        </div>
+      </ReportTemplate>
+    );
+  }
 
   return (
     <ReportTemplate
@@ -195,6 +229,7 @@ export default function RiskAssessmentReportPage() {
             variant="outline" 
             className="flex items-center gap-1"
             onClick={exportReport}
+            disabled={!data?.risks || data.risks.length === 0}
           >
             <Download className="h-4 w-4" />
             {t("export")}
@@ -203,62 +238,68 @@ export default function RiskAssessmentReportPage() {
       </ReportCard>
 
       <ReportCard title={t("riskAssessmentDetails")}>
-        <div className="overflow-x-auto">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="cursor-pointer" onClick={() => requestSort('id')}>
-                  ID {getSortDirection('id')}
-                </TableHead>
-                <TableHead className="cursor-pointer" onClick={() => requestSort('title')}>
-                  {t("risk")} {getSortDirection('title')}
-                </TableHead>
-                <TableHead className="cursor-pointer" onClick={() => requestSort('project')}>
-                  {t("project")} {getSortDirection('project')}
-                </TableHead>
-                <TableHead className="cursor-pointer" onClick={() => requestSort('severity')}>
-                  {t("severity")} {getSortDirection('severity')}
-                </TableHead>
-                <TableHead className="cursor-pointer" onClick={() => requestSort('impact')}>
-                  {t("impact")} {getSortDirection('impact')}
-                </TableHead>
-                <TableHead className="cursor-pointer" onClick={() => requestSort('likelihood')}>
-                  {t("likelihood")} {getSortDirection('likelihood')}
-                </TableHead>
-                <TableHead className="cursor-pointer" onClick={() => requestSort('status')}>
-                  {t("status")} {getSortDirection('status')}
-                </TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {isLoading ? (
+        {isLoading ? (
+          <div className="text-center py-8">
+            <p className="text-gray-500">{t("loading")}</p>
+          </div>
+        ) : !data?.risks || data.risks.length === 0 ? (
+          <div className="text-center py-8">
+            <p className="text-gray-500">{t("noRisksFound")}</p>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
                 <TableRow>
-                  <TableCell colSpan={7} className="text-center py-4">
-                    {t("loading")}...
-                  </TableCell>
+                  <TableHead className="cursor-pointer">
+                    <div onClick={() => requestSort('id')}>
+                      ID {getSortDirection('id')}
+                    </div>
+                  </TableHead>
+                  <TableHead className="cursor-pointer">
+                    <div onClick={() => requestSort('title')}>
+                      {t("risk")} {getSortDirection('title')}
+                    </div>
+                  </TableHead>
+                  <TableHead className="cursor-pointer">
+                    <div onClick={() => requestSort('type')}>
+                      {t("type")} {getSortDirection('type')}
+                    </div>
+                  </TableHead>
+                  <TableHead className="cursor-pointer">
+                    <div onClick={() => requestSort('priority')}>
+                      {t("priority")} {getSortDirection('priority')}
+                    </div>
+                  </TableHead>
+                  <TableHead className="cursor-pointer">
+                    <div onClick={() => requestSort('status')}>
+                      {t("status")} {getSortDirection('status')}
+                    </div>
+                  </TableHead>
+                  <TableHead>{t("mitigation")}</TableHead>
                 </TableRow>
-              ) : sortedRisks.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={7} className="text-center py-4">
-                    {t("noRisks")}
-                  </TableCell>
-                </TableRow>
-              ) : (
-                sortedRisks.map((risk: any) => (
+              </TableHeader>
+              <TableBody>
+                {sortedRisks.map((risk: any) => (
                   <TableRow key={risk.id}>
-                    <TableCell>{risk.id}</TableCell>
+                    <TableCell className="font-medium">{risk.id}</TableCell>
                     <TableCell>{risk.title}</TableCell>
-                    <TableCell>{risk.project}</TableCell>
-                    <TableCell>{getSeverityBadge(risk.severity)}</TableCell>
-                    <TableCell>{getSeverityBadge(risk.impact)}</TableCell>
-                    <TableCell>{getSeverityBadge(risk.likelihood)}</TableCell>
+                    <TableCell>
+                      <Badge variant="outline">{risk.type}</Badge>
+                    </TableCell>
+                    <TableCell>{getSeverityBadge(risk.priority)}</TableCell>
                     <TableCell>{getStatusBadge(risk.status)}</TableCell>
+                    <TableCell className="max-w-xs truncate">
+                      <span title={risk.mitigation}>
+                        {risk.mitigation || t("noMitigationPlan")}
+                      </span>
+                    </TableCell>
                   </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
-        </div>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        )}
       </ReportCard>
     </ReportTemplate>
   );

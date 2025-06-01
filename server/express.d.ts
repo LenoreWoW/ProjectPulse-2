@@ -7,9 +7,17 @@ declare global {
       id: number;
       name: string;
       email: string;
-      roles: string[];
-      departmentId?: number;
-      preferredLanguage?: string;
+      phone?: string | null;
+      username: string;
+      password: string;
+      role?: string | null;
+      status?: string | null;
+      departmentId?: number | null;
+      passportImage?: string | null;
+      idCardImage?: string | null;
+      preferredLanguage?: string | null;
+      createdAt: Date;
+      updatedAt: Date;
     }
   }
 }

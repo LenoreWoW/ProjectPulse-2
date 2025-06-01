@@ -214,6 +214,8 @@ const enTranslations = {
   newTask: "New Task",
   taskCreated: "Task Created",
   taskCreatedDescription: "Task has been created successfully",
+  taskCreatedSuccessfully: "Task created successfully",
+  failedToCreateTask: "Failed to create task",
   createTaskDescription: "Create a new task for your project",
   taskTitle: "Task Title",
   enterTaskTitle: "Enter task title",
@@ -234,6 +236,28 @@ const enTranslations = {
   noTasksFound: "No tasks found",
   createYourFirstTask: "Create your first task to get started",
   tasksDescription: "Manage tasks for this project",
+  
+  // Milestones
+  milestones: "Milestones",
+  projectMilestones: "Project Milestones",
+  addMilestone: "Add Milestone",
+  addNewMilestone: "Add New Milestone",
+  addNewMilestoneDescription: "Create a new milestone for this project",
+  enterMilestoneTitle: "Enter milestone title",
+  enterMilestoneDescription: "Enter milestone description",
+  createMilestone: "Create Milestone",
+  milestoneCreatedSuccessfully: "Milestone created successfully",
+  failedToCreateMilestone: "Failed to create milestone",
+  noMilestones: "No Milestones",
+  noMilestonesDescription: "No milestones have been created for this project yet",
+  creating: "Creating...",
+  titleRequired: "Title is required",
+  descriptionRequired: "Description is required",
+  deadlineRequired: "Deadline is required",
+  linkTasks: "Link Tasks",
+  selectTasksToLink: "Select tasks to link to this milestone",
+  noTasksAvailable: "No tasks available to link",
+  selectedTasks: "{{count}} task(s) selected",
   
   // Comments
   addComment: "Add Comment",
@@ -307,6 +331,10 @@ const enTranslations = {
   departmentGoalNote: "This goal will be specific to a department",
   isStrategic: "Strategic Goal",
   isAnnual: "Annual Goal",
+  strategicGoal: "Strategic Goal",
+  annualGoal: "Annual Goal",
+  strategicGoalDescription: "Strategic goals span multiple years and align with long-term organizational objectives",
+  annualGoalDescription: "Annual goals are completed within one year and support strategic initiatives",
   relatedGoals: "Related Goals",
   addRelatedGoal: "Add Related Goal",
   noRelatedGoals: "No related goals",
@@ -335,6 +363,30 @@ const enTranslations = {
   noRisksIssuesFound: "No risks or issues found",
   createYourFirstRiskIssue: "Document your first risk or issue",
   risksIssuesDescription: "Manage risks and issues for this project",
+  
+  // Assignments
+  newAssignment: "New Assignment",
+  assignmentCreated: "Assignment Created",
+  assignmentCreatedDescription: "Assignment has been created successfully",
+  createAssignmentDescription: "Create a new assignment for a team member",
+  createNewAssignment: "Create New Assignment",
+  assignmentTitle: "Assignment Title",
+  enterAssignmentTitle: "Enter assignment title",
+  enterAssignmentDescription: "Enter assignment description",
+  createAssignment: "Create Assignment",
+  viewAssignments: "View Assignments",
+  noAssignmentsFound: "No assignments found",
+  createYourFirstAssignment: "Create your first assignment",
+  assignmentsDescription: "Manage assignments for team members",
+  assignedToMe: "Assigned to Me",
+  assignedByMe: "Assigned by Me",
+  noAssignmentsToYou: "No assignments assigned to you",
+  searchAssignments: "Search assignments...",
+  allStatuses: "All Statuses",
+  allPriorities: "All Priorities",
+  daysOverdue: "days overdue",
+  dueToday: "Due today",
+  daysLeft: "days left",
   
   // Error Messages
   error: "Error",
@@ -411,7 +463,53 @@ const enTranslations = {
   low: "Low",
   medium: "Medium",
   high: "High",
-  critical: "Critical"
+  critical: "Critical",
+  
+  // New task translations
+  noTasksAssigned: "No tasks assigned to you",
+  noTasksCreated: "No tasks created by you",
+  noCompletedTasks: "No completed tasks",
+  selfAssigned: "Self-assigned",
+  assignedByYou: "Assigned by you",
+  assignedToYou: "Assigned to you",
+  
+  // Assignment translations
+  noAssignmentsByYou: "No assignments created by you", 
+  noCompletedAssignments: "No completed assignments",
+  
+  // Additional form fields
+  enterTitle: "Enter title",
+  enterDescription: "Enter description",
+  
+  // Milestone linking translations
+  linkedMilestones: "Linked Milestones",
+  noLinkedMilestones: "No milestones linked to this task",
+  linkToMilestone: "Link to Milestone",
+  selectMilestone: "Select milestone",
+  taskLinkedToMilestone: "Task linked to milestone successfully",
+  taskUnlinkedFromMilestone: "Task unlinked from milestone successfully",
+  failedToLinkTaskToMilestone: "Failed to link task to milestone",
+  failedToUnlinkTaskFromMilestone: "Failed to unlink task from milestone",
+  
+  // Goal relationship translations
+  linkedGoals: "Linked Goals",
+  noLinkedGoals: "No goals linked to this goal",
+  linkToGoal: "Link to Goal",
+  selectGoalToLink: "Select goal to link",
+  goalLinkedToGoal: "Goal linked successfully",
+  goalUnlinkedFromGoal: "Goal unlinked successfully",
+  failedToLinkGoalToGoal: "Failed to link goal",
+  failedToUnlinkGoalFromGoal: "Failed to unlink goal",
+  linkedProjects: "Linked Projects",
+  noLinkedProjects: "No projects linked to this goal",
+  linkToProject: "Link to Project",
+  selectProjectToLink: "Select project to link",
+  goalLinkedToProject: "Project linked to goal successfully",
+  goalUnlinkedFromProject: "Project unlinked from goal successfully",
+  failedToLinkGoalToProject: "Failed to link project to goal",
+  failedToUnlinkGoalFromProject: "Failed to unlink project from goal",
+  editGoalRelationships: "Edit Goal Relationships",
+  manageRelationships: "Manage Relationships",
 };
 
 // Arabic translations
