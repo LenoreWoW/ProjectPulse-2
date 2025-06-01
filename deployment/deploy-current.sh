@@ -239,6 +239,206 @@ deploy_render() {
 }
 
 # ============================================================================ #
+# CSV IMPORT FUNCTIONS
+# ============================================================================ #
+
+setup_csv_import() {
+  banner "Setting up CSV import functionality on $1"
+  
+  # Create CSV import directory
+  run_remote_sudo_command "$1" "mkdir -p $APP_DIR/csv-imports"
+  run_remote_sudo_command "$1" "mkdir -p $APP_DIR/csv-imports/processed"
+  run_remote_sudo_command "$1" "mkdir -p $APP_DIR/csv-imports/failed"
+  run_remote_sudo_command "$1" "chown -R $(whoami):$(whoami) $APP_DIR/csv-imports"
+  
+  # Copy CSV import scripts
+  if [ -f "$PROJECT_ROOT/import-projects.js" ]; then
+    log_info "Copying CSV import script to $1"
+    scp -P "$SSH_PORT" "$PROJECT_ROOT/import-projects.js" "$SSH_USER@$1:$APP_DIR/"
+  fi
+  
+  if [ -f "$PROJECT_ROOT/convert-csv.js" ]; then
+    log_info "Copying CSV conversion script to $1"
+    scp -P "$SSH_PORT" "$PROJECT_ROOT/convert-csv.js" "$SSH_USER@$1:$APP_DIR/"
+  fi
+  
+  # Create CSV import wrapper script
+  cat > tmp_csv_import.sh << 'EOF'
+#!/bin/bash
+# CSV Import Wrapper Script for ProjectPulse
+# Usage: ./csv-import.sh [csv-file-path]
+
+set -euo pipefail
+
+APP_DIR="/opt/projectpulse"
+CSV_DIR="$APP_DIR/csv-imports"
+PROCESSED_DIR="$CSV_DIR/processed"
+FAILED_DIR="$CSV_DIR/failed"
+
+# Colors for output
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[0;33m'
+BLUE='\033[0;34m'
+NC='\033[0m' # No Color
+
+log_info() {
+  echo -e "${BLUE}[INFO]${NC} $1"
+}
+
+log_success() {
+  echo -e "${GREEN}[SUCCESS]${NC} $1"
+}
+
+log_warn() {
+  echo -e "${YELLOW}[WARNING]${NC} $1"
+}
+
+log_error() {
+  echo -e "${RED}[ERROR]${NC} $1"
+}
+
+# Check if CSV file is provided
+if [ $# -eq 0 ]; then
+  echo "Usage: $0 <csv-file-path>"
+  echo ""
+  echo "Examples:"
+  echo "  $0 /path/to/projects.csv"
+  echo "  $0 projects.csv  # if file is in current directory"
+  echo ""
+  echo "CSV Import Directories:"
+  echo "  Import directory: $CSV_DIR"
+  echo "  Processed files: $PROCESSED_DIR"
+  echo "  Failed imports: $FAILED_DIR"
+  exit 1
+fi
+
+CSV_FILE="$1"
+FILENAME=$(basename "$CSV_FILE")
+TIMESTAMP=$(date +"%Y%m%d_%H%M%S")
+
+# Check if file exists
+if [ ! -f "$CSV_FILE" ]; then
+  log_error "CSV file not found: $CSV_FILE"
+  exit 1
+fi
+
+log_info "Starting CSV import process for: $FILENAME"
+
+# Change to application directory
+cd "$APP_DIR"
+
+# Create backup of original file
+BACKUP_FILE="$CSV_DIR/${FILENAME}.backup.$TIMESTAMP"
+cp "$CSV_FILE" "$BACKUP_FILE"
+log_info "Created backup: $BACKUP_FILE"
+
+# Try to convert CSV first (in case format needs standardization)
+CONVERTED_FILE="$CSV_DIR/converted_${FILENAME}"
+log_info "Converting CSV format..."
+
+if node convert-csv.js "$CSV_FILE" "$CONVERTED_FILE" 2>/dev/null; then
+  log_success "CSV conversion completed"
+  IMPORT_FILE="$CONVERTED_FILE"
+else
+  log_warn "CSV conversion failed or not needed, using original file"
+  IMPORT_FILE="$CSV_FILE"
+fi
+
+# Run the import
+log_info "Starting project import from: $IMPORT_FILE"
+IMPORT_LOG="$CSV_DIR/import_${TIMESTAMP}.log"
+
+if node import-projects.js "$IMPORT_FILE" 2>&1 | tee "$IMPORT_LOG"; then
+  log_success "CSV import completed successfully!"
+  
+  # Move files to processed directory
+  mv "$BACKUP_FILE" "$PROCESSED_DIR/"
+  if [ -f "$CONVERTED_FILE" ]; then
+    mv "$CONVERTED_FILE" "$PROCESSED_DIR/"
+  fi
+  mv "$IMPORT_LOG" "$PROCESSED_DIR/"
+  
+  log_info "Import files moved to: $PROCESSED_DIR"
+  
+else
+  log_error "CSV import failed!"
+  
+  # Move files to failed directory
+  mv "$BACKUP_FILE" "$FAILED_DIR/"
+  if [ -f "$CONVERTED_FILE" ]; then
+    mv "$CONVERTED_FILE" "$FAILED_DIR/"
+  fi
+  mv "$IMPORT_LOG" "$FAILED_DIR/"
+  
+  log_error "Failed import files moved to: $FAILED_DIR"
+  log_error "Check the log file for details: $FAILED_DIR/import_${TIMESTAMP}.log"
+  
+  exit 1
+fi
+
+log_success "CSV import process completed!"
+log_info "Summary:"
+log_info "  - Original file: $CSV_FILE"
+log_info "  - Backup created: $PROCESSED_DIR/$(basename $BACKUP_FILE)"
+log_info "  - Import log: $PROCESSED_DIR/import_${TIMESTAMP}.log"
+EOF
+
+  # Copy CSV import wrapper script
+  scp -P "$SSH_PORT" tmp_csv_import.sh "$SSH_USER@$1:$APP_DIR/csv-import.sh"
+  run_remote_command "$1" "chmod +x $APP_DIR/csv-import.sh"
+  rm -f tmp_csv_import.sh
+  
+  # Create CSV import service script for systemd (optional)
+  cat > tmp_csv_import_service.sh << 'EOF'
+#!/bin/bash
+# CSV Import Service Script
+# This can be used to set up automated CSV processing
+
+APP_DIR="/opt/projectpulse"
+WATCH_DIR="$APP_DIR/csv-imports"
+
+# Watch for new CSV files and process them automatically
+inotifywait -m -e create -e moved_to --format '%w%f' "$WATCH_DIR" |
+while read FILE; do
+  if [[ "$FILE" == *.csv ]]; then
+    echo "New CSV file detected: $FILE"
+    sleep 2  # Wait for file to be fully written
+    "$APP_DIR/csv-import.sh" "$FILE"
+  fi
+done
+EOF
+
+  scp -P "$SSH_PORT" tmp_csv_import_service.sh "$SSH_USER@$1:$APP_DIR/csv-import-service.sh"
+  run_remote_command "$1" "chmod +x $APP_DIR/csv-import-service.sh"
+  rm -f tmp_csv_import_service.sh
+  
+  log_success "CSV import functionality set up successfully"
+  log_info "Usage instructions:"
+  log_info "  1. Copy CSV file to server: scp projects.csv $SSH_USER@$1:$APP_DIR/csv-imports/"
+  log_info "  2. Run import: ssh $SSH_USER@$1 'cd $APP_DIR && ./csv-import.sh csv-imports/projects.csv'"
+  log_info "  3. Check logs in: $APP_DIR/csv-imports/processed/ or $APP_DIR/csv-imports/failed/"
+}
+
+run_sample_csv_import() {
+  banner "Running sample CSV import (if sample file exists)"
+  
+  # Check if there's a sample CSV file to import
+  if [ -f "$PROJECT_ROOT/sample-projects.csv" ]; then
+    log_info "Found sample CSV file, importing..."
+    scp -P "$SSH_PORT" "$PROJECT_ROOT/sample-projects.csv" "$SSH_USER@$NODE01:$APP_DIR/csv-imports/"
+    run_remote_command "$NODE01" "cd $APP_DIR && ./csv-import.sh csv-imports/sample-projects.csv"
+  elif [ -f "$PROJECT_ROOT/Projects.csv" ]; then
+    log_info "Found Projects.csv file, importing..."
+    scp -P "$SSH_PORT" "$PROJECT_ROOT/Projects.csv" "$SSH_USER@$NODE01:$APP_DIR/csv-imports/"
+    run_remote_command "$NODE01" "cd $APP_DIR && ./csv-import.sh csv-imports/Projects.csv"
+  else
+    log_info "No sample CSV file found, skipping sample import"
+    log_info "To import CSV files later, use: ./csv-import.sh <csv-file-path>"
+  fi
+}
+
+# ============================================================================ #
 # REMOTE DEPLOYMENT FUNCTIONS
 # ============================================================================ #
 
@@ -631,6 +831,9 @@ deploy_remote() {
   # Run database setup
   run_database_migrations
   
+  # Setup CSV import functionality
+  setup_csv_import
+  
   # Verify deployment
   verify_deployment
   
@@ -639,6 +842,8 @@ deploy_remote() {
   if [ -f "$CERT_SRC_DIR/mod-gov-qa.crt" ]; then
     log_info "HTTPS should be available at: https://$APP_DOMAIN"
   fi
+  log_info "CSV import directory: /opt/projectpulse/csv-imports"
+  log_info "To import CSV files, copy them to the csv-imports directory and run: /opt/projectpulse/csv-import.sh <filename>"
 }
 
 # ============================================================================ #
