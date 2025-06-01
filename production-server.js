@@ -6,10 +6,9 @@ import ConnectPgSimple from 'connect-pg-simple';
 import passport from 'passport';
 import { Strategy as LDAPStrategy } from 'passport-ldapauth';
 import { Strategy as LocalStrategy } from 'passport-local';
-import { randomBytes, scrypt, timingSafeEqual } from 'crypto';
-import { promisify } from 'util';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import bcrypt from 'bcrypt';
 
 // Setup Express
 const app = express();
@@ -49,9 +48,6 @@ const sessionStore = new PgSession({
 });
 
 console.log("PostgreSQL session store initialized");
-
-// Helper for password hashing
-const scryptAsync = promisify(scrypt);
 
 // Database functions
 async function getUserByUsername(username) {
@@ -101,19 +97,14 @@ async function getProjects() {
   return result.rows;
 }
 
-// Hash password with scrypt
+// Hash password with bcrypt
 async function hashPassword(password) {
-  const salt = randomBytes(16).toString("hex");
-  const derivedKey = (await scryptAsync(password, salt, 64));
-  return salt + "." + derivedKey.toString("hex");
+  return bcrypt.hash(password, 10);
 }
 
-// Compare a password with a hash
-async function comparePasswords(providedPassword, storedHash) {
-  const [salt, key] = storedHash.split(".");
-  const derivedKey = (await scryptAsync(providedPassword, salt, 64));
-  const keyBuffer = Buffer.from(key, "hex");
-  return timingSafeEqual(derivedKey, keyBuffer);
+// Verify password with bcrypt
+async function verifyPassword(password, hash) {
+  return bcrypt.compare(password, hash);
 }
 
 // Ensure the Hold department exists
@@ -167,7 +158,7 @@ passport.use('local',
         return done(null, false, { message: "Invalid username or password" });
       }
       
-      const passwordValid = await comparePasswords(password, user.password);
+      const passwordValid = await verifyPassword(password, user.password);
       if (!passwordValid) {
         console.log(`Invalid password for user: ${username}`);
         return done(null, false, { message: "Invalid username or password" });
@@ -880,14 +871,14 @@ app.get('/api/projects/:id/tasks', isAuthenticated, async (req, res) => {
 app.post('/api/projects/:id/tasks', isAuthenticated, async (req, res) => {
   try {
     const projectId = req.params.id;
-    const { title, description, priority, assignedUserId, deadline } = req.body;
+    const { title, description, priority, assigneduserid, deadline } = req.body;
     
     // Insert new task into database
     const result = await pool.query(`
       INSERT INTO tasks (projectid, title, description, status, priority, assigneduserid, createdbyuserid, deadline, createdat, updatedat)
       VALUES ($1, $2, $3, 'Todo', $4, $5, $6, $7, NOW(), NOW())
       RETURNING *
-    `, [projectId, title, description, priority, assignedUserId || null, req.user.id, deadline]);
+    `, [projectId, title, description, priority, assigneduserid || null, req.user.id, deadline]);
     
     res.json(result.rows[0]);
   } catch (error) {

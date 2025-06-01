@@ -1,7 +1,6 @@
 import pkg from 'pg';
 const { Pool } = pkg;
-import { randomBytes, scrypt } from 'crypto';
-import { promisify } from 'util';
+import bcrypt from 'bcrypt';
 
 // Create a PostgreSQL client
 const pool = new Pool({
@@ -18,13 +17,9 @@ console.log(`- Port: ${parseInt(process.env.POSTGRES_PORT || '5432', 10)}`);
 console.log(`- Database: ${process.env.POSTGRES_DB || 'projectpulse'}`);
 console.log(`- User: ${process.env.POSTGRES_USER || 'postgres'}`);
 
-const scryptAsync = promisify(scrypt);
-
-// Hash password with scrypt
+// Hash password with bcrypt (matches auth.ts)
 async function hashPassword(password) {
-  const salt = randomBytes(16).toString("hex");
-  const derivedKey = await scryptAsync(password, salt, 64);
-  return salt + "." + derivedKey.toString("hex");
+  return bcrypt.hash(password, 10);
 }
 
 async function createSchema() {
@@ -46,12 +41,14 @@ async function createSchema() {
         "id" SERIAL PRIMARY KEY,
         "name" VARCHAR(255) NOT NULL,
         "description" TEXT,
-        "is_active" BOOLEAN DEFAULT true
+        "isactive" BOOLEAN DEFAULT true,
+        "created_at" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        "updated_at" TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
     `);
     console.log("Departments table created or already exists");
 
-    // Create users table with correct column names
+    // Create users table with correct column names (matching current schema)
     await pool.query(`
       CREATE TABLE IF NOT EXISTS "users" (
         "id" SERIAL PRIMARY KEY,
@@ -59,14 +56,19 @@ async function createSchema() {
         "email" VARCHAR(255) NOT NULL,
         "name" VARCHAR(255) NOT NULL,
         "password" TEXT NOT NULL,
-        "role" VARCHAR(50) NOT NULL,
-        "status" VARCHAR(50) NOT NULL,
-        "department_id" INTEGER REFERENCES "departments"("id"),
-        "preferred_lang" VARCHAR(5) DEFAULT 'en',
-        "is_active" BOOLEAN DEFAULT true,
+        "role" VARCHAR(50),
+        "status" VARCHAR(50),
+        "departmentid" INTEGER REFERENCES "departments"("id"),
+        "preferredlanguage" VARCHAR(5) DEFAULT 'en',
+        "isactive" BOOLEAN DEFAULT true,
         "phone" VARCHAR(50),
-        "passport_image" TEXT,
-        "id_card_image" TEXT
+        "passportimage" TEXT,
+        "idcardimage" TEXT,
+        "title" VARCHAR(255),
+        "position" VARCHAR(255),
+        "avatarurl" TEXT,
+        "created_at" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        "updated_at" TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
     `);
     console.log("Users table created or already exists");
@@ -75,14 +77,22 @@ async function createSchema() {
     await pool.query(`
       CREATE TABLE IF NOT EXISTS "projects" (
         "id" SERIAL PRIMARY KEY,
-        "name" VARCHAR(255) NOT NULL,
+        "title" VARCHAR(255) NOT NULL,
+        "titlear" VARCHAR(255),
         "description" TEXT,
-        "start_date" DATE,
-        "end_date" DATE,
-        "status" VARCHAR(50) NOT NULL,
-        "manager_id" INTEGER REFERENCES "users"("id"),
-        "department_id" INTEGER REFERENCES "departments"("id"),
-        "is_active" BOOLEAN DEFAULT true
+        "descriptionar" TEXT,
+        "startdate" DATE,
+        "enddate" DATE,
+        "deadline" DATE,
+        "status" VARCHAR(50),
+        "manageruserid" INTEGER REFERENCES "users"("id"),
+        "departmentid" INTEGER REFERENCES "departments"("id"),
+        "client" VARCHAR(255),
+        "priority" VARCHAR(50),
+        "budget" DECIMAL(15,2),
+        "actualcost" DECIMAL(15,2),
+        "created_at" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        "updated_at" TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
     `);
     console.log("Projects table created or already exists");
@@ -95,7 +105,7 @@ async function createSchema() {
     
     if (holdDepartmentResult.rows.length === 0) {
       await pool.query(
-        'INSERT INTO departments (name, description, is_active) VALUES ($1, $2, $3)',
+        'INSERT INTO departments (name, description, isactive) VALUES ($1, $2, $3)',
         ['Hold', 'Temporary department for new LDAP users', true]
       );
       console.log("Hold department created");
@@ -112,7 +122,7 @@ async function createSchema() {
     let adminDepartmentId;
     if (adminDepartmentResult.rows.length === 0) {
       const result = await pool.query(
-        'INSERT INTO departments (name, description, is_active) VALUES ($1, $2, $3) RETURNING id',
+        'INSERT INTO departments (name, description, isactive) VALUES ($1, $2, $3) RETURNING id',
         ['Administration', 'Department for administrators', true]
       );
       adminDepartmentId = result.rows[0].id;
@@ -129,11 +139,11 @@ async function createSchema() {
     );
     
     if (hdminResult.rows.length === 0) {
-      // Hash the password: Hdmin1738!@
+      // Hash the password: Hdmin1738!@ - using bcrypt hash
       const hashedPassword = await hashPassword('Hdmin1738!@');
       
       await pool.query(
-        'INSERT INTO users (username, email, name, password, role, status, department_id, preferred_lang, is_active) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)',
+        'INSERT INTO users (username, email, name, password, role, status, departmentid, preferredlanguage, isactive) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)',
         [
           'Hdmin', 
           'superadmin@example.com', 
@@ -147,8 +157,43 @@ async function createSchema() {
         ]
       );
       console.log("Hdmin super admin user created");
+      console.log("Default admin credentials:");
+      console.log("Username: Hdmin");
+      console.log("Password: Hdmin1738!@");
     } else {
       console.log("Hdmin super admin user already exists");
+    }
+    
+    // Create admin user if it doesn't exist
+    const adminResult = await pool.query(
+      'SELECT * FROM users WHERE LOWER(username) = LOWER($1)',
+      ['admin']
+    );
+    
+    if (adminResult.rows.length === 0) {
+      // Hash the password: admin123 - using bcrypt hash
+      const hashedPassword = await hashPassword('admin123');
+      
+      await pool.query(
+        'INSERT INTO users (username, email, name, password, role, status, departmentid, preferredlanguage, isactive) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)',
+        [
+          'admin', 
+          'admin@example.com', 
+          'Admin User', 
+          hashedPassword, 
+          'Administrator', 
+          'Active', 
+          adminDepartmentId,
+          'en',
+          true
+        ]
+      );
+      console.log("Admin user created");
+      console.log("Additional admin credentials:");
+      console.log("Username: admin");
+      console.log("Password: admin123");
+    } else {
+      console.log("Admin user already exists");
     }
     
     console.log("Database schema and initial data setup completed");

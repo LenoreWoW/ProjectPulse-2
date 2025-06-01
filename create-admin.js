@@ -1,8 +1,5 @@
 import { Pool } from 'pg';
-import { randomBytes, scrypt } from 'crypto';
-import { promisify } from 'util';
-
-const scryptAsync = promisify(scrypt);
+import bcrypt from 'bcrypt';
 
 // Create a PostgreSQL client
 const pool = new Pool({
@@ -13,11 +10,9 @@ const pool = new Pool({
   password: process.env.POSTGRES_PASSWORD || 'postgres'
 });
 
-// Hash password with scrypt
+// Hash password with bcrypt (matches auth.ts)
 async function hashPassword(password) {
-  const salt = randomBytes(16).toString("hex");
-  const derivedKey = (await scryptAsync(password, salt, 64));
-  return salt + "." + derivedKey.toString("hex");
+  return bcrypt.hash(password, 10);
 }
 
 async function createSuperAdmin() {
@@ -33,7 +28,7 @@ async function createSuperAdmin() {
     
     console.log("Hdmin user does not exist. Creating...");
     
-    // Password: Hdmin1738!@
+    // Password: Hdmin1738!@ - using bcrypt hash
     const hashedPassword = await hashPassword('Hdmin1738!@');
     
     // Create the super admin user with correct column names
@@ -51,6 +46,9 @@ async function createSuperAdmin() {
     
     console.log("Super admin user created successfully!");
     console.log("User details:", insertResult.rows[0]);
+    console.log("Default admin credentials:");
+    console.log("Username: Hdmin");
+    console.log("Password: Hdmin1738!@");
   } catch (error) {
     console.error("Error:", error);
   } finally {
