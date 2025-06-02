@@ -1,7 +1,6 @@
 import express from 'express';
 import { Express, Request, Response, NextFunction } from 'express';
 import { registerRoutes } from './routes';
-import { registerVite } from './vite';
 import { serveStatic } from './vite';
 import { Server as HttpServer } from 'http';
 import { reminderService } from './reminder-service';
@@ -85,12 +84,6 @@ app.get('/test', (req: Request, res: Response) => {
   res.send('Server is working!');
 });
 
-// Simple route to handle the root path
-app.get('/', (req: Request, res: Response, next: NextFunction) => {
-  console.log('Root path requested');
-  next(); // Continue to next middleware (which would be Vite in dev or static in prod)
-});
-
 // Error handling middleware
 app.use((err: Error & { status?: number }, req: Request, res: Response, next: NextFunction) => {
   console.error('Error:', err);
@@ -119,30 +112,20 @@ async function startServer(): Promise<void> {
     console.log("Registering API routes...");
     const server: HttpServer = await registerRoutes(app);
     
-    // Once API routes are set up, we can handle static files and client routing
-    
-    // In development mode, use Vite for handling React app
-    if (process.env.NODE_ENV !== 'production') {
-      try {
-        console.log("Setting up Vite for development mode...");
-        await registerVite(app);
-      } catch (error) {
-        console.error("Error setting up Vite:", error);
-        throw error;
-      }
-    } else {
-      // In production, serve static files
+    // In production mode, serve static files
+    if (process.env.NODE_ENV === 'production') {
       console.log("Setting up static file serving for production...");
       serveStatic(app);
     }
     
     // Start listening for connections
     server.listen(port, () => {
-      console.log(`⚡️ Server is running at http://localhost:${port}`);
+      console.log(`⚡️ Backend server is running at http://localhost:${port}`);
+      console.log(`📱 Frontend should run on http://localhost:5173 with proxy to backend`);
       
       // Log all routes (in development)
       if (process.env.NODE_ENV === 'development') {
-        console.log('Registered routes:');
+        console.log('Registered API routes:');
         (app._router.stack as any[])
           .filter((r) => r.route)
           .forEach((r) => {

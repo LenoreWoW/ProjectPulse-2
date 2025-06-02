@@ -31,7 +31,14 @@ export async function registerVite(app: Express): Promise<ViteDevServer | undefi
       server: { middlewareMode: true },
       appType: "spa",
       logLevel: "info",
-      root: projectRoot
+      root: path.resolve(projectRoot, "client"),
+      resolve: {
+        alias: {
+          "@": path.resolve(projectRoot, "client", "src"),
+          "@shared": path.resolve(projectRoot, "shared"),
+          "@assets": path.resolve(projectRoot, "attached_assets"),
+        },
+      },
     });
     
     app.use(vite.ssrFixStacktrace);
