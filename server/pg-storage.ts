@@ -989,10 +989,11 @@ export class PgStorage implements IStorage {
       
       const taskMilestones = await this.getTaskMilestonesByMilestone(milestoneId);
       if (taskMilestones.length === 0) {
-        // No associated tasks, milestone progress is 0
+        // No associated tasks - preserve existing progress value instead of resetting to 0
+        // This allows imported milestones to keep their CSV progress values
+        // Only update status based on existing completion percentage
         await this.updateMilestone(milestoneId, {
-          completionPercentage: 0,
-          status: this.getMilestoneStatusFromCompletion(0, milestone)
+          status: this.getMilestoneStatusFromCompletion(milestone.completionPercentage, milestone)
         });
         return;
       }

@@ -24,6 +24,12 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { Plus, Search, Calendar, LayoutList, User } from "lucide-react";
 import { Link } from "wouter";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 export default function ProjectsPage() {
   const { t } = useI18n();
@@ -31,7 +37,7 @@ export default function ProjectsPage() {
   const [filterStatus, setFilterStatus] = useState<string>("");
   const [filterDepartment, setFilterDepartment] = useState<string>("");
   const [searchQuery, setSearchQuery] = useState<string>("");
-  const [viewMode, setViewMode] = useState<"list" | "kanban">("list");
+  const [viewMode, setViewMode] = useState<"list" | "kanban">("kanban");
 
   const { data: projects, isLoading, error } = useQuery<Project[]>({
     queryKey: ["/api/projects"],
@@ -214,22 +220,39 @@ export default function ProjectsPage() {
           </div>
           
           <div className="flex gap-2">
-            <Button 
-              variant={viewMode === "list" ? "default" : "outline"} 
-              size="icon"
-              onClick={() => setViewMode("list")}
-              className={viewMode === "list" ? "bg-maroon-700 hover:bg-maroon-800" : ""}
-            >
-              <LayoutList className="h-4 w-4" />
-            </Button>
-            <Button 
-              variant={viewMode === "kanban" ? "default" : "outline"} 
-              size="icon"
-              onClick={() => setViewMode("kanban")}
-              className={viewMode === "kanban" ? "bg-maroon-700 hover:bg-maroon-800" : ""}
-            >
-              <Calendar className="h-4 w-4" />
-            </Button>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button 
+                    variant={viewMode === "list" ? "default" : "outline"} 
+                    size="icon"
+                    onClick={() => setViewMode("list")}
+                    className={viewMode === "list" ? "bg-maroon-700 hover:bg-maroon-800" : ""}
+                  >
+                    <LayoutList className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>{t("listView")}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+            
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button 
+                  variant={viewMode === "kanban" ? "default" : "outline"} 
+                  size="icon"
+                  onClick={() => setViewMode("kanban")}
+                  className={viewMode === "kanban" ? "bg-maroon-700 hover:bg-maroon-800" : ""}
+                >
+                  <Calendar className="h-4 w-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>{t("kanbanView")}</p>
+              </TooltipContent>
+            </Tooltip>
           </div>
         </div>
       </div>

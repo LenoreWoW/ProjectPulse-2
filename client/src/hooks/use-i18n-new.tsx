@@ -392,6 +392,7 @@ const enTranslations = {
   error: "Error",
   somethingWentWrong: "Something went wrong",
   tryAgainLater: "Please try again later",
+  tryAgain: "Try again",
   pageNotFound: "Page Not Found",
   pageNotFoundDescription: "The page you are looking for does not exist or has been moved.",
   backToDashboard: "Back to Dashboard",
@@ -440,6 +441,81 @@ const enTranslations = {
   pdf: "PDF",
   excel: "Excel",
   csv: "CSV",
+  
+  // Budget Report specific translations
+  detailedBudgetAnalysis: "Detailed budget analysis and insights",
+  filters: "Filters",
+  exportPDF: "Export PDF",
+  spentToDate: "Spent to date",
+  budgetRemaining: "Budget remaining",
+  variancePercentage: "Variance %",
+  underBudget: "Under Budget",
+  overBudget: "Over Budget",
+  departmentBudgets: "Department Budgets",
+  budgetByDepartment: "Budget breakdown by department",
+  spent: "Spent",
+  percentSpent: "% Spent",
+  monthlySpendingTrends: "Monthly Spending Trends",
+  actualVsProjectedSpending: "Actual vs projected spending over time",
+  projectedSpend: "Projected Spend",
+  budgetAllocationByCategory: "Budget Allocation by Category",
+  howBudgetIsAllocated: "How budget is allocated across different categories",
+  budgetVsActualByDepartment: "Budget vs Actual by Department",
+  compareAllocation: "Compare budget allocation vs actual spending",
+  budgetAllocated: "Budget Allocated",
+  
+  // Custom Analytics translations
+  customAnalytics: "Custom Analytics",
+  customAnalyticsDescription: "Build and visualize custom reports from your data",
+  dataSource: "Data Source",
+  selectDataAndVisualization: "Select your data source and visualization type",
+  dataCategory: "Data Category",
+  selectDataCategory: "Select data category",
+  visualizationType: "Visualization Type",
+  selectVisualization: "Select visualization",
+  barChart: "Bar Chart",
+  pieChart: "Pie Chart",
+  tableView: "Table View",
+  allClients: "All Clients",
+  saveReport: "Save Report",
+  saveReportDescription: "Save this report for future use",
+  reportName: "Report Name",
+  enterReportName: "Enter report name",
+  shareReport: "Share Report",
+  visualization: "Visualization",
+  showingDataCount: "Showing {{count}} records",
+  noDataDescription: "No data matches your current filters",
+  loadingData: "Loading data...",
+  count: "Count",
+  title: "Title",
+  projectId: "Project ID",
+  type: "Type",
+  noDataAvailable: "No Data Available",
+  selectDataAndGenerateReport: "Select your data source and filters, then click Generate Report to see results",
+  savedReports: "Saved Reports",
+  savedReportsDescription: "Your previously saved custom reports",
+  
+  // Issue Tracking Report translations
+  issueTrackingReport: "Issue Tracking Report",
+  issueTrackingDescription: "Track and manage project issues and risks",
+  projectIssues: "Project Issues",
+  issueStatus: "Issue Status",
+  comingSoon: "Coming Soon",
+  issueTrackingReportUnderDevelopment: "The issue tracking report is currently under development.",
+  checkBackSoon: "Please check back soon for updates.",
+  
+  // Resource Allocation Report translations
+  resourceAllocationDescription: "View team and resource allocation across projects",
+  resourceAllocation: "Resource Allocation",
+  teamAllocation: "Team Allocation",
+  resourceAllocationReportUnderDevelopment: "The resource allocation report is currently under development.",
+  
+  // Project Timeline Report translations
+  projectTimelineReport: "Project Timeline Report",
+  projectTimelineDescription: "View project timelines and schedules",
+  projectTimelines: "Project Timelines",
+  projectSchedules: "Project Schedules",
+  timelineReportUnderDevelopment: "The timeline report is currently under development.",
   
   // Approvals
   pendingApprovals: "Pending Approvals",
@@ -510,6 +586,100 @@ const enTranslations = {
   failedToUnlinkGoalFromProject: "Failed to unlink project from goal",
   editGoalRelationships: "Edit Goal Relationships",
   manageRelationships: "Manage Relationships",
+  
+  // Department filtering
+  showingFor: "Showing for",
+  unknownDepartment: "Unknown Department",
+  allDepartments: "All Departments",
+  
+  // Budget overview - planning projects
+  activeBudgetOverview: "Active Budget Overview",
+  excludingPlanningProjects: "Excluding planning projects",
+  activeProjectsOnly: "Active projects only",
+  planningProjects: "Planning Projects",
+  totalPlanningBudget: "Total Planning Budget",
+  notIncludedInMainBudget: "Not included in main budget",
+  willBeIncludedWhenActive: "Will be included when projects become active",
+  
+  // User Permissions
+  editUserPermissions: "Edit User Permissions",
+  editingPermissionsFor: "Editing permissions for",
+  role: "Role",
+  selectRole: "Select a role",
+  useCustomPermissions: "Use custom permissions",
+  customPermissions: "Custom Permissions",
+  saveChanges: "Save Changes",
+  permissionsUpdated: "Permissions Updated",
+  userPermissionsUpdatedSuccessfully: "User permissions have been updated successfully",
+  searchUsers: "Search users by name, email, or role...",
+  noUsersFound: "No users found",
+  noUsersMatchSearch: "No users match your search criteria",
+  editPermissions: "Edit Permissions",
+  actions: "Actions",
+  
+  // User Roles
+  User: "User",
+  ProjectManager: "Project Manager",
+  SubPMO: "Sub PMO",
+  MainPMO: "Main PMO",
+  DepartmentDirector: "Department Director",
+  Executive: "Executive",
+  Administrator: "Administrator",
+  
+  // Access control
+  accessDenied: "Access Denied",
+  noPermissionToManageUsers: "You don't have permission to manage users",
+  errorLoadingUsers: "Error loading users",
+  
+  // Missing placeholders and form fields
+  searchRepositoryPlaceholder: "Search repository...",
+  searchDependenciesPlaceholder: "Search dependencies...",
+  searchGoalsDependenciesPlaceholder: "Search goals dependencies...",
+  searchProjects: "Search projects...",
+  searchDepartments: "Search departments...",
+  searchRisksIssues: "Search risks & issues...",
+  
+  // Audit logs
+  allEntityTypes: "All Entity Types",
+  allActions: "All Actions",
+  enterEntityId: "Enter entity ID",
+  selectStartDate: "Select start date",
+  selectEndDate: "Select end date",
+  enterUserId: "Enter user ID",
+  errorLoadingAuditLogs: "Error loading audit logs",
+  
+  // Department management
+  enterDepartmentName: "Enter department name",
+  enterDepartmentCode: "Enter department code",
+  enterDepartmentDescription: "Enter department description",
+  selectDepartmentHead: "Select department head",
+  enterBudget: "Enter budget",
+  enterLocation: "Enter location",
+  enterPhone: "Enter phone",
+  enterEmail: "Enter email",
+  departmentCreatedSuccess: "Department created successfully",
+  departmentCreationFailed: "Failed to create department",
+  departmentUpdatedSuccess: "Department updated successfully",
+  departmentUpdateFailed: "Failed to update department",
+  departmentDeletedSuccess: "Department deleted successfully",
+  departmentDeletionFailed: "Failed to delete department",
+  
+  // User management
+  enterFullName: "Enter full name",
+  enterUsername: "Enter username",
+  enterPassword: "Enter password",
+  leaveEmptyToKeep: "Leave empty to keep current password",
+  selectLanguage: "Select language",
+  selectStatus: "Select status",
+  
+  // Project management
+  enterProjectName: "Enter project name",
+  selectNewStatus: "Select new status",
+  requestJustification: "Enter justification for request",
+  
+  // Form validation and actions
+  actionFailed: "Action failed",
+  errorLoadingData: "Error loading data",
 };
 
 // Arabic translations
@@ -688,7 +858,199 @@ const arTranslations = {
   posting: "جاري النشر...",
   noComments: "لا توجد تعليقات",
   unknownUser: "مستخدم غير معروف",
-  commentAddError: "فشل في إضافة التعليق"
+  commentAddError: "فشل في إضافة التعليق",
+  
+  // Department filtering
+  showingFor: "عرض لـ",
+  unknownDepartment: "إدارة غير معروفة",
+  allDepartments: "جميع الإدارات",
+  
+  // Budget overview - planning projects
+  activeBudgetOverview: "نظرة عامة على الميزانية النشطة",
+  excludingPlanningProjects: "باستثناء مشاريع التخطيط",
+  activeProjectsOnly: "المشاريع النشطة فقط",
+  planningProjects: "مشاريع التخطيط",
+  totalPlanningBudget: "إجمالي ميزانية التخطيط",
+  notIncludedInMainBudget: "غير مشمولة في الميزانية الرئيسية",
+  willBeIncludedWhenActive: "ستُدرج عند تفعيل المشاريع",
+  
+  // Error Messages
+  error: "خطأ",
+  somethingWentWrong: "حدث خطأ ما",
+  tryAgainLater: "يرجى المحاولة مرة أخرى",
+  tryAgain: "حاول مرة أخرى",
+  pageNotFound: "الصفحة غير موجودة",
+  pageNotFoundDescription: "الصفحة التي تبحث عنها غير موجودة أو تم نقلها.",
+  backToDashboard: "العودة إلى لوحة المعلومات",
+  
+  // Reports
+  generateReport: "إنشاء تقرير",
+  reportType: "نوع التقرير",
+  selectReportType: "اختر نوع التقرير",
+  projectStatusReport: "تقرير حالة المشروع",
+  resourceAllocationReport: "تقرير تخصيص الموارد",
+  budgetReport: "تقرير الميزانية",
+  customDateRange: "نطاق تاريخ مخصص",
+  filterByDepartment: "تصفية حسب الإدارة",
+  exportAs: "تصدير كـ",
+  pdf: "PDF",
+  excel: "Excel",
+  csv: "CSV",
+  
+  // Budget Report specific translations
+  detailedBudgetAnalysis: "تحليل مفصل للميزانية ورؤى",
+  filters: "المرشحات",
+  exportPDF: "تصدير PDF",
+  spentToDate: "المنفق حتى تاريخه",
+  budgetRemaining: "المتبقي من الميزانية",
+  variancePercentage: "نسبة التباين %",
+  underBudget: "تحت الميزانية",
+  overBudget: "تجاوز الميزانية",
+  departmentBudgets: "ميزانيات الإدارات",
+  budgetByDepartment: "تفصيل الميزانية حسب الإدارة",
+  spent: "المنفق",
+  percentSpent: "% المنفق",
+  monthlySpendingTrends: "اتجاهات الإنفاق الشهرية",
+  actualVsProjectedSpending: "الإنفاق الفعلي مقابل المتوقع عبر الوقت",
+  projectedSpend: "الإنفاق المتوقع",
+  budgetAllocationByCategory: "توزيع الميزانية حسب الفئة",
+  howBudgetIsAllocated: "كيفية توزيع الميزانية عبر الفئات المختلفة",
+  budgetVsActualByDepartment: "الميزانية مقابل الفعلي حسب الإدارة",
+  compareAllocation: "مقارنة تخصيص الميزانية مقابل الإنفاق الفعلي",
+  budgetAllocated: "الميزانية المخصصة",
+  
+  // Custom Analytics translations
+  customAnalytics: "التحليلات المخصصة",
+  customAnalyticsDescription: "إنشاء وتصور تقارير مخصصة من بياناتك",
+  dataSource: "مصدر البيانات",
+  selectDataAndVisualization: "اختر مصدر البيانات ونوع التصور",
+  dataCategory: "فئة البيانات",
+  selectDataCategory: "اختر فئة البيانات",
+  visualizationType: "نوع التصور",
+  selectVisualization: "اختر التصور",
+  barChart: "رسم بياني بالأعمدة",
+  pieChart: "رسم بياني دائري",
+  tableView: "عرض جدولي",
+  allClients: "جميع العملاء",
+  saveReport: "حفظ التقرير",
+  saveReportDescription: "احفظ هذا التقرير للاستخدام المستقبلي",
+  reportName: "اسم التقرير",
+  enterReportName: "أدخل اسم التقرير",
+  shareReport: "مشاركة التقرير",
+  visualization: "التصور",
+  showingDataCount: "عرض {{count}} سجل",
+  noDataDescription: "لا توجد بيانات تطابق المرشحات الحالية",
+  loadingData: "جاري تحميل البيانات...",
+  count: "العدد",
+  title: "العنوان",
+  projectId: "معرف المشروع",
+  type: "النوع",
+  noDataAvailable: "لا توجد بيانات متاحة",
+  selectDataAndGenerateReport: "اختر مصدر البيانات والمرشحات، ثم انقر على إنشاء تقرير لرؤية النتائج",
+  savedReports: "التقارير المحفوظة",
+  savedReportsDescription: "تقاريرك المخصصة المحفوظة مسبقاً",
+  
+  // Issue Tracking Report translations
+  issueTrackingReport: "تقرير تتبع المشاكل",
+  issueTrackingDescription: "تتبع وإدارة مشاكل ومخاطر المشروع",
+  projectIssues: "مشاكل المشروع",
+  issueStatus: "حالة المشكلة",
+  comingSoon: "قريباً",
+  issueTrackingReportUnderDevelopment: "تقرير تتبع المشاكل قيد التطوير حالياً.",
+  checkBackSoon: "يرجى المراجعة قريباً للحصول على التحديثات.",
+  
+  // Resource Allocation Report translations
+  resourceAllocationDescription: "عرض تخصيص الفريق والموارد عبر المشاريع",
+  resourceAllocation: "تخصيص الموارد",
+  teamAllocation: "تخصيص الفريق",
+  resourceAllocationReportUnderDevelopment: "تقرير تخصيص الموارد قيد التطوير حالياً.",
+  
+  // Project Timeline Report translations
+  projectTimelineReport: "تقرير الجدول الزمني للمشروع",
+  projectTimelineDescription: "عرض الجداول الزمنية وبرامج المشاريع",
+  projectTimelines: "الجداول الزمنية للمشاريع",
+  projectSchedules: "برامج المشاريع",
+  timelineReportUnderDevelopment: "تقرير الجدول الزمني قيد التطوير حالياً.",
+  
+  // User Permissions
+  editUserPermissions: "تعديل صلاحيات المستخدم",
+  editingPermissionsFor: "تعديل صلاحيات لـ",
+  role: "الدور",
+  selectRole: "اختر دوراً",
+  useCustomPermissions: "استخدام صلاحيات مخصصة",
+  customPermissions: "صلاحيات مخصصة",
+  saveChanges: "حفظ التغييرات",
+  permissionsUpdated: "تم تحديث الصلاحيات",
+  userPermissionsUpdatedSuccessfully: "تم تحديث صلاحيات المستخدم بنجاح",
+  searchUsers: "البحث عن المستخدمين بالاسم أو البريد الإلكتروني أو الدور...",
+  noUsersFound: "لم يتم العثور على مستخدمين",
+  noUsersMatchSearch: "لا يوجد مستخدمين يطابقون معايير البحث",
+  editPermissions: "تعديل الصلاحيات",
+  actions: "الإجراءات",
+  
+  // User Roles
+  User: "مستخدم",
+  ProjectManager: "مدير مشروع",
+  SubPMO: "مكتب إدارة مشاريع فرعي",
+  MainPMO: "مكتب إدارة مشاريع رئيسي",
+  DepartmentDirector: "مدير إدارة",
+  Executive: "تنفيذي",
+  Administrator: "مسؤول النظام",
+  
+  // Access control
+  accessDenied: "تم رفض الوصول",
+  noPermissionToManageUsers: "ليس لديك صلاحية لإدارة المستخدمين",
+  errorLoadingUsers: "خطأ في تحميل المستخدمين",
+  
+  // Missing placeholders and form fields
+  searchRepositoryPlaceholder: "البحث في المستودع...",
+  searchDependenciesPlaceholder: "البحث في الاعتماديات...",
+  searchGoalsDependenciesPlaceholder: "البحث في اعتماديات الأهداف...",
+  searchProjects: "البحث في المشاريع...",
+  searchDepartments: "البحث في الإدارات...",
+  searchRisksIssues: "البحث في المخاطر والمشاكل...",
+  
+  // Audit logs
+  allEntityTypes: "جميع أنواع الكيانات",
+  allActions: "جميع الإجراءات",
+  enterEntityId: "أدخل معرف الكيان",
+  selectStartDate: "اختر تاريخ البداية",
+  selectEndDate: "اختر تاريخ النهاية",
+  enterUserId: "أدخل معرف المستخدم",
+  errorLoadingAuditLogs: "خطأ في تحميل سجلات المراجعة",
+  
+  // Department management
+  enterDepartmentName: "أدخل اسم الإدارة",
+  enterDepartmentCode: "أدخل رمز الإدارة",
+  enterDepartmentDescription: "أدخل وصف الإدارة",
+  selectDepartmentHead: "اختر رئيس الإدارة",
+  enterBudget: "أدخل الميزانية",
+  enterLocation: "أدخل الموقع",
+  enterPhone: "أدخل رقم الهاتف",
+  enterEmail: "أدخل البريد الإلكتروني",
+  departmentCreatedSuccess: "تم إنشاء الإدارة بنجاح",
+  departmentCreationFailed: "فشل في إنشاء الإدارة",
+  departmentUpdatedSuccess: "تم تحديث الإدارة بنجاح",
+  departmentUpdateFailed: "فشل في تحديث الإدارة",
+  departmentDeletedSuccess: "تم حذف الإدارة بنجاح",
+  departmentDeletionFailed: "فشل في حذف الإدارة",
+  
+  // User management
+  enterFullName: "أدخل الاسم الكامل",
+  enterUsername: "أدخل اسم المستخدم",
+  enterPassword: "أدخل كلمة المرور",
+  leaveEmptyToKeep: "اتركه فارغاً للاحتفاظ بكلمة المرور الحالية",
+  selectLanguage: "اختر اللغة",
+  selectStatus: "اختر الحالة",
+  
+  // Project management
+  enterProjectName: "أدخل اسم المشروع",
+  selectNewStatus: "اختر الحالة الجديدة",
+  requestJustification: "أدخل مبرر الطلب",
+  
+  // Form validation and actions
+  actionFailed: "فشل الإجراء",
+  errorLoadingData: "خطأ في تحميل البيانات",
 };
 
 // Merge translations

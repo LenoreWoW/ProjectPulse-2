@@ -5,11 +5,13 @@
  * This script checks the database connection and displays information about the database structure
  */
 
-const { Pool } = require('pg');
-const dotenv = require('dotenv');
+import pg from 'pg';
+import dotenv from 'dotenv';
 
 // Load environment variables
 dotenv.config();
+
+const { Pool } = pg;
 
 // Database connection parameters from environment variables
 const dbConfig = {
@@ -64,6 +66,59 @@ async function checkDatabase() {
       tablesResult.rows.forEach((row, index) => {
         console.log(`   ${index + 1}. ${row.table_name}`);
       });
+    }
+    
+    // Check projects table structure and data
+    console.log('\nChecking projects table...');
+    try {
+      const projectsResult = await client.query('SELECT COUNT(*) FROM projects');
+      console.log(`✅ Projects table exists with ${projectsResult.rows[0].count} records`);
+      
+      // Get column structure
+      const columnsResult = await client.query(`
+        SELECT column_name, data_type 
+        FROM information_schema.columns 
+        WHERE table_name = 'projects' 
+        ORDER BY ordinal_position
+      `);
+      console.log('Projects table columns:');
+      columnsResult.rows.forEach(row => {
+        console.log(`   - ${row.column_name} (${row.data_type})`);
+      });
+      
+      // Sample project titles
+      const sampleProjects = await client.query('SELECT id, title FROM projects LIMIT 3');
+      if (sampleProjects.rows.length > 0) {
+        console.log('Sample projects:');
+        sampleProjects.rows.forEach(project => {
+          console.log(`   - ID ${project.id}: ${project.title}`);
+        });
+      }
+    } catch (error) {
+      console.log('❌ Projects table does not exist or cannot be queried');
+      console.error(error.message);
+    }
+    
+    // Check milestones table structure
+    console.log('\nChecking milestones table...');
+    try {
+      const milestonesResult = await client.query('SELECT COUNT(*) FROM milestones');
+      console.log(`✅ Milestones table exists with ${milestonesResult.rows[0].count} records`);
+      
+      // Get column structure
+      const milestonesColumnsResult = await client.query(`
+        SELECT column_name, data_type 
+        FROM information_schema.columns 
+        WHERE table_name = 'milestones' 
+        ORDER BY ordinal_position
+      `);
+      console.log('Milestones table columns:');
+      milestonesColumnsResult.rows.forEach(row => {
+        console.log(`   - ${row.column_name} (${row.data_type})`);
+      });
+    } catch (error) {
+      console.log('❌ Milestones table does not exist or cannot be queried');
+      console.error(error.message);
     }
     
     // Check if users table exists and has data

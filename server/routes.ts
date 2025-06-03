@@ -1415,19 +1415,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
         filteredProjects = projects.filter(project => project.departmentId === currentUser.departmentId);
       }
       
-      // Calculate budget summary with null safety
-      const totalBudget = filteredProjects.reduce((sum, project) => {
+      // Separate planning projects from active projects
+      const planningProjects = filteredProjects.filter(project => project.status === "Planning");
+      const activeProjects = filteredProjects.filter(project => project.status !== "Planning");
+      
+      // Calculate main budget summary (excluding planning projects)
+      const totalBudget = activeProjects.reduce((sum, project) => {
         const budget = typeof project.budget === 'string' ? parseFloat(project.budget) : (project.budget || 0);
         return sum + budget;
       }, 0);
-      const actualCost = filteredProjects.reduce((sum, project) => {
+      const actualCost = activeProjects.reduce((sum, project) => {
         const cost = typeof project.actualCost === 'string' ? parseFloat(project.actualCost) : (project.actualCost || 0);
         return sum + cost;
       }, 0);
       const remainingBudget = totalBudget - actualCost;
       
+      // Calculate planning projects budget (separate)
+      const planningBudget = planningProjects.reduce((sum, project) => {
+        const budget = typeof project.budget === 'string' ? parseFloat(project.budget) : (project.budget || 0);
+        return sum + budget;
+      }, 0);
+      const planningCount = planningProjects.length;
+      
       // Simplified prediction calculation with null safety
-      const predictedCost = filteredProjects.reduce((sum, project) => {
+      const predictedCost = activeProjects.reduce((sum, project) => {
         // Get budget and actualCost with null safety
         const budget = typeof project.budget === 'string' ? parseFloat(project.budget) : (project.budget || 0);
         const actualCost = typeof project.actualCost === 'string' ? parseFloat(project.actualCost) : (project.actualCost || 0);
@@ -1448,7 +1459,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         totalBudget,
         actualCost,
         remainingBudget,
-        predictedCost
+        predictedCost,
+        // Planning projects data (separate from main budget)
+        planningBudget,
+        planningCount,
+        activeProjectsCount: activeProjects.length
       });
     } catch (error) {
       res.status(500).json({ message: "Failed to calculate budget summary" });
