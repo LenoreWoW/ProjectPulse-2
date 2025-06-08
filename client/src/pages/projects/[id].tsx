@@ -68,6 +68,8 @@ import { useToast } from "@/hooks/use-toast";
 import { Loader2 } from "lucide-react";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { KanbanBoard } from "@/components/kanban/KanbanBoard";
+import { useProjectColorBasic } from "@/hooks/use-project-color";
+import { FavoriteButton } from "@/components/projects/favorite-button";
 
 export default function ProjectDetailsPage() {
   const [, params] = useRoute("/projects/:id");
@@ -577,7 +579,7 @@ export default function ProjectDetailsPage() {
   
   const formatDate = (date: string | Date | null) => {
     if (!date) return "-";
-    return format(new Date(date), "PPP");
+    return new Date(date).toLocaleDateString();
   };
   
   const formatCurrency = (amount: number | null) => {
@@ -595,25 +597,6 @@ export default function ProjectDetailsPage() {
     if (!userId || !users) return "-";
     const user = users.find(u => u.id === userId);
     return user ? user.name : "-";
-  };
-  
-  const getStatusBadgeClass = (status: string | null) => {
-    if (!status) return "bg-gray-100 text-gray-800";
-    
-    switch (status) {
-      case 'InProgress':
-        return "bg-green-100 text-green-800";
-      case 'OnHold':
-        return "bg-orange-100 text-orange-800";
-      case 'Completed':
-        return "bg-blue-100 text-blue-800";
-      case 'Planning':
-        return "bg-purple-100 text-purple-800";
-      case 'Pending':
-        return "bg-red-100 text-red-800";
-      default:
-        return "bg-gray-100 text-gray-800";
-    }
   };
   
   const getPriorityBadgeClass = (priority: string | null) => {
@@ -664,6 +647,9 @@ export default function ProjectDetailsPage() {
       });
     }
   };
+  
+  // Color configuration for this project
+  const projectColorConfig = useProjectColorBasic(project || {} as Project);
   
   if (isLoadingProject) {
     return (
@@ -737,10 +723,18 @@ export default function ProjectDetailsPage() {
           <h1 className="text-2xl font-bold text-contrast dark:text-white mb-1">
             {project.title}
           </h1>
-          <Badge className={getStatusBadgeClass(project.status || null)}>{t(project.status?.toLowerCase() || "")}</Badge>
+          <Badge className={projectColorConfig.badgeClass}>{t(project.status?.toLowerCase() || "")}</Badge>
         </div>
         
         <div className="flex gap-2">
+          {/* Favorite Button */}
+          <FavoriteButton 
+            projectId={projectId} 
+            variant="outline" 
+            size="default" 
+            showText={true}
+          />
+          
           {/* Change Request Button */}
           <PermissionGate permission="canSubmitChangeRequest">
             <Dialog open={isChangeRequestOpen} onOpenChange={setIsChangeRequestOpen}>
@@ -2097,11 +2091,27 @@ export default function ProjectDetailsPage() {
                       <CardHeader className="pb-2">
                         <div className="flex justify-between items-center">
                           <CardTitle className="text-base">
-                            {t("weekOf")} {formatDate(update.weekStartDate)}
+                            {t("week")} {update.weekNumber}, {update.year}
                           </CardTitle>
-                          <Badge variant="outline">
-                            {formatDate(update.createdAt)}
-                          </Badge>
+                          <div className="flex items-center gap-2">
+                            <Badge variant="outline">
+                              {formatDate(update.submittedAt || update.createdAt)}
+                            </Badge>
+                            {/* Progress indicator */}
+                            <Badge variant="outline" className="bg-blue-50">
+                              {update.progressSnapshot}% {t("progress")}
+                            </Badge>
+                            {/* Progress change indicator */}
+                            {update.previousWeekProgress !== undefined && update.progressSnapshot !== update.previousWeekProgress && (
+                              <Badge 
+                                variant={update.progressSnapshot > update.previousWeekProgress ? "default" : "secondary"}
+                                className={update.progressSnapshot > update.previousWeekProgress ? "bg-green-50 text-green-700" : "bg-red-50 text-red-700"}
+                              >
+                                {update.progressSnapshot > update.previousWeekProgress ? "+" : ""}
+                                {update.progressSnapshot - update.previousWeekProgress}%
+                              </Badge>
+                            )}
+                          </div>
                         </div>
                         <CardDescription>
                           {t("by")} {getUserName(update.createdByUserId)}
@@ -2109,32 +2119,60 @@ export default function ProjectDetailsPage() {
                       </CardHeader>
                       <CardContent>
                         <div className="space-y-4">
-                          <div>
-                            <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">
-                              {t("accomplishments")}
-                            </h4>
-                            <p className="text-gray-900 dark:text-white whitespace-pre-line">
-                              {update.accomplishments || "-"}
-                            </p>
-                          </div>
+                          {update.achievements && (
+                            <div>
+                              <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">
+                                {t("achievements")}
+                              </h4>
+                              <p className="text-gray-900 dark:text-white whitespace-pre-line">
+                                {update.achievements}
+                              </p>
+                            </div>
+                          )}
                           
-                          <div>
-                            <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">
-                              {t("plannedWork")}
-                            </h4>
-                            <p className="text-gray-900 dark:text-white whitespace-pre-line">
-                              {update.plannedWork || "-"}
-                            </p>
-                          </div>
+                          {update.challenges && (
+                            <div>
+                              <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">
+                                {t("challenges")}
+                              </h4>
+                              <p className="text-gray-900 dark:text-white whitespace-pre-line">
+                                {update.challenges}
+                              </p>
+                            </div>
+                          )}
                           
-                          <div>
-                            <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">
-                              {t("issuesRisks")}
-                            </h4>
-                            <p className="text-gray-900 dark:text-white whitespace-pre-line">
-                              {update.issues || "-"}
-                            </p>
-                          </div>
+                          {update.nextSteps && (
+                            <div>
+                              <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">
+                                {t("nextSteps")}
+                              </h4>
+                              <p className="text-gray-900 dark:text-white whitespace-pre-line">
+                                {update.nextSteps}
+                              </p>
+                            </div>
+                          )}
+                          
+                          {update.risksIssues && (
+                            <div>
+                              <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">
+                                {t("risksIssues")}
+                              </h4>
+                              <p className="text-gray-900 dark:text-white whitespace-pre-line">
+                                {update.risksIssues}
+                              </p>
+                            </div>
+                          )}
+                          
+                          {update.managerComment && (
+                            <div className="border-t pt-3">
+                              <h4 className="text-sm font-medium text-qatar-maroon mb-1">
+                                {t("managerComment")}
+                              </h4>
+                              <p className="text-gray-900 dark:text-white whitespace-pre-line bg-qatar-maroon/5 p-3 rounded-md">
+                                {update.managerComment}
+                              </p>
+                            </div>
+                          )}
                         </div>
                       </CardContent>
                     </Card>

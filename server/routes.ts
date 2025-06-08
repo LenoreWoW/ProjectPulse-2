@@ -1808,6 +1808,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
           return;
         }
         
+        // Don't allow weekly updates for completed, cancelled, or pending projects
+        if (project.status === "Completed" || project.status === "Cancelled" || project.status === "Pending") {
+          res.status(400).json({ message: "Cannot create weekly updates for projects that are completed, cancelled, or pending" });
+          return;
+        }
+        
         // Only project manager can create weekly updates
         if (
           req.currentUser.role !== "Administrator" && 
@@ -1818,9 +1824,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
           return;
         }
         
+        // Get current week and year
+        const currentDate = new Date();
+        const currentWeek = getWeekNumber(currentDate);
+        const currentYear = currentDate.getFullYear();
+        
+        // Check if weekly update already exists for this week
+        const existingUpdates = await storage.getWeeklyUpdatesByProject(projectId);
+        const weekUpdateExists = existingUpdates.some(update => 
+          update.weekNumber === currentWeek && 
+          update.year === currentYear
+        );
+        
+        if (weekUpdateExists) {
+          res.status(400).json({ message: "Weekly update already exists for this week" });
+          return;
+        }
+        
         const weeklyUpdateData = {
           ...req.body,
           projectId,
+          weekNumber: currentWeek,
+          year: currentYear,
           createdByUserId: req.currentUser.id
         };
         
@@ -1831,6 +1856,178 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
     })
   );
+
+  // Check if project has missed weekly update (for UI color indication)
+  app.get("/api/projects/:projectId/missed-weekly-update", isAuthenticated, async (req: Request, res: Response): Promise<void> => {
+    try {
+      const projectId = parseInt(req.params.projectId);
+      
+      // Import the function from weekly update checker
+      const { hasProjectMissedWeeklyUpdate } = await import('./jobs/weekly-update-checker');
+      const hasMissed = await hasProjectMissedWeeklyUpdate(projectId);
+      
+      res.json({ hasMissedUpdate: hasMissed });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to check weekly update status" });
+    }
+  });
+
+  // Project Favorites Routes
+  app.post("/api/projects/:projectId/favorite", isAuthenticated, async (req: Request, res: Response): Promise<void> => {
+    try {
+      const projectId = parseInt(req.params.projectId);
+      const userId = req.user?.id;
+      
+      if (!userId) {
+        res.status(401).json({ message: "User not authenticated" });
+        return;
+      }
+      
+      // Check if project exists
+      const project = await storage.getProject(projectId);
+      if (!project) {
+        res.status(404).json({ message: "Project not found" });
+        return;
+      }
+      
+      // Check if already favorited
+      const isAlreadyFavorited = await storage.isProjectFavorited(userId, projectId);
+      if (isAlreadyFavorited) {
+        res.status(409).json({ message: "Project is already favorited" });
+        return;
+      }
+      
+      const favorite = await storage.addProjectFavorite({ userId, projectId });
+      res.status(201).json(favorite);
+    } catch (error) {
+      console.error('Error adding project favorite:', error);
+      res.status(500).json({ message: "Failed to add project to favorites" });
+    }
+  });
+  
+  app.delete("/api/projects/:projectId/favorite", isAuthenticated, async (req: Request, res: Response): Promise<void> => {
+    try {
+      const projectId = parseInt(req.params.projectId);
+      const userId = req.user?.id;
+      
+      if (!userId) {
+        res.status(401).json({ message: "User not authenticated" });
+        return;
+      }
+      
+      const success = await storage.removeProjectFavorite(userId, projectId);
+      if (!success) {
+        res.status(404).json({ message: "Favorite not found" });
+        return;
+      }
+      
+      res.status(200).json({ message: "Project removed from favorites" });
+    } catch (error) {
+      console.error('Error removing project favorite:', error);
+      res.status(500).json({ message: "Failed to remove project from favorites" });
+    }
+  });
+  
+  app.get("/api/users/:userId/favorite-projects", isAuthenticated, async (req: Request, res: Response): Promise<void> => {
+    try {
+      const userId = parseInt(req.params.userId);
+      const currentUser = req.user;
+      
+      // Users can only access their own favorites unless they're an admin
+      if (currentUser?.id !== userId && currentUser?.role !== "Administrator" && currentUser?.role !== "MainPMO") {
+        res.status(403).json({ message: "Access denied" });
+        return;
+      }
+      
+      const favorites = await storage.getUserFavoriteProjects(userId);
+      
+      // Get full project details for each favorite
+      const favoriteProjects = await Promise.all(
+        favorites.map(async (favorite) => {
+          const project = await storage.getProject(favorite.projectId);
+          return {
+            ...favorite,
+            project: project
+          };
+        })
+      );
+      
+      res.json(favoriteProjects);
+    } catch (error) {
+      console.error('Error getting user favorite projects:', error);
+      res.status(500).json({ message: "Failed to get favorite projects" });
+    }
+  });
+  
+  app.get("/api/projects/:projectId/is-favorited", isAuthenticated, async (req: Request, res: Response): Promise<void> => {
+    try {
+      const projectId = parseInt(req.params.projectId);
+      const userId = req.user?.id;
+      
+      if (!userId) {
+        res.status(401).json({ message: "User not authenticated" });
+        return;
+      }
+      
+      const isFavorited = await storage.isProjectFavorited(userId, projectId);
+      res.json({ isFavorited });
+    } catch (error) {
+      console.error('Error checking if project is favorited:', error);
+      res.status(500).json({ message: "Failed to check favorite status" });
+    }
+  });
+
+  // Utility function to get week number
+  function getWeekNumber(date: Date): number {
+    const startOfYear = new Date(date.getFullYear(), 0, 1);
+    const dayOfYear = Math.floor((date.getTime() - startOfYear.getTime()) / (24 * 60 * 60 * 1000));
+    return Math.ceil((dayOfYear + startOfYear.getDay() + 1) / 7);
+  }
+
+  // Get projects that need weekly updates (for dashboard reminder)
+  app.get("/api/projects/weekly-updates-needed", isAuthenticated, async (req: Request, res: Response): Promise<void> => {
+    try {
+      const currentUser = req.user;
+      
+      if (!currentUser || currentUser.role !== "ProjectManager") {
+        res.status(403).json({ message: "Only project managers can access this endpoint" });
+        return;
+      }
+      
+      // Get projects managed by this user
+      const projects = await storage.getProjectsByManager(currentUser.id);
+      
+      // Filter out completed, cancelled, or pending projects
+      const activeProjects = projects.filter(project => 
+        project.status !== "Completed" && 
+        project.status !== "Cancelled" && 
+        project.status !== "Pending"
+      );
+      
+      const currentDate = new Date();
+      const currentWeek = getWeekNumber(currentDate);
+      const currentYear = currentDate.getFullYear();
+      
+      // Check which projects need weekly updates
+      const projectsNeedingUpdates = [];
+      
+      for (const project of activeProjects) {
+        const weeklyUpdates = await storage.getWeeklyUpdatesByProject(project.id);
+        const hasCurrentWeekUpdate = weeklyUpdates.some(update => 
+          update.weekNumber === currentWeek && 
+          update.year === currentYear
+        );
+        
+        if (!hasCurrentWeekUpdate) {
+          projectsNeedingUpdates.push(project);
+        }
+      }
+      
+      res.json(projectsNeedingUpdates);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch projects needing weekly updates" });
+    }
+  });
 
   // Milestone Routes
   app.get("/api/projects/:projectId/milestones", isAuthenticated, async (req: Request, res: Response, next: NextFunction): Promise<void> => {

@@ -6,7 +6,8 @@ import {
   WeeklyUpdate, InsertWeeklyUpdate, ProjectCostHistory, InsertProjectCostHistory,
   ProjectGoal, InsertProjectGoal,
   Milestone, InsertMilestone, TaskMilestone,
-  AuditLog, InsertAuditLog, GoalRelationship, InsertGoalRelationship
+  AuditLog, InsertAuditLog, GoalRelationship, InsertGoalRelationship,
+  ProjectFavorite, InsertProjectFavorite
 } from "@shared/schema";
 import createMemoryStore from "memorystore";
 import session from "express-session";
@@ -171,6 +172,12 @@ export interface IStorage {
   // Project-Goal Relationships
   getProjectGoalsByGoal(goalId: number): Promise<ProjectGoal[]>;
   deleteProjectGoal(id: number): Promise<boolean>;
+  
+  // Project Favorites
+  addProjectFavorite(favorite: InsertProjectFavorite): Promise<ProjectFavorite>;
+  removeProjectFavorite(userId: number, projectId: number): Promise<boolean>;
+  getUserFavoriteProjects(userId: number): Promise<ProjectFavorite[]>;
+  isProjectFavorited(userId: number, projectId: number): Promise<boolean>;
 }
 
 export class MemStorage implements IStorage {
@@ -192,6 +199,7 @@ export class MemStorage implements IStorage {
   private taskMilestones: Map<number, TaskMilestone>;
   private auditLogs: Map<number, AuditLog>;
   private goalRelationships: Map<number, GoalRelationship>;
+  private projectFavorites: Map<number, ProjectFavorite>;
   
   // Counters for IDs
   private userIdCounter: number;
@@ -212,6 +220,7 @@ export class MemStorage implements IStorage {
   private taskMilestoneIdCounter: number;
   private auditLogIdCounter: number;
   private goalRelationshipIdCounter: number;
+  private projectFavoriteIdCounter: number;
   
   sessionStore: session.Store;
 
@@ -234,6 +243,7 @@ export class MemStorage implements IStorage {
     this.taskMilestones = new Map();
     this.auditLogs = new Map();
     this.goalRelationships = new Map();
+    this.projectFavorites = new Map();
     
     this.userIdCounter = 1;
     this.departmentIdCounter = 1;
@@ -253,6 +263,7 @@ export class MemStorage implements IStorage {
     this.taskMilestoneIdCounter = 1;
     this.auditLogIdCounter = 1;
     this.goalRelationshipIdCounter = 1;
+    this.projectFavoriteIdCounter = 1;
     
     this.sessionStore = new MemoryStore({
       checkPeriod: 86400000 // 24 hours
@@ -972,11 +983,43 @@ export class MemStorage implements IStorage {
   async createWeeklyUpdate(weeklyUpdate: InsertWeeklyUpdate): Promise<WeeklyUpdate> {
     const id = this.weeklyUpdateIdCounter++;
     const now = new Date();
-    const newWeeklyUpdate = { 
+    
+    // Calculate current progress for the project
+    const project = this.projects.get(weeklyUpdate.projectId);
+    let currentProgress = 0;
+    
+    if (project) {
+      // Get tasks for this project
+      const projectTasks = Array.from(this.tasks.values()).filter(
+        task => task.projectId === weeklyUpdate.projectId
+      );
+      
+      if (projectTasks.length > 0) {
+        const completedTasks = projectTasks.filter(task => task.status === "Completed").length;
+        currentProgress = Math.floor((completedTasks / projectTasks.length) * 100);
+      }
+    }
+    
+    // Get previous week's progress if available
+    const existingUpdates = Array.from(this.weeklyUpdates.values()).filter(
+      update => update.projectId === weeklyUpdate.projectId
+    ).sort((a, b) => {
+      if (a.year !== b.year) return b.year - a.year;
+      return b.weekNumber - a.weekNumber;
+    });
+    
+    const previousWeekProgress = existingUpdates.length > 0 ? existingUpdates[0].progressSnapshot : 0;
+    
+    const newWeeklyUpdate: WeeklyUpdate = { 
       ...weeklyUpdate, 
       id, 
-      createdAt: now 
-    } as WeeklyUpdate;
+      progressSnapshot: currentProgress,
+      previousWeekProgress,
+      submittedAt: now,
+      createdAt: now,
+      updatedAt: now
+    };
+    
     this.weeklyUpdates.set(id, newWeeklyUpdate);
     return newWeeklyUpdate;
   }
@@ -1409,6 +1452,45 @@ export class MemStorage implements IStorage {
     const success = this.projectGoals.delete(id);
     
     return success;
+  }
+
+  // Project Favorites methods
+  async addProjectFavorite(favorite: InsertProjectFavorite): Promise<ProjectFavorite> {
+    const newFavorite: ProjectFavorite = {
+      id: this.projectFavoriteIdCounter++,
+      userId: favorite.userId,
+      projectId: favorite.projectId,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+    
+    this.projectFavorites.set(newFavorite.id, newFavorite);
+    return newFavorite;
+  }
+
+  async removeProjectFavorite(userId: number, projectId: number): Promise<boolean> {
+    for (const [id, favorite] of this.projectFavorites.entries()) {
+      if (favorite.userId === userId && favorite.projectId === projectId) {
+        this.projectFavorites.delete(id);
+        return true;
+      }
+    }
+    return false;
+  }
+
+  async getUserFavoriteProjects(userId: number): Promise<ProjectFavorite[]> {
+    return Array.from(this.projectFavorites.values())
+      .filter(favorite => favorite.userId === userId)
+      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+  }
+
+  async isProjectFavorited(userId: number, projectId: number): Promise<boolean> {
+    for (const favorite of this.projectFavorites.values()) {
+      if (favorite.userId === userId && favorite.projectId === projectId) {
+        return true;
+      }
+    }
+    return false;
   }
 }
 

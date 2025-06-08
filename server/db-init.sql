@@ -211,6 +211,10 @@ CREATE TABLE IF NOT EXISTS weekly_updates (
   challenges TEXT,
   nextSteps TEXT,
   risksIssues TEXT,
+  progressSnapshot NUMERIC(5,2) DEFAULT 0,
+  previousWeekProgress NUMERIC(5,2) DEFAULT 0,
+  managerComment TEXT,
+  submittedAt TIMESTAMP WITH TIME ZONE,
   createdAt TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
   updatedAt TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (projectId) REFERENCES projects(id),
@@ -316,4 +320,18 @@ CREATE INDEX IF NOT EXISTS idx_change_requests_status ON change_requests(status)
 CREATE INDEX IF NOT EXISTS idx_notifications_user ON notifications(userId);
 CREATE INDEX IF NOT EXISTS idx_notifications_read ON notifications(isRead);
 CREATE INDEX IF NOT EXISTS idx_assignments_assignee ON assignments(assignedToUserId);
-CREATE INDEX IF NOT EXISTS idx_sessions_expire ON sessions(expire); 
+CREATE INDEX IF NOT EXISTS idx_sessions_expire ON sessions(expire);
+
+-- Project Favorites Table
+CREATE TABLE IF NOT EXISTS project_favorites (
+  id SERIAL PRIMARY KEY,
+  user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  project_id INTEGER NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
+  UNIQUE(user_id, project_id)
+);
+
+-- Project Favorites Indexes
+CREATE INDEX IF NOT EXISTS idx_favorites_user_id ON project_favorites(user_id);
+CREATE INDEX IF NOT EXISTS idx_favorites_project_id ON project_favorites(project_id); 

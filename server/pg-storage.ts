@@ -8,7 +8,7 @@ import {
   InsertProjectGoal, InsertGoalRelationship, InsertTaskComment, InsertAssignmentComment,
   InsertProjectDependency, InsertMilestone,
   ProjectGoal, GoalRelationship, TaskComment, AssignmentComment, Milestone, TaskMilestone,
-  AuditLog, InsertAuditLog
+  AuditLog, InsertAuditLog, ProjectFavorite, InsertProjectFavorite
 } from '@shared/schema';
 import { IStorage } from './storage';
 import { Store } from 'express-session';
@@ -111,12 +111,15 @@ export class PgStorage implements IStorage {
    * Execute a query and handle common errors
    */
   private async query<T>(text: string, params: any[] = []): Promise<T[]> {
+    const client = await this.getClient();
     try {
-      const result = await this.pool.query(text, params);
-      return result.rows.map(row => formatJsonDates(row)) as T[];
+      const result = await client.query(text, params);
+      return result.rows.map((row: any) => formatJsonDates(row) as T);
     } catch (error) {
       console.error('Database query error:', error);
       throw error;
+    } finally {
+      client.release();
     }
   }
   
@@ -125,7 +128,6 @@ export class PgStorage implements IStorage {
    */
   private async getClient(): Promise<PoolClient> {
     const client = await this.pool.connect();
-    await client.query('BEGIN');
     return client;
   }
   
@@ -139,11 +141,9 @@ export class PgStorage implements IStorage {
   ): Promise<T[]> {
     try {
       const result = await client.query(text, params);
-      return result.rows.map(row => formatJsonDates(row)) as T[];
+      return result.rows.map((row: any) => formatJsonDates(row) as T);
     } catch (error) {
-      await client.query('ROLLBACK');
-      client.release();
-      console.error('Transaction query error:', error);
+      console.error('Database transaction query error:', error);
       throw error;
     }
   }
@@ -339,7 +339,7 @@ export class PgStorage implements IStorage {
       FROM users
     `);
     
-    return result.rows.map(user => ({
+    return result.rows.map((user: any) => ({
       ...user,
       roles: [user.role], // Convert single role to array
       isActive: user.status === 'Active', // Convert status to boolean
@@ -368,7 +368,7 @@ export class PgStorage implements IStorage {
       WHERE role = $1
     `, [role]);
     
-    return result.rows.map(user => ({
+    return result.rows.map((user: any) => ({
       ...user,
       roles: [user.role], // Convert single role to array
       isActive: user.status === 'Active', // Convert status to boolean
@@ -397,7 +397,7 @@ export class PgStorage implements IStorage {
       WHERE departmentid = $1
     `, [departmentId]);
     
-    return result.rows.map(user => ({
+    return result.rows.map((user: any) => ({
       ...user,
       roles: [user.role], // Convert single role to array
       isActive: user.status === 'Active', // Convert status to boolean
@@ -882,7 +882,69 @@ export class PgStorage implements IStorage {
   }
 
   async createWeeklyUpdate(weeklyUpdate: InsertWeeklyUpdate): Promise<WeeklyUpdate> {
-    return this.createEntity<InsertWeeklyUpdate, WeeklyUpdate>('weekly_updates', weeklyUpdate);
+    const client = await this.getClient();
+    try {
+      await client.query('BEGIN');
+      
+      // Calculate current progress for the project
+      const projectTasks = await this.queryWithTransaction<Task>(
+        client,
+        'SELECT * FROM tasks WHERE projectid = $1',
+        [weeklyUpdate.projectId]
+      );
+      
+      let currentProgress = 0;
+      if (projectTasks.length > 0) {
+        const completedTasks = projectTasks.filter(task => task.status === "Completed").length;
+        currentProgress = Math.floor((completedTasks / projectTasks.length) * 100);
+      }
+      
+      // Get previous week's progress if available
+      const existingUpdates = await this.queryWithTransaction<WeeklyUpdate>(
+        client,
+        'SELECT * FROM weekly_updates WHERE projectid = $1 ORDER BY year DESC, weeknumber DESC LIMIT 1',
+        [weeklyUpdate.projectId]
+      );
+      
+      const previousWeekProgress = existingUpdates.length > 0 ? existingUpdates[0].progressSnapshot : 0;
+      
+      // Create the weekly update with calculated progress values
+      const weeklyUpdateWithProgress = {
+        ...weeklyUpdate,
+        progressSnapshot: currentProgress,
+        previousWeekProgress,
+        submittedAt: new Date()
+      };
+      
+      const result = await this.createEntityWithTransaction<typeof weeklyUpdateWithProgress, WeeklyUpdate>(
+        client,
+        'weekly_updates',
+        weeklyUpdateWithProgress
+      );
+      
+      await client.query('COMMIT');
+      return result;
+    } catch (error) {
+      await client.query('ROLLBACK');
+      throw error;
+    } finally {
+      client.release();
+    }
+  }
+
+  private async createEntityWithTransaction<T, U>(client: PoolClient, table: string, entity: T): Promise<U> {
+    const keys = Object.keys(entity as Record<string, any>);
+    const values = Object.values(entity as Record<string, any>);
+    const placeholders = values.map((_, index) => `$${index + 1}`).join(', ');
+    
+    const query = `INSERT INTO ${table} (${keys.join(', ')}) VALUES (${placeholders}) RETURNING *`;
+    const result = await this.queryWithTransaction<U>(client, query, values);
+    
+    if (result.length === 0) {
+      throw new Error(`Failed to create entity in ${table}`);
+    }
+    
+    return formatJsonDates(result[0]);
   }
 
   // ------------------------------------------------------------------------
@@ -1307,5 +1369,48 @@ export class PgStorage implements IStorage {
       console.error('Error deleting project goal:', error);
       return false;
     }
+  }
+
+  // Project Favorites methods
+  async addProjectFavorite(favorite: InsertProjectFavorite): Promise<ProjectFavorite> {
+    return this.createEntity<InsertProjectFavorite, ProjectFavorite>('project_favorites', favorite);
+  }
+
+  async removeProjectFavorite(userId: number, projectId: number): Promise<boolean> {
+    try {
+      const result = await this.query(`
+        DELETE FROM project_favorites 
+        WHERE user_id = $1 AND project_id = $2
+      `, [userId, projectId]);
+      return true;
+    } catch (error) {
+      console.error('Error removing project favorite:', error);
+      return false;
+    }
+  }
+
+  async getUserFavoriteProjects(userId: number): Promise<ProjectFavorite[]> {
+    const result = await this.query<ProjectFavorite>(`
+      SELECT 
+        id,
+        user_id as "userId",
+        project_id as "projectId",
+        created_at as "createdAt",
+        updated_at as "updatedAt"
+      FROM project_favorites 
+      WHERE user_id = $1
+      ORDER BY created_at DESC
+    `, [userId]);
+    return result;
+  }
+
+  async isProjectFavorited(userId: number, projectId: number): Promise<boolean> {
+    const result = await this.query<{count: string}>(`
+      SELECT COUNT(*) as count 
+      FROM project_favorites 
+      WHERE user_id = $1 AND project_id = $2
+    `, [userId, projectId]);
+    
+    return parseInt(result[0]?.count || '0') > 0;
   }
 }

@@ -1,7 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useI18n } from "@/hooks/use-i18n-new";
 import { useQuery } from "@tanstack/react-query";
-import { Project } from "@/lib/schema-types";
+import { Project, Department } from "@shared/schema";
 import { useAuth } from "@/hooks/use-auth";
 import { usePermissions, PermissionGate } from "@/hooks/use-permissions";
 import { Button } from "@/components/ui/button";
@@ -22,7 +22,18 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Plus, Search, Calendar, LayoutList, User } from "lucide-react";
+import { 
+  Plus, 
+  Search, 
+  Filter,
+  Calendar,
+  DollarSign,
+  Users,
+  ChevronRight,
+  AlertTriangle,
+  Clock,
+  LayoutList
+} from "lucide-react";
 import { Link } from "wouter";
 import {
   Tooltip,
@@ -30,6 +41,10 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
+import { useProjectColorBasic } from "@/hooks/use-project-color";
+import { FavoriteButton } from "@/components/projects/favorite-button";
 
 export default function ProjectsPage() {
   const { t } = useI18n();
@@ -43,7 +58,7 @@ export default function ProjectsPage() {
     queryKey: ["/api/projects"],
   });
 
-  const { data: departments } = useQuery<any[]>({
+  const { data: departments } = useQuery<Department[]>({
     queryKey: ["/api/departments"],
   });
 
@@ -103,7 +118,7 @@ export default function ProjectsPage() {
   };
 
   // Format status for display
-  const formatStatus = (status: string | null) => {
+  const formatStatus = (status: string | null | undefined) => {
     if (!status) return "";
     
     switch (status) {
@@ -144,6 +159,124 @@ export default function ProjectsPage() {
   const formatBudget = (budget: number | null) => {
     if (!budget && budget !== 0) return "0";
     return new Intl.NumberFormat('en-QA', { maximumFractionDigits: 0 }).format(budget);
+  };
+
+  // Calculate project progress
+  const calculateProgress = (project: Project) => {
+    // This is a simplified calculation - in reality you might want to fetch tasks
+    return Math.floor(Math.random() * 100); // Placeholder
+  };
+
+  // ProjectCard component with color system
+  const ProjectCard = ({ project }: { project: Project }) => {
+    const colorConfig = useProjectColorBasic(project);
+    const progress = calculateProgress(project);
+    const daysRemaining = getDaysRemaining(project.deadline);
+    
+    return (
+      <Card className={`h-full transition-all duration-200 hover:shadow-lg border-l-4 ${colorConfig.borderClass}`}>
+        <CardHeader className="pb-3">
+          <div className="flex justify-between items-start mb-2">
+            <CardTitle className="text-lg font-semibold line-clamp-2 flex-1 mr-2">
+              {project.title}
+            </CardTitle>
+            <div className="flex items-center gap-2">
+              <FavoriteButton projectId={project.id} variant="ghost" size="sm" />
+              <Badge className={colorConfig.badgeClass}>
+                {formatStatus(project.status)}
+              </Badge>
+            </div>
+          </div>
+          <CardDescription className="line-clamp-2">
+            {project.description || t("noDescription")}
+          </CardDescription>
+        </CardHeader>
+        
+        <CardContent className="space-y-4">
+          {/* Project metrics */}
+          <div className="grid grid-cols-2 gap-4 text-sm">
+            <div className="flex items-center gap-2">
+              <Users className="h-4 w-4 text-muted-foreground" />
+              <span className="text-muted-foreground">{departments?.find(d => d.id === project.departmentId)?.name || t("department")}</span>
+            </div>
+            
+            <div className="flex items-center gap-2">
+              <Calendar className="h-4 w-4 text-muted-foreground" />
+              <span className="text-muted-foreground">
+                {project.deadline ? formatDate(project.deadline) : "-"}
+              </span>
+            </div>
+          </div>
+
+          {/* Progress bar */}
+          <div className="space-y-2">
+            <div className="flex justify-between text-sm">
+              <span className="text-muted-foreground">{t("progress")}</span>
+              <span className="font-medium">{progress}%</span>
+            </div>
+            <Progress value={progress} className="h-2" />
+          </div>
+
+          {/* Deadline warning */}
+          {daysRemaining !== null && (
+            <div className={`flex items-center gap-2 text-sm p-2 rounded-md ${
+              daysRemaining < 0 ? 'bg-red-50 text-red-700' :
+              daysRemaining <= 7 ? 'bg-amber-50 text-amber-700' :
+              'bg-blue-50 text-blue-700'
+            }`}>
+              {daysRemaining < 0 ? (
+                <AlertTriangle className="h-4 w-4" />
+              ) : (
+                <Clock className="h-4 w-4" />
+              )}
+              <span>
+                {daysRemaining < 0 
+                  ? t("overdueDays", { days: Math.abs(daysRemaining) })
+                  : daysRemaining === 0 
+                    ? t("dueToday")
+                    : t("daysRemaining", { days: daysRemaining })
+                }
+              </span>
+            </div>
+          )}
+
+          {/* Project details */}
+          <div className="space-y-2 text-sm text-muted-foreground">
+            <div className="flex justify-between">
+              <span>{t("manager")}:</span>
+              <span>{getUserName(project.managerUserId)}</span>
+            </div>
+            
+            {project.budget && (
+              <div className="flex justify-between">
+                <span>{t("budget")}:</span>
+                <span className="flex items-center gap-1">
+                  <DollarSign className="h-3 w-3" />
+                  {project.budget.toLocaleString()} QAR
+                </span>
+              </div>
+            )}
+            
+            {project.priority && (
+              <div className="flex justify-between">
+                <span>{t("priority")}:</span>
+                <Badge variant="outline" size="sm">
+                  {project.priority}
+                </Badge>
+              </div>
+            )}
+          </div>
+
+          {/* Action button */}
+          <Link href={`/projects/${project.id}`}>
+            <Button variant="outline" className="w-full">
+              {t("viewDetails")}
+              <ChevronRight className="ml-2 h-4 w-4" />
+            </Button>
+          </Link>
+        </CardContent>
+      </Card>
+    );
   };
 
   return (
@@ -299,57 +432,9 @@ export default function ProjectsPage() {
               </div>
             ) : (
               <div className="grid grid-cols-1 gap-4">
-                {filteredProjects?.map((project) => {
-                  const daysRemaining = getDaysRemaining(project.deadline);
-                  const isOverdue = daysRemaining !== null && daysRemaining < 0;
-                  
-                  return (
-                    <Link key={project.id} href={`/projects/${project.id}`}>
-                      <Card className="w-full hover:border-maroon-300 dark:hover:border-maroon-700 transition-all cursor-pointer">
-                        <CardHeader className="pb-2">
-                          <CardTitle>{project.title}</CardTitle>
-                          <CardDescription>
-                            {departments?.find(d => d.id === project.departmentId)?.name || t("department")} • 
-                            {project.deadline ? ` ${t("deadline")}: ${formatDate(project.deadline)}` : ''}
-                          </CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                          <div className="flex justify-between">
-                            <div className="space-y-1">
-                              <div className="text-sm font-medium text-gray-500 dark:text-gray-400">
-                                {t("budget")}: {formatBudget(project.budget || null)} QAR
-                              </div>
-                              <div className="text-sm font-medium text-gray-500 dark:text-gray-400">
-                                {t("actualCost")}: {formatBudget(project.actualCost || null)} QAR
-                              </div>
-                              <div className="flex items-center gap-2 text-sm font-medium text-gray-500 dark:text-gray-400">
-                                <User className="h-4 w-4" />
-                                <span>{t("manager")}: {getUserName(project.managerUserId)}</span>
-                              </div>
-                            </div>
-                            <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusClasses(project.status || null)}`}>
-                              {formatStatus(project.status || null)}
-                            </span>
-                          </div>
-                          {project.description && (
-                            <p className="mt-4 text-sm text-gray-600 dark:text-gray-300 line-clamp-2">
-                              {project.description}
-                            </p>
-                          )}
-                          {daysRemaining !== null && (
-                            <div className="mt-4">
-                              <span className={`text-xs font-medium ${isOverdue ? 'text-red-600 dark:text-red-400' : 'text-gray-500 dark:text-gray-400'}`}>
-                                {isOverdue 
-                                  ? `${Math.abs(daysRemaining)} ${t('daysOverdue')}` 
-                                  : `${daysRemaining} ${t('daysRemaining')}`}
-                              </span>
-                            </div>
-                          )}
-                        </CardContent>
-                      </Card>
-                    </Link>
-                  );
-                })}
+                {filteredProjects?.map((project) => (
+                  <ProjectCard key={project.id} project={project} />
+                ))}
               </div>
             )}
           </>
@@ -374,44 +459,7 @@ export default function ProjectsPage() {
                       </div>
                     ) : (
                       filteredProjects?.filter(p => p.status === status).map((project) => (
-                        <Link key={project.id} href={`/projects/${project.id}`}>
-                          <Card className="h-full hover:border-maroon-300 dark:hover:border-maroon-700 transition-all cursor-pointer">
-                            <CardHeader className="pb-2">
-                              <CardTitle className="line-clamp-1">{project.title}</CardTitle>
-                              <CardDescription>
-                                {departments?.find(d => d.id === project.departmentId)?.name || t("department")}
-                              </CardDescription>
-                            </CardHeader>
-                            <CardContent>
-                              {project.description && (
-                                <p className="text-sm text-gray-600 dark:text-gray-300 line-clamp-3 mb-4">
-                                  {project.description}
-                                </p>
-                              )}
-                              <div className="space-y-2 mb-4">
-                                <div className="flex items-center gap-2 text-sm font-medium text-gray-500 dark:text-gray-400">
-                                  <User className="h-4 w-4" />
-                                  <span>{t("manager")}: {getUserName(project.managerUserId)}</span>
-                                </div>
-                              </div>
-                              <div className="flex justify-between items-center mt-auto">
-                                <div className="space-y-1">
-                                  <div className="text-sm font-medium">
-                                    {t("budget")}: {formatBudget(project.budget || null)} QAR
-                                  </div>
-                                  <div className="text-sm font-medium">
-                                    {t("actualCost")}: {formatBudget(project.actualCost || null)} QAR
-                                  </div>
-                                </div>
-                                {project.deadline && (
-                                  <span className="text-xs text-gray-500 dark:text-gray-400">
-                                    {formatDate(project.deadline || null)}
-                                  </span>
-                                )}
-                              </div>
-                            </CardContent>
-                          </Card>
-                        </Link>
+                        <ProjectCard key={project.id} project={project} />
                       ))
                     )}
                   </div>

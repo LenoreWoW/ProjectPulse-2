@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, boolean, timestamp, doublePrecision, pgEnum, varchar, jsonb } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, timestamp, doublePrecision, pgEnum, varchar, jsonb, unique, index } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -259,9 +259,16 @@ export const actionItems = pgTable('action_items', {
 export const weeklyUpdates = pgTable('weekly_updates', {
   id: serial('id').primaryKey(),
   projectId: integer('project_id').notNull(),
-  week: text('week').notNull(),
-  comments: text('comments').notNull(),
-  commentsAr: text('comments_ar'),
+  weekNumber: integer('week_number').notNull(),
+  year: integer('year').notNull(),
+  achievements: text('achievements'),
+  challenges: text('challenges'),
+  nextSteps: text('next_steps'),
+  risksIssues: text('risks_issues'),
+  progressSnapshot: doublePrecision('progress_snapshot').default(0), // Progress at time of update
+  previousWeekProgress: doublePrecision('previous_week_progress').default(0), // Progress from previous week
+  managerComment: text('manager_comment'), // Project manager comment
+  submittedAt: timestamp('submitted_at'),
   createdByUserId: integer('created_by_user_id').notNull(),
   createdAt: timestamp('created_at').defaultNow(),
   updatedAt: timestamp('updated_at').defaultNow(),
@@ -306,6 +313,20 @@ export const auditLogs = pgTable('audit_logs', {
   departmentId: integer('department_id').references(() => departments.id, { onDelete: 'set null' }),
   createdAt: timestamp('created_at').defaultNow(),
 });
+
+// Project Favorites
+export const projectFavorites = pgTable('project_favorites', {
+  id: serial('id').primaryKey(),
+  userId: integer('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  projectId: integer('project_id').notNull().references(() => projects.id, { onDelete: 'cascade' }),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+}, (table) => ({
+  // Composite unique constraint to prevent duplicate favorites
+  uniqueFavorite: unique().on(table.userId, table.projectId),
+  userIdIdx: index('favorites_user_id_idx').on(table.userId),
+  projectIdIdx: index('favorites_project_id_idx').on(table.projectId),
+}));
 
 // ===== Insert Schemas =====
 
@@ -384,7 +405,7 @@ export const insertAssignmentSchema = createInsertSchema(assignments)
   });
 
 export const insertActionItemSchema = createInsertSchema(actionItems).omit({ id: true, createdAt: true, updatedAt: true });
-export const insertWeeklyUpdateSchema = createInsertSchema(weeklyUpdates).omit({ id: true, createdAt: true });
+export const insertWeeklyUpdateSchema = createInsertSchema(weeklyUpdates).omit({ id: true, createdAt: true, progressSnapshot: true, previousWeekProgress: true });
 export const insertProjectCostHistorySchema = createInsertSchema(projectCostHistory).omit({ id: true, updatedAt: true });
 export const insertProjectGoalSchema = createInsertSchema(projectGoals).omit({ id: true });
 export const insertGoalRelationshipSchema = createInsertSchema(goalRelationships).omit({ id: true });
@@ -418,6 +439,12 @@ export const insertAuditLogSchema = createInsertSchema(auditLogs).omit({
   userAgent: z.string().optional(),
   departmentId: z.number().optional(),
   userId: z.number().optional(),
+});
+
+export const insertProjectFavoriteSchema = createInsertSchema(projectFavorites).omit({ 
+  id: true, 
+  createdAt: true, 
+  updatedAt: true 
 });
 
 // Login schema (subset of user)
@@ -566,10 +593,17 @@ export type InsertActionItem = {
 };
 
 export type InsertWeeklyUpdate = {
-  week: string;
+  weekNumber: number;
+  year: number;
   projectId: number;
-  comments: string;
-  commentsAr?: string | null;
+  achievements?: string | null;
+  challenges?: string | null;
+  nextSteps?: string | null;
+  risksIssues?: string | null;
+  progressSnapshot: number;
+  previousWeekProgress: number;
+  managerComment?: string | null;
+  submittedAt?: Date | null;
   createdByUserId: number;
 };
 
@@ -631,6 +665,11 @@ export type InsertAuditLog = {
   departmentId?: number | null;
   userId?: number | null;
   createdAt: Date;
+};
+
+export type InsertProjectFavorite = {
+  userId: number;
+  projectId: number;
 };
 
 // Login Type
@@ -719,9 +758,16 @@ export const updateActionItemSchema = z.object({
 export const updateWeeklyUpdateSchema = z.object({
   id: z.number().optional(),
   projectId: z.number().optional(),
-  week: z.string().optional(),
-  comments: z.string().optional(),
-  commentsAr: z.string().optional().nullable(),
+  weekNumber: z.number().optional(),
+  year: z.number().optional(),
+  achievements: z.string().optional(),
+  challenges: z.string().optional(),
+  nextSteps: z.string().optional(),
+  risksIssues: z.string().optional(),
+  progressSnapshot: z.number().optional(),
+  previousWeekProgress: z.number().optional(),
+  managerComment: z.string().optional(),
+  submittedAt: z.date().optional(),
   createdByUserId: z.number().optional(),
   createdAt: z.date().optional(),
   updatedAt: z.date().optional()
@@ -729,6 +775,7 @@ export const updateWeeklyUpdateSchema = z.object({
   // Ensure date fields are properly converted
   return {
     ...data,
+    submittedAt: data.submittedAt ? new Date(data.submittedAt) : data.submittedAt,
     createdAt: data.createdAt ? new Date(data.createdAt) : data.createdAt,
     updatedAt: data.updatedAt ? new Date(data.updatedAt) : data.updatedAt,
   };
@@ -935,10 +982,17 @@ export type ActionItem = {
 
 export type WeeklyUpdate = {
   id: number;
-  week: string;
+  weekNumber: number;
+  year: number;
   projectId: number;
-  comments: string;
-  commentsAr?: string | null;
+  achievements?: string | null;
+  challenges?: string | null;
+  nextSteps?: string | null;
+  risksIssues?: string | null;
+  progressSnapshot: number;
+  previousWeekProgress: number;
+  managerComment?: string | null;
+  submittedAt?: Date | null;
   createdByUserId: number;
   createdAt: Date;
   updatedAt: Date;
@@ -1024,4 +1078,12 @@ export type AuditLog = {
   departmentId?: number | null;
   userId?: number | null;
   createdAt: Date;
+};
+
+export type ProjectFavorite = {
+  id: number;
+  userId: number;
+  projectId: number;
+  createdAt: Date;
+  updatedAt: Date;
 };

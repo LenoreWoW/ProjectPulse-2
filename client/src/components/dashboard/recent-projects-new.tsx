@@ -1,27 +1,32 @@
-import { useI18n } from "@/hooks/use-i18n-new";
+import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Skeleton } from "@/components/ui/skeleton";
-import { Project } from "@shared/schema";
+import { useI18n } from "@/hooks/use-i18n-new";
 import { Link } from "wouter";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { 
-  Shield, 
-  FlaskConical, 
-  Server, 
-  Briefcase,
+  Calendar, 
+  Users, 
   Clock,
-  ArrowRight,
-  Folder,
-  Building
+  Building, 
+  Briefcase, 
+  Shield,
+  Server,
+  FlaskConical,
+  ExternalLink,
+  TrendingUp,
+  Zap,
+  Target
 } from "lucide-react";
+import { Project } from "@shared/schema";
+import { useProjectColorBasic } from "@/hooks/use-project-color";
+import { FavoriteButton } from "@/components/projects/favorite-button";
 
 // Extended Project interface with additional properties
 interface ExtendedProject extends Project {
+  department?: { name: string };
   totalTasks?: number;
   completedTasks?: number;
-  type?: string;
-  department?: {
-    name: string;
-  };
 }
 
 interface RecentProjectsProps {
@@ -85,40 +90,35 @@ export function RecentProjects({ className = "" }: RecentProjectsProps) {
     }
   };
   
-  // Get days until deadline
-  const getDaysUntilDeadline = (deadline: string | Date) => {
-    const deadlineDate = deadline instanceof Date ? deadline : new Date(deadline);
+  // Get project icon based on status or type
+  const getProjectIcon = (project: ExtendedProject) => {
+    switch (project.status) {
+      case 'Completed':
+        return <Target className="h-5 w-5" />;
+      case 'InProgress':
+        return <TrendingUp className="h-5 w-5" />;
+      case 'Planning':
+        return <Calendar className="h-5 w-5" />;
+      default:
+        return <Zap className="h-5 w-5" />;
+    }
+  };
+  
+  // Format days until deadline
+  const getDaysUntilDeadline = (endDate: string | Date) => {
     const today = new Date();
-    
-    // Reset both dates to just the date part, no time
-    deadlineDate.setHours(0, 0, 0, 0);
-    today.setHours(0, 0, 0, 0);
-    
-    const diffTime = deadlineDate.getTime() - today.getTime();
+    const deadline = new Date(endDate);
+    const diffTime = deadline.getTime() - today.getTime();
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
     
     if (diffDays < 0) {
-      return `${Math.abs(diffDays)} ${t("daysOverdue")}`;
+      return t("overdue", { days: Math.abs(diffDays) });
     } else if (diffDays === 0) {
       return t("dueToday");
     } else if (diffDays === 1) {
       return t("dueTomorrow");
     } else {
-      return `${diffDays} ${t("daysLeft")}`;
-    }
-  };
-  
-  // Get project icon based on type
-  const getProjectIcon = (project: ExtendedProject) => {
-    switch (project.type?.toLowerCase()) {
-      case 'security':
-        return <Shield className="h-5 w-5" />;
-      case 'infrastructure':
-        return <Server className="h-5 w-5" />;
-      case 'research':
-        return <FlaskConical className="h-5 w-5" />;
-      default:
-        return <Briefcase className="h-5 w-5" />;
+      return t("daysRemaining", { days: diffDays });
     }
   };
   
@@ -128,136 +128,122 @@ export function RecentProjects({ className = "" }: RecentProjectsProps) {
     return Math.round((project.completedTasks || 0) / project.totalTasks * 100);
   };
   
-  if (isLoading) {
+  // Get recent projects (limit to 6)
+  const recentProjects = projects?.slice(0, 6) || [];
+
+  // Project card component with new color system
+  const ProjectCard = ({ project }: { project: ExtendedProject }) => {
+    const colorConfig = useProjectColorBasic(project);
+    
     return (
-      <div className={`lg:col-span-2 bg-white dark:bg-gray-800 shadow-md rounded-xl border ${className || 'border-gray-100 dark:border-gray-800'}`}>
-        <div className="p-5 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between">
-          <Skeleton className="h-7 w-36" />
-          <Skeleton className="h-5 w-20" />
-        </div>
-        <div className="p-4">
-          {[1, 2, 3].map((i) => (
-            <div key={i} className="mb-4 p-4 bg-gray-50 dark:bg-gray-800/40 rounded-xl">
-              <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center">
-                  <Skeleton className="h-8 w-8 rounded-lg mr-3" />
-                  <div>
-                    <Skeleton className="h-5 w-32 mb-1" />
-                    <Skeleton className="h-4 w-20" />
-                  </div>
-                </div>
-                <Skeleton className="h-6 w-16 rounded-md" />
-              </div>
-              <Skeleton className="h-2 w-full mt-2" />
+      <div className={`p-4 border-l-4 ${colorConfig.borderClass} hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors`}>
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center">
+            <div className={`p-2 ${colorConfig.lightBgClass} rounded-lg mr-3 ${colorConfig.textClass}`}>
+              {getProjectIcon(project)}
             </div>
-          ))}
-        </div>
-      </div>
-    );
-  }
-  
-  if (error || !projects) {
-    return (
-      <div className="bg-white dark:bg-gray-800 shadow-md rounded-xl border-l-4 border-red-500 overflow-hidden">
-        <div className="p-5 border-b border-gray-100 dark:border-gray-800">
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center">
-            <Briefcase className="h-5 w-5 text-red-500 mr-2" />
-            {t("recentProjects")}
-          </h2>
-        </div>
-        <div className="p-5">
-          <div className="flex items-center text-red-500 mb-2">
-            <p className="font-medium">{t("somethingWentWrong")}</p>
+            <div>
+              <div className="font-medium text-gray-900 dark:text-white flex items-center">
+                {project.title}
+                {project.endDate && (
+                  <span className="ml-2 text-xs px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded-md text-gray-600 dark:text-gray-300">
+                    {getDaysUntilDeadline(project.endDate)}
+                  </span>
+                )}
+              </div>
+              <div className="text-xs text-gray-500 dark:text-gray-400 flex items-center mt-1">
+                <Building className="h-3 w-3 mr-1" />
+                {project.department?.name || t("noDepartment")}
+              </div>
+            </div>
           </div>
-          <p className="text-sm text-gray-500 dark:text-gray-400">{error?.message || t("tryAgain")}</p>
+          <Badge className={colorConfig.badgeClass}>
+            {formatStatus(project.status || '')}
+          </Badge>
         </div>
-      </div>
-    );
-  }
-  
-  // Sort projects by most recent updated date and take most recent 3
-  const recentProjects = [...projects]
-    .sort((a, b) => {
-      if (!a.updatedAt || !b.updatedAt) return 0;
-      return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime();
-    })
-    .slice(0, 3);
-  
-  return (
-    <div className={`lg:col-span-2 bg-white dark:bg-gray-800 shadow-md hover:shadow-lg transition-all duration-200 rounded-xl overflow-hidden ${className || 'border border-gray-100 dark:border-gray-800'}`}>
-      <div className="px-6 py-4 border-b border-qatar-maroon/20 dark:border-qatar-maroon/10 flex justify-between items-center">
-        <h2 className="text-lg font-semibold text-qatar-maroon dark:text-white flex items-center">
-          <Briefcase className="h-5 w-5 mr-2" />
-          {t("recentProjects")}
-        </h2>
-        <Link href="/projects">
-          <a className="text-sm text-qatar-maroon dark:text-white hover:bg-qatar-maroon/10 py-1 px-3 rounded-md transition-colors flex items-center">
-            {t("viewAll")}
-            <ArrowRight className="h-4 w-4 ml-1" />
-          </a>
-        </Link>
-      </div>
-      
-      <div className="px-4 py-2">
-        {recentProjects.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-8 px-4 text-center">
-            <Folder className="h-12 w-12 text-gray-300 dark:text-gray-600 mb-3" />
-            <p className="text-gray-500 dark:text-gray-400">{t("noProjects")}</p>
-            <Link href="/projects/new">
-              <a className="mt-4 px-4 py-2 bg-qatar-maroon text-white rounded-lg text-sm hover:bg-qatar-maroon/90 transition-colors">
-                {t("createProject")}
-              </a>
+        
+        <div className="flex items-center justify-between">
+          <span className="text-sm text-gray-500 dark:text-gray-400">
+            {project.description ? 
+              (project.description.length > 60 ? 
+                `${project.description.substring(0, 60)}...` : 
+                project.description
+              ) : 
+              t("noDescription")
+            }
+          </span>
+          <div className="flex items-center gap-1">
+            <FavoriteButton projectId={project.id} variant="ghost" size="sm" />
+            <Link href={`/projects/${project.id}`}>
+              <ExternalLink className="h-4 w-4 text-gray-400 hover:text-qatar-maroon transition-colors" />
             </Link>
           </div>
-        ) : (
-          <div className="space-y-4 py-2">
-            {recentProjects.map((project) => {
-              const progress = getProgress(project);
-              return (
-                <div key={project.id} className="flex flex-col p-4 bg-gray-50 dark:bg-gray-800/50 rounded-xl hover:shadow-md transition-all border border-gray-100 dark:border-gray-700">
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="flex items-center">
-                      <div className="p-2 bg-qatar-maroon/10 rounded-lg mr-3 text-qatar-maroon dark:text-white">
-                        {getProjectIcon(project)}
-                      </div>
-                      <div>
-                        <div className="font-medium text-gray-900 dark:text-white flex items-center">
-                          {project.title}
-                          {project.endDate && (
-                            <span className="ml-2 text-xs px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded-md text-gray-600 dark:text-gray-300">
-                              {getDaysUntilDeadline(project.endDate)}
-                            </span>
-                          )}
-                        </div>
-                        <div className="text-xs text-gray-500 dark:text-gray-400 flex items-center mt-1">
-                          <Building className="h-3 w-3 mr-1" />
-                          {project.department?.name || t("noDepartment")}
-                        </div>
-                      </div>
-                    </div>
-                    <span className={`px-2.5 py-1 text-xs font-medium rounded-lg ${getStatusClasses(project.status || '')}`}>
-                      {formatStatus(project.status || '')}
-                    </span>
+        </div>
+      </div>
+    );
+  };
+
+  if (error) {
+    return (
+      <Card className={className}>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-red-600">
+            <Briefcase className="h-5 w-5" />
+            {t("error")}
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-red-500 text-sm">{t("failedToLoadProjects")}</p>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <Card className={className}>
+      <CardHeader className="pb-3">
+        <CardTitle className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Briefcase className="h-5 w-5 text-qatar-maroon" />
+            {t("recentProjects")}
+          </div>
+          <Link href="/projects">
+            <span className="text-sm text-qatar-maroon hover:underline cursor-pointer">
+              {t("viewAll")}
+            </span>
+          </Link>
+        </CardTitle>
+      </CardHeader>
+      
+      <CardContent className="p-0">
+        {isLoading ? (
+          <div className="space-y-3 p-4">
+            {[1, 2, 3, 4].map((i) => (
+              <div key={i} className="animate-pulse">
+                <div className="flex items-center space-x-3">
+                  <div className="h-10 w-10 bg-gray-200 dark:bg-gray-700 rounded-lg"></div>
+                  <div className="flex-1 space-y-2">
+                    <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-3/4"></div>
+                    <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-1/2"></div>
                   </div>
-                  
-                  <div className="mt-2">
-                    <div className="flex justify-between items-center mb-1 text-xs">
-                      <span className="text-gray-500 dark:text-gray-400">{t("progress")}</span>
-                      <span className="text-gray-700 dark:text-gray-200 font-medium">{progress}%</span>
-                    </div>
-                    <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-1.5">
-                      <div 
-                        className="bg-qatar-maroon dark:bg-qatar-maroon h-1.5 rounded-full" 
-                        style={{ width: `${progress}%` }}
-                      ></div>
-                    </div>
-                  </div>
+                  <div className="h-6 w-16 bg-gray-200 dark:bg-gray-700 rounded-full"></div>
                 </div>
-              );
-            })}
+              </div>
+            ))}
+          </div>
+        ) : recentProjects.length === 0 ? (
+          <div className="p-6 text-center text-gray-500 dark:text-gray-400">
+            <Briefcase className="h-12 w-12 mx-auto mb-3 opacity-50" />
+            <p>{t("noProjects")}</p>
+          </div>
+        ) : (
+          <div className="divide-y divide-gray-200 dark:divide-gray-700">
+            {recentProjects.map((project) => (
+              <ProjectCard key={project.id} project={project} />
+            ))}
           </div>
         )}
-      </div>
-    </div>
+      </CardContent>
+    </Card>
   );
 }

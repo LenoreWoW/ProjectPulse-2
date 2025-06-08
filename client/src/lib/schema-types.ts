@@ -166,10 +166,17 @@ export type ActionItem = {
 
 export type WeeklyUpdate = {
   id: number;
-  week: string;
+  weekNumber: number;
+  year: number;
   projectId: number;
-  comments: string;
-  commentsAr?: string | null;
+  achievements?: string | null;
+  challenges?: string | null;
+  nextSteps?: string | null;
+  risksIssues?: string | null;
+  progressSnapshot: number;
+  previousWeekProgress: number;
+  managerComment?: string | null;
+  submittedAt?: Date | null;
   createdByUserId: number;
   createdAt: Date;
   updatedAt: Date;

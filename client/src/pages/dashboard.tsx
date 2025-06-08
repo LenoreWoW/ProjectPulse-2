@@ -8,6 +8,7 @@ import { BudgetOverview } from "@/components/dashboard/budget-overview";
 import { RecentProjects } from "@/components/dashboard/recent-projects";
 import { PendingApprovals } from "@/components/dashboard/pending-approvals";
 import { WeeklyUpdateReminder } from "@/components/dashboard/weekly-update-reminder";
+import { FavoriteProjects } from "@/components/dashboard/favorite-projects";
 import { Button } from "@/components/ui/button";
 import { Project, Department } from "@/lib/schema-types";
 import { 
@@ -290,7 +291,7 @@ export default function Dashboard() {
             count={metrics.activeProjects.length}
             status="InProgress"
             projects={metrics.activeProjects}
-            color="blue"
+            color="green"
           />
           
           <StatusCard
@@ -299,7 +300,7 @@ export default function Dashboard() {
             count={metrics.completedProjects.length}
             status="Completed"
             projects={metrics.completedProjects}
-            color="green"
+            color="blue"
           />
           
           <StatusCard
@@ -317,7 +318,7 @@ export default function Dashboard() {
             count={metrics.onHoldProjects.length}
             status="OnHold"
             projects={metrics.onHoldProjects}
-            color="amber"
+            color="orange"
           />
           
           <StatusCard
@@ -326,14 +327,14 @@ export default function Dashboard() {
             count={metrics.pendingProjects.length}
             status="Pending"
             projects={metrics.pendingProjects}
-            color="amber"
+            color="pink"
           />
           
           <StatusCard
-            icon={<CalendarX className="h-5 w-5" />}
+            icon={<AlertTriangle className="h-5 w-5" />}
             title={t("overdue")}
             count={metrics.overdueProjects.length}
-            status="Overdue"
+            status="overdue"
             projects={metrics.overdueProjects}
             color="red"
           />
@@ -412,10 +413,10 @@ export default function Dashboard() {
         </div>
       </PermissionGate>
       
-      {/* Projects and Approvals */}
-      <div className="mt-10 grid grid-cols-1 lg:grid-cols-3 gap-6">
+      {/* Projects and Favorites */}
+      <div className="mt-10 grid grid-cols-1 xl:grid-cols-2 gap-6">
         {/* Recent Projects - Available to all authorized users */}
-        <div className="lg:col-span-2">
+        <div>
           <div className="flex justify-between items-center mb-5">
             <h2 className="text-2xl font-bold dashboard-text flex items-center">
               <div className="p-2 bg-maroon-50 dark:bg-maroon-900/20 rounded-lg mr-3">
@@ -436,6 +437,15 @@ export default function Dashboard() {
             <RecentProjects />
           </div>
         </div>
+        
+        {/* Favorite Projects - Available to all authenticated users */}
+        <div>
+          <FavoriteProjects className="bg-white dark:bg-gray-800 shadow-lg rounded-xl overflow-hidden border border-gray-200 dark:border-gray-700" />
+        </div>
+      </div>
+      
+      {/* Approvals Section */}
+      <div className="mt-10 grid grid-cols-1 lg:grid-cols-3 gap-6">
         
         {/* Pending Approvals - Only for users who can approve */}
         <PermissionGate permission="canApproveProject">
