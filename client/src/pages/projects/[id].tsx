@@ -37,7 +37,9 @@ import {
   Trello,
   List,
   InfoIcon,
-  FlagIcon
+  FlagIcon,
+  DownloadIcon,
+  EyeIcon
 } from "lucide-react";
 import { useI18n } from "@/hooks/use-i18n-new";
 import { useAuth } from "@/hooks/use-auth";
@@ -185,6 +187,15 @@ export default function ProjectDetailsPage() {
     queryKey: [`/api/projects/${projectId}/milestones`],
     enabled: !!projectId,
   });
+  
+  // Fetch project attachments
+  const { data: attachments = [], isLoading: isLoadingAttachments } = useQuery<any[]>({
+    queryKey: [`/api/projects/${projectId}/attachments`],
+    enabled: !!projectId,
+  });
+  
+  // Get project plan (attachment marked as project plan)
+  const projectPlan = attachments.find(attachment => attachment.isprojectplan === true);
   
   // Create change request mutation
   const createChangeRequest = useMutation({
@@ -616,7 +627,35 @@ export default function ProjectDetailsPage() {
     }
   };
   
+  const getStatusBadgeClass = (status: string | null) => {
+    if (!status) return "bg-gray-100 text-gray-800";
+    
+    switch (status) {
+      case 'Not Started':
+        return "bg-gray-100 text-gray-800";
+      case 'In Progress':
+        return "bg-blue-100 text-blue-800";
+      case 'Completed':
+        return "bg-green-100 text-green-800";
+      case 'On Hold':
+        return "bg-yellow-100 text-yellow-800";
+      case 'Cancelled':
+        return "bg-red-100 text-red-800";
+      default:
+        return "bg-gray-100 text-gray-800";
+    }
+  };
+  
   const calculateProgress = () => {
+    // Use milestone-based calculation if milestones are available
+    if (milestones && milestones.length > 0) {
+      const totalProgress = milestones.reduce((sum, milestone) => {
+        return sum + (milestone.completionPercentage || 0);
+      }, 0);
+      return Math.round(totalProgress / milestones.length);
+    }
+    
+    // Fallback: use task-based calculation if no milestones
     if (!tasks || tasks.length === 0) return 0;
     
     const completedTasks = tasks.filter(task => task.status === "Completed").length;
@@ -989,14 +1028,15 @@ export default function ProjectDetailsPage() {
       
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-        <TabsList className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
-          <TabsTrigger value="overview">{t("overview")}</TabsTrigger>
-          <TabsTrigger value="tasks">{t("tasks")}</TabsTrigger>
-          <TabsTrigger value="milestones">{t("milestones")}</TabsTrigger>
-          <TabsTrigger value="team">{t("team")}</TabsTrigger>
-          <TabsTrigger value="updates">{t("weeklyUpdates")}</TabsTrigger>
-          <TabsTrigger value="files">{t("files")}</TabsTrigger>
-          <TabsTrigger value="logs">{t("activityLog")}</TabsTrigger>
+        <TabsList className="bg-gray-800 dark:bg-gray-800 border border-gray-600 dark:border-gray-700">
+          <TabsTrigger value="overview" className="text-white hover:text-gray-200 data-[state=active]:text-white data-[state=active]:bg-gray-700">{t("overview")}</TabsTrigger>
+          <TabsTrigger value="tasks" className="text-white hover:text-gray-200 data-[state=active]:text-white data-[state=active]:bg-gray-700">{t("tasks")}</TabsTrigger>
+          <TabsTrigger value="milestones" className="text-white hover:text-gray-200 data-[state=active]:text-white data-[state=active]:bg-gray-700">{t("milestones")}</TabsTrigger>
+          <TabsTrigger value="plan" className="text-white hover:text-gray-200 data-[state=active]:text-white data-[state=active]:bg-gray-700">{t("projectPlan")}</TabsTrigger>
+          <TabsTrigger value="team" className="text-white hover:text-gray-200 data-[state=active]:text-white data-[state=active]:bg-gray-700">{t("team")}</TabsTrigger>
+          <TabsTrigger value="updates" className="text-white hover:text-gray-200 data-[state=active]:text-white data-[state=active]:bg-gray-700">{t("weeklyUpdates")}</TabsTrigger>
+          <TabsTrigger value="files" className="text-white hover:text-gray-200 data-[state=active]:text-white data-[state=active]:bg-gray-700">{t("files")}</TabsTrigger>
+          <TabsTrigger value="logs" className="text-white hover:text-gray-200 data-[state=active]:text-white data-[state=active]:bg-gray-700">{t("activityLog")}</TabsTrigger>
         </TabsList>
         
         {/* Overview Tab */}
@@ -1086,10 +1126,10 @@ export default function ProjectDetailsPage() {
                   {changeRequests.slice(0, 5).map((cr) => (
                     <li key={cr.id} className="flex items-start gap-3">
                       <div className="bg-gray-100 dark:bg-gray-800 rounded-full p-2 mt-0.5">
-                        <HistoryIcon className="h-4 w-4 text-gray-500" />
+                        <HistoryIcon className="h-4 w-4 text-gray-600 dark:text-gray-300" />
                       </div>
                       <div>
-                        <p className="font-medium">{cr.type} {t("changeRequested")}</p>
+                        <p className="font-medium text-gray-900 dark:text-white">{cr.type} {t("changeRequested")}</p>
                         <p className="text-sm text-gray-500 dark:text-gray-400">
                           {formatDate(cr.requestedAt)} • {t("by")} {getUserName(cr.requestedByUserId)}
                         </p>
@@ -1522,7 +1562,7 @@ export default function ProjectDetailsPage() {
                 taskViewMode === 'list' ? (
                   <div className="overflow-x-auto">
                     <table className="w-full text-sm text-left text-gray-500 dark:text-gray-400">
-                      <thead className="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-800 dark:text-gray-400">
+                      <thead className="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-800 dark:text-gray-200">
                         <tr>
                           <th scope="col" className="px-6 py-3">{t("title")}</th>
                           <th scope="col" className="px-6 py-3">{t("assignedTo")}</th>
@@ -1537,10 +1577,10 @@ export default function ProjectDetailsPage() {
                             <td className="px-6 py-4 font-medium text-gray-900 dark:text-white">
                               {task.title}
                             </td>
-                            <td className="px-6 py-4">
+                            <td className="px-6 py-4 text-gray-700 dark:text-gray-200">
                               {getUserName(task.assignedUserId || null)}
                             </td>
-                            <td className="px-6 py-4">
+                            <td className="px-6 py-4 text-gray-700 dark:text-gray-200">
                               {formatDate(task.deadline || null)}
                             </td>
                             <td className="px-6 py-4">
@@ -1888,7 +1928,7 @@ export default function ProjectDetailsPage() {
                             <FlagIcon className="h-5 w-5 text-qatar-maroon" />
                             <div>
                               <CardTitle className="text-lg text-gray-900 dark:text-white">{milestone.title}</CardTitle>
-                              <p className="text-sm text-gray-500 dark:text-gray-400">
+                              <p className="text-sm text-gray-500 dark:text-gray-300">
                                 {t("deadline")}: {formatDate(milestone.deadline)}
                               </p>
                             </div>
@@ -1900,10 +1940,10 @@ export default function ProjectDetailsPage() {
                       </CardHeader>
                       <CardContent>
                         <div className="space-y-3">
-                          <p className="text-gray-700 dark:text-gray-300">{milestone.description}</p>
+                          <p className="text-gray-700 dark:text-gray-200">{milestone.description}</p>
                           
                           <div className="flex items-center justify-between">
-                            <span className="text-sm text-gray-500 dark:text-gray-400">{t("progress")}</span>
+                            <span className="text-sm text-gray-500 dark:text-gray-300">{t("progress")}</span>
                             <span className="text-sm font-medium text-gray-900 dark:text-white">
                               {Math.round(milestone.completionPercentage || 0)}%
                             </span>
@@ -1931,6 +1971,94 @@ export default function ProjectDetailsPage() {
           </Card>
         </TabsContent>
         
+        {/* Project Plan Tab */}
+        <TabsContent value="plan" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>{t("projectPlan")}</CardTitle>
+              <CardDescription>{t("projectPlanDescription")}</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {isLoadingAttachments ? (
+                <div className="flex justify-center py-8">
+                  <Loader2 className="h-6 w-6 animate-spin" />
+                </div>
+              ) : projectPlan ? (
+                <div className="space-y-4">
+                  <div className="border rounded-lg p-4 bg-gray-50 dark:bg-gray-800">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-3">
+                        <FilesIcon className="h-8 w-8 text-qatar-maroon" />
+                        <div>
+                          <h3 className="font-medium text-gray-900 dark:text-white">
+                            {projectPlan.originalname}
+                          </h3>
+                          <p className="text-sm text-gray-500 dark:text-gray-400">
+                            {t("uploadedOn")} {formatDate(projectPlan.createdat)}
+                          </p>
+                          <p className="text-sm text-gray-500 dark:text-gray-400">
+                            {(projectPlan.filesize / 1024 / 1024).toFixed(2)} MB
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex space-x-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            // Download file
+                            const link = document.createElement('a');
+                            link.href = `/api/projects/${projectId}/attachments/${projectPlan.id}/download`;
+                            link.download = projectPlan.originalname;
+                            link.click();
+                          }}
+                        >
+                          <DownloadIcon className="mr-2 h-4 w-4" />
+                          {t("download")}
+                        </Button>
+                        <PermissionGate permission="canEditProject">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              // View file in new tab
+                              window.open(`/api/projects/${projectId}/attachments/${projectPlan.id}/view`, '_blank');
+                            }}
+                          >
+                            <EyeIcon className="mr-2 h-4 w-4" />
+                            {t("view")}
+                          </Button>
+                        </PermissionGate>
+                      </div>
+                    </div>
+                    {projectPlan.description && (
+                      <div className="mt-3 pt-3 border-t">
+                        <p className="text-sm text-gray-600 dark:text-gray-300">
+                          {projectPlan.description}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ) : (
+                <div className="text-center py-8">
+                  <FilesIcon className="mx-auto h-12 w-12 text-gray-400" />
+                  <h3 className="mt-2 text-sm font-medium text-gray-900 dark:text-white">{t("noProjectPlan")}</h3>
+                  <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">{t("noProjectPlanDescription")}</p>
+                  <PermissionGate permission="canEditProject">
+                    <div className="mt-6">
+                      <Button>
+                        <FilesIcon className="mr-2 h-4 w-4" />
+                        {t("uploadProjectPlan")}
+                      </Button>
+                    </div>
+                  </PermissionGate>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+        
         {/* Team Tab */}
         <TabsContent value="team" className="space-y-6">
           <Card>
@@ -1951,8 +2079,8 @@ export default function ProjectDetailsPage() {
                         </AvatarFallback>
                       </Avatar>
                       <div>
-                        <p className="font-medium">{getUserName(project.managerUserId)}</p>
-                        <p className="text-sm text-gray-500 dark:text-gray-400">
+                        <p className="font-medium text-gray-900 dark:text-white">{getUserName(project.managerUserId)}</p>
+                        <p className="text-sm text-gray-500 dark:text-gray-300">
                           {t("department")}: {getDepartmentName(users.find(u => u.id === project.managerUserId)?.departmentId)}
                         </p>
                       </div>
@@ -2028,8 +2156,8 @@ export default function ProjectDetailsPage() {
                             </AvatarFallback>
                           </Avatar>
                           <div className="flex-1">
-                            <p className="font-medium">{member.name}</p>
-                            <p className="text-sm text-gray-500 dark:text-gray-400">
+                            <p className="font-medium text-gray-900 dark:text-white">{member.name}</p>
+                            <p className="text-sm text-gray-500 dark:text-gray-300">
                               {member.role && t(member.role.toLowerCase())}
                             </p>
                           </div>
@@ -2090,7 +2218,7 @@ export default function ProjectDetailsPage() {
                     <Card key={update.id} className="bg-gray-50 dark:bg-gray-800">
                       <CardHeader className="pb-2">
                         <div className="flex justify-between items-center">
-                          <CardTitle className="text-base">
+                          <CardTitle className="text-base text-gray-900 dark:text-white">
                             {t("week")} {update.weekNumber}, {update.year}
                           </CardTitle>
                           <div className="flex items-center gap-2">
@@ -2121,10 +2249,10 @@ export default function ProjectDetailsPage() {
                         <div className="space-y-4">
                           {update.achievements && (
                             <div>
-                              <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">
+                              <h4 className="text-sm font-medium text-gray-500 dark:text-gray-300 mb-1">
                                 {t("achievements")}
                               </h4>
-                              <p className="text-gray-900 dark:text-white whitespace-pre-line">
+                              <p className="text-gray-900 dark:text-gray-100 whitespace-pre-line">
                                 {update.achievements}
                               </p>
                             </div>
@@ -2132,10 +2260,10 @@ export default function ProjectDetailsPage() {
                           
                           {update.challenges && (
                             <div>
-                              <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">
+                              <h4 className="text-sm font-medium text-gray-500 dark:text-gray-300 mb-1">
                                 {t("challenges")}
                               </h4>
-                              <p className="text-gray-900 dark:text-white whitespace-pre-line">
+                              <p className="text-gray-900 dark:text-gray-100 whitespace-pre-line">
                                 {update.challenges}
                               </p>
                             </div>
@@ -2143,10 +2271,10 @@ export default function ProjectDetailsPage() {
                           
                           {update.nextSteps && (
                             <div>
-                              <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">
+                              <h4 className="text-sm font-medium text-gray-500 dark:text-gray-300 mb-1">
                                 {t("nextSteps")}
                               </h4>
-                              <p className="text-gray-900 dark:text-white whitespace-pre-line">
+                              <p className="text-gray-900 dark:text-gray-100 whitespace-pre-line">
                                 {update.nextSteps}
                               </p>
                             </div>
@@ -2154,10 +2282,10 @@ export default function ProjectDetailsPage() {
                           
                           {update.risksIssues && (
                             <div>
-                              <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">
+                              <h4 className="text-sm font-medium text-gray-500 dark:text-gray-300 mb-1">
                                 {t("risksIssues")}
                               </h4>
-                              <p className="text-gray-900 dark:text-white whitespace-pre-line">
+                              <p className="text-gray-900 dark:text-gray-100 whitespace-pre-line">
                                 {update.risksIssues}
                               </p>
                             </div>
@@ -2168,7 +2296,7 @@ export default function ProjectDetailsPage() {
                               <h4 className="text-sm font-medium text-qatar-maroon mb-1">
                                 {t("managerComment")}
                               </h4>
-                              <p className="text-gray-900 dark:text-white whitespace-pre-line bg-qatar-maroon/5 p-3 rounded-md">
+                              <p className="text-gray-900 dark:text-gray-100 whitespace-pre-line bg-qatar-maroon/5 p-3 rounded-md">
                                 {update.managerComment}
                               </p>
                             </div>
@@ -2195,17 +2323,89 @@ export default function ProjectDetailsPage() {
               <CardDescription>{t("projectFilesDescription")}</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="text-center py-8">
-                <FilesIcon className="mx-auto h-12 w-12 text-gray-400" />
-                <h3 className="mt-2 text-sm font-medium text-gray-900 dark:text-white">{t("noFiles")}</h3>
-                <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">{t("uploadFilesInstruction")}</p>
-                <div className="mt-6">
-                  <Button>
-                    <FilesIcon className="mr-2 h-4 w-4" />
-                    {t("uploadFiles")}
-                  </Button>
+              {isLoadingAttachments ? (
+                <div className="flex justify-center py-8">
+                  <Loader2 className="h-6 w-6 animate-spin" />
                 </div>
-              </div>
+              ) : attachments && attachments.length > 0 ? (
+                <div className="space-y-4">
+                  {attachments.map((attachment) => (
+                    <div key={attachment.id} className="border rounded-lg p-4 bg-gray-50 dark:bg-gray-800">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-3">
+                          <FilesIcon className="h-8 w-8 text-qatar-maroon" />
+                          <div>
+                            <h3 className="font-medium text-gray-900 dark:text-white flex items-center">
+                              {attachment.originalname}
+                              {attachment.isprojectplan && (
+                                <Badge variant="secondary" className="ml-2 text-xs">
+                                  {t("projectPlan")}
+                                </Badge>
+                              )}
+                            </h3>
+                            <p className="text-sm text-gray-500 dark:text-gray-400">
+                              {t("uploadedOn")} {formatDate(attachment.createdat)}
+                            </p>
+                            <p className="text-sm text-gray-500 dark:text-gray-400">
+                              {(attachment.filesize / 1024 / 1024).toFixed(2)} MB • {attachment.filetype}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex space-x-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              // Download file
+                              const link = document.createElement('a');
+                              link.href = `/api/projects/${projectId}/attachments/${attachment.id}/download`;
+                              link.download = attachment.originalname;
+                              link.click();
+                            }}
+                          >
+                            <DownloadIcon className="mr-2 h-4 w-4" />
+                            {t("download")}
+                          </Button>
+                          <PermissionGate permission="canEditProject">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => {
+                                // View file in new tab
+                                window.open(`/api/projects/${projectId}/attachments/${attachment.id}/view`, '_blank');
+                              }}
+                            >
+                              <EyeIcon className="mr-2 h-4 w-4" />
+                              {t("view")}
+                            </Button>
+                          </PermissionGate>
+                        </div>
+                      </div>
+                      {attachment.description && (
+                        <div className="mt-3 pt-3 border-t">
+                          <p className="text-sm text-gray-600 dark:text-gray-300">
+                            {attachment.description}
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-8">
+                  <FilesIcon className="mx-auto h-12 w-12 text-gray-400" />
+                  <h3 className="mt-2 text-sm font-medium text-gray-900 dark:text-white">{t("noFiles")}</h3>
+                  <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">{t("uploadFilesInstruction")}</p>
+                  <PermissionGate permission="canEditProject">
+                    <div className="mt-6">
+                      <Button>
+                        <FilesIcon className="mr-2 h-4 w-4" />
+                        {t("uploadFiles")}
+                      </Button>
+                    </div>
+                  </PermissionGate>
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>

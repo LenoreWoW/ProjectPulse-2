@@ -1,6 +1,9 @@
 import { Router, Request, Response, NextFunction } from 'express';
-import { storage } from './storage';
+import { PgStorage } from './pg-storage';
 import { Task, RiskIssue, Project } from '@shared/schema';
+
+// Create storage instance
+const storage = new PgStorage();
 
 // Simple auth middleware for analytics routes
 const hasAuth = (req: Request, res: Response, next: NextFunction): void => {
@@ -25,15 +28,15 @@ export function registerAnalyticsRoutes(router: Router) {
       // Filter based on user role
       if (user.role !== 'Admin' && user.role !== 'Manager') {
         // Regular users can only see projects in their department
-        projects = projects.filter(project => project.departmentId === user.departmentId);
-      } else if (user.role === 'Manager' && user.departmentId) {
+        projects = projects.filter(project => project.departmentid === user.departmentid);
+      } else if (user.role === 'Manager' && user.departmentid) {
         // Managers can see projects in their department
-        projects = projects.filter(project => project.departmentId === user.departmentId);
+        projects = projects.filter(project => project.departmentid === user.departmentid);
       }
       
       // Apply filters
       if (department) {
-        projects = projects.filter(project => project.departmentId === Number(department));
+        projects = projects.filter(project => project.departmentid === Number(department));
       }
       
       if (status) {
@@ -73,7 +76,7 @@ export function registerAnalyticsRoutes(router: Router) {
           actualCost: project.actualCost,
           startDate: project.startDate,
           deadline: project.deadline,
-          departmentId: project.departmentId,
+          departmentid: project.departmentid,
         };
       });
       
@@ -111,9 +114,9 @@ export function registerAnalyticsRoutes(router: Router) {
         }
         
         // If manager, filter to only show tasks in their department
-        if (user.role === 'Manager' && user.departmentId) {
+        if (user.role === 'Manager' && user.departmentid) {
           const departmentProjectIds = projects
-            .filter(p => p.departmentId === user.departmentId)
+            .filter(p => p.departmentid === user.departmentid)
             .map(p => p.id);
           
           allTasks = allTasks.filter(task => departmentProjectIds.includes(task.projectId));
@@ -176,16 +179,16 @@ export function registerAnalyticsRoutes(router: Router) {
         const projects = await storage.getProjects();
         
         const accessibleProjectIds = projects
-          .filter(p => p.departmentId === user.departmentId)
+          .filter(p => p.departmentid === user.departmentid)
           .map(p => p.id);
         
         risks = allRisksAndIssues.filter(risk => accessibleProjectIds.includes(risk.projectId));
-      } else if (user.role === 'Manager' && user.departmentId) {
+      } else if (user.role === 'Manager' && user.departmentid) {
         // Managers see risks for projects in their department
         const projects = await storage.getProjects();
         
         const departmentProjectIds = projects
-          .filter(p => p.departmentId === user.departmentId)
+          .filter(p => p.departmentid === user.departmentid)
           .map(p => p.id);
         
         risks = allRisksAndIssues.filter(risk => departmentProjectIds.includes(risk.projectId));

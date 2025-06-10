@@ -148,14 +148,14 @@ export function FavoriteProjects({ className = "" }: FavoriteProjectsProps) {
 
   return (
     <Card className={className}>
-      <CardHeader className="pb-3">
-        <CardTitle className="flex items-center justify-between">
+      <CardHeader className="pb-3 bg-gray-50 dark:bg-gray-800/50 border-b border-gray-200 dark:border-gray-700">
+        <CardTitle className="flex items-center justify-between text-gray-900 dark:text-white">
           <div className="flex items-center gap-2">
             <Star className="h-5 w-5 text-yellow-500" />
             {t("favoriteProjects")}
           </div>
           <Link href="/projects">
-            <span className="text-sm text-qatar-maroon hover:underline cursor-pointer">
+            <span className="text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 hover:underline cursor-pointer">
               {t("viewAll")}
             </span>
           </Link>

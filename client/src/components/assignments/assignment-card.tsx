@@ -122,7 +122,7 @@ export const AssignmentCard: React.FC<AssignmentCardProps> = ({
                   variant="ghost"
                   size="icon"
                   className="h-7 w-7"
-                  onClick={(e) => {
+                  onClick={(e: React.MouseEvent) => {
                     e.stopPropagation();
                     onEdit?.(assignment);
                   }}
@@ -133,7 +133,7 @@ export const AssignmentCard: React.FC<AssignmentCardProps> = ({
                   variant="ghost"
                   size="icon"
                   className="h-7 w-7"
-                  onClick={(e) => {
+                  onClick={(e: React.MouseEvent) => {
                     e.stopPropagation();
                     setShowDeleteConfirm(true);
                   }}
@@ -189,7 +189,7 @@ export const AssignmentCard: React.FC<AssignmentCardProps> = ({
                 !disableActions && "hover:opacity-80"
               )}
               variant="outline"
-              onClick={(e) => {
+              onClick={(e: React.MouseEvent) => {
                 e.stopPropagation();
                 if (!disableActions) {
                   handleStatusClick();

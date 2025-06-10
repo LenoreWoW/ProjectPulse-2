@@ -80,7 +80,7 @@ export default function RisksIssuesPage() {
   const filteredIssues = data?.issues ? filterItems(data.issues) : [];
   
   // Format priority badge
-  const getPriorityBadge = (priority: string | null) => {
+  const getPriorityBadge = (priority: string | null | undefined) => {
     if (!priority) return (
       <div className="flex items-center text-green-600 dark:text-green-400">
         <Clock className="w-4 h-4 mr-1" />
@@ -120,7 +120,7 @@ export default function RisksIssuesPage() {
   };
   
   // Format status badge
-  const getStatusBadge = (status: string | null) => {
+  const getStatusBadge = (status: string | null | undefined) => {
     if (!status) return (
       <span className="px-2 py-1 bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300 text-xs rounded-full">
         {t("unknown")}
@@ -178,7 +178,12 @@ export default function RisksIssuesPage() {
         <PermissionGate permission="canCreateRiskIssue">
           {canCreate && (
             <Link href="/risks-issues/new">
-              <Button className="bg-qatar-maroon hover:bg-maroon-800 text-white">
+              <Button 
+              className="text-white font-medium"
+              style={{ backgroundColor: '#8a1538' }}
+              onMouseEnter={(e: React.MouseEvent<HTMLButtonElement>) => e.currentTarget.style.backgroundColor = '#7c1b38'}
+              onMouseLeave={(e: React.MouseEvent<HTMLButtonElement>) => e.currentTarget.style.backgroundColor = '#8a1538'}
+            >
                 <Plus className="mr-2 h-4 w-4" />
                 <span>{t("newRiskIssue")}</span>
               </Button>
@@ -200,7 +205,7 @@ export default function RisksIssuesPage() {
                 placeholder={t("searchRisksIssues")}
                 className="pl-8"
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchQuery(e.target.value)}
               />
             </div>
           </div>

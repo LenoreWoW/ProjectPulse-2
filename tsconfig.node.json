@@ -28,6 +28,7 @@
   "include": [
     "vite.config.ts",
     "server/**/*",
-    "shared/**/*"
+    "shared/**/*",
+    "types/**/*"
   ]
 } 

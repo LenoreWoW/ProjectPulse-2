@@ -38,7 +38,7 @@ const toastVariants = cva(
   }
 )
 
-const Toast = React.forwardRef<
+const ToastComponent = React.forwardRef<
   React.ElementRef<typeof ToastPrimitives.Root>,
   React.ComponentPropsWithoutRef<typeof ToastPrimitives.Root> &
     VariantProps<typeof toastVariants>
@@ -51,9 +51,9 @@ const Toast = React.forwardRef<
     />
   )
 })
-Toast.displayName = ToastPrimitives.Root.displayName
+ToastComponent.displayName = ToastPrimitives.Root.displayName
 
-const ToastAction = React.forwardRef<
+const ToastActionComponent = React.forwardRef<
   React.ElementRef<typeof ToastPrimitives.Action>,
   React.ComponentPropsWithoutRef<typeof ToastPrimitives.Action>
 >(({ className, ...props }, ref) => (
@@ -66,7 +66,7 @@ const ToastAction = React.forwardRef<
     {...props}
   />
 ))
-ToastAction.displayName = ToastPrimitives.Action.displayName
+ToastActionComponent.displayName = ToastPrimitives.Action.displayName
 
 const ToastClose = React.forwardRef<
   React.ElementRef<typeof ToastPrimitives.Close>,
@@ -110,18 +110,18 @@ const ToastDescription = React.forwardRef<
 ))
 ToastDescription.displayName = ToastPrimitives.Description.displayName
 
-type ToastProps = React.ComponentPropsWithoutRef<typeof Toast>
+type ToastProps = React.ComponentPropsWithoutRef<typeof ToastComponent>
 
-type ToastActionElement = React.ReactElement<typeof ToastAction>
+type ToastActionElement = React.ReactElement<typeof ToastActionComponent>
 
 export {
   type ToastProps,
   type ToastActionElement,
   ToastProvider,
   ToastViewport,
-  Toast,
   ToastTitle,
   ToastDescription,
   ToastClose,
-  ToastAction,
+  ToastComponent as Toast,
+  ToastActionComponent as ToastAction,
 }

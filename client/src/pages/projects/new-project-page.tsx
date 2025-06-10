@@ -5,7 +5,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useFieldArray, useForm, Control, SubmitHandler, FieldPath, ControllerRenderProps } from "react-hook-form";
 import { z } from "zod";
-import { CalendarIcon, Loader2, Plus, Trash2 } from "lucide-react";
+import { CalendarIcon, Loader2, Plus, Trash2, InfoIcon } from "lucide-react";
 import {
   Tabs,
   TabsContent,
@@ -36,6 +36,7 @@ import {
   FormLabel,
   FormControl,
   FormMessage,
+  FormDescription,
 } from "@/components/ui/form-wrapper";
 import { useI18n } from "@/hooks/use-i18n-new";
 import { cn } from "@/lib/utils";
@@ -69,15 +70,14 @@ const formSchema = z.object({
   title: z.string().min(1, {
     message: "Project name is required",
   }),
-  status: z.string().default("Draft"),
   priority: z.string().default("Medium"),
-  departmentId: z.string(),
   managerUserId: z.string(),
   budget: z.coerce.number().optional(),
-  actualCost: z.coerce.number().optional(),
   startDate: z.date(),
   endDate: z.date(),
   description: z.string().optional(),
+  projectPlanFile: z.instanceof(File).optional(),
+  attachments: z.array(z.instanceof(File)).default([]),
   projectGoals: z.array(
     z.object({
       goalId: z.number(),
@@ -140,15 +140,14 @@ export default function NewProjectPage() {
     resolver: zodResolver(formSchema) as any,
     defaultValues: {
       title: "",
-      status: "Draft",
       priority: "Medium",
-      departmentId: "",
       managerUserId: "",
       budget: undefined,
-      actualCost: undefined,
       startDate: new Date(),
       endDate: new Date(),
       description: "",
+      projectPlanFile: undefined,
+      attachments: [],
       projectGoals: [{ goalId: 0, weight: 1 }],
       relatedProjects: [],
       relatedToProjects: [],
@@ -174,29 +173,49 @@ export default function NewProjectPage() {
       name: "relatedToProjects",
     });
   
-  // Mutation for creating a new project
-  const createProjectMutation = useMutation({
-    mutationFn: async (values: FormValues) => {
-      const response = await fetch("/api/projects", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          ...values,
-          departmentId: parseInt(values.departmentId),
-          managerUserId: parseInt(values.managerUserId),
-          startDate: values.startDate.toISOString(),
-          endDate: values.endDate.toISOString(),
-        }),
-      });
+  // Create the mutation for project creation
+  const mutation = useMutation({
+    mutationFn: async (data: z.infer<typeof formSchema>) => {
+      const formData = new FormData();
       
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || "Failed to create project");
+      // Add all the project data
+      formData.append('title', data.title);
+      formData.append('priority', data.priority);
+      formData.append('managerUserId', data.managerUserId);
+      if (data.budget) formData.append('budget', data.budget.toString());
+      formData.append('startDate', data.startDate.toISOString());
+      formData.append('endDate', data.endDate.toISOString());
+      if (data.description) formData.append('description', data.description);
+      
+      // Add project goals
+      formData.append('projectGoals', JSON.stringify(data.projectGoals));
+      
+      // Add related projects
+      formData.append('relatedProjects', JSON.stringify(data.relatedProjects));
+      formData.append('relatedToProjects', JSON.stringify(data.relatedToProjects));
+      
+      // Add project plan file if provided
+      if (data.projectPlanFile) {
+        formData.append('projectPlanFile', data.projectPlanFile);
       }
       
-      return response.json();
+      // Add additional attachments if provided
+      if (data.attachments && data.attachments.length > 0) {
+        data.attachments.forEach((file, index) => {
+          formData.append(`attachments`, file);
+        });
+      }
+
+      const response = await fetch('/api/projects', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to create project');
+      }
+
+      return await response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/projects"] });
@@ -216,7 +235,7 @@ export default function NewProjectPage() {
   });
   
   const onSubmit: SubmitHandler<FormValues> = (values) => {
-    createProjectMutation.mutate(values);
+    mutation.mutate(values);
   };
   
   // Filter projects for selection dropdown (exclude already selected)
@@ -230,7 +249,7 @@ export default function NewProjectPage() {
     return projects.filter((project: Project) => !selectedIds.includes(project.id));
   };
 
-  const isLoading = isLoadingDepartments || isLoadingUsers || isLoadingProjects || isLoadingGoals || createProjectMutation.isPending;
+  const isLoading = isLoadingDepartments || isLoadingUsers || isLoadingProjects || isLoadingGoals || mutation.isPending;
 
   return (
     <div className="container mx-auto">
@@ -240,8 +259,7 @@ export default function NewProjectPage() {
           <CardDescription>{t("createProjectDescription")}</CardDescription>
         </CardHeader>
         <CardContent>
-          <FormRoot form={form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+          <FormRoot form={form} onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <FormField
                   control={form.control as FormControl}
@@ -257,36 +275,7 @@ export default function NewProjectPage() {
                   )}
                 />
                 
-                <FormField
-                  control={form.control as FormControl}
-                  name="status"
-                  render={({ field }: { field: FieldProps }) => (
-                    <FormItem>
-                      <FormLabel>{t("status")}</FormLabel>
-                      <FormControl>
-                        <Select
-                          value={field.value}
-                          onValueChange={field.onChange}
-                        >
-                          <SelectTrigger>
-                            <SelectValue placeholder={t("selectStatus")} />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="Draft">{t("draft")}</SelectItem>
-                            <SelectItem value="Pending">{t("pending")}</SelectItem>
-                            <SelectItem value="Approved">{t("approved")}</SelectItem>
-                            <SelectItem value="InProgress">{t("inProgress")}</SelectItem>
-                            <SelectItem value="OnHold">{t("onHold")}</SelectItem>
-                            <SelectItem value="Completed">{t("completed")}</SelectItem>
-                            <SelectItem value="Cancelled">{t("cancelled")}</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                
+
                 <FormField
                   control={form.control as FormControl}
                   name="priority"
@@ -314,38 +303,7 @@ export default function NewProjectPage() {
                   )}
                 />
                 
-                <FormField
-                  control={form.control as FormControl}
-                  name="departmentId"
-                  render={({ field }: { field: FieldProps }) => (
-                    <FormItem>
-                      <FormLabel>{t("department")}</FormLabel>
-                      <FormControl>
-                        <Select
-                          value={field.value}
-                          onValueChange={field.onChange}
-                          disabled={isLoadingDepartments}
-                        >
-                          <SelectTrigger>
-                            <SelectValue placeholder={t("selectDepartment")} />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {departments.map((department: Department) => (
-                              <SelectItem
-                                key={department.id}
-                                value={department.id.toString()}
-                              >
-                                {department.name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                
+
                 <FormField
                   control={form.control as FormControl}
                   name="managerUserId"
@@ -364,9 +322,9 @@ export default function NewProjectPage() {
                           <SelectContent>
                             {users
                               .filter((user) => 
-                                (user.roles && user.roles.includes("ProjectManager")) || 
-                                (user.roles && user.roles.includes("SubPMO")) || 
-                                (user.roles && user.roles.includes("MainPMO")))
+                                user.role === "ProjectManager" || 
+                                user.role === "SubPMO" || 
+                                user.role === "MainPMO")
                               .map((user) => (
                                 <SelectItem
                                   key={user.id}
@@ -383,44 +341,44 @@ export default function NewProjectPage() {
                   )}
                 />
                 
-                <FormField
-                  control={form.control as FormControl}
-                  name="budget"
-                  render={({ field }: { field: FieldProps }) => (
-                    <FormItem>
-                      <FormLabel>{t("budget")}</FormLabel>
-                      <FormControl>
-                        <Input
-                          type="number"
-                          placeholder="0"
-                          value={field.value || ""}
-                          onChange={(e: React.ChangeEvent<HTMLInputElement>) => field.onChange(e.target.value === "" ? undefined : Number(e.target.value))}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                {/* Department Auto-Assignment Display */}
+                {form.watch("managerUserId") && (
+                  <div className="rounded-md border p-3 bg-gray-50 dark:bg-gray-800">
+                    <div className="flex items-center space-x-2">
+                      <InfoIcon className="h-4 w-4 text-blue-500" />
+                      <span className="text-sm font-medium text-gray-900 dark:text-white">
+                        {t("department")}: {" "}
+                        {departments?.find(dept => 
+                          dept.id === users?.find(user => user.id.toString() === form.watch("managerUserId"))?.departmentId
+                        )?.name || t("loading")}
+                      </span>
+                    </div>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                      {t("departmentAutoAssigned")}
+                    </p>
+                  </div>
+                )}
                 
-                <FormField
-                  control={form.control as FormControl}
-                  name="actualCost"
-                  render={({ field }: { field: FieldProps }) => (
-                    <FormItem>
-                      <FormLabel>{t("actualCost")}</FormLabel>
-                      <FormControl>
-                        <Input
-                          type="number"
-                          placeholder="0"
-                          value={field.value || ""}
-                          onChange={(e: React.ChangeEvent<HTMLInputElement>) => field.onChange(e.target.value === "" ? undefined : Number(e.target.value))}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                                  <FormField
+                    control={form.control}
+                    name="budget"
+                    render={({ field }: any) => (
+                      <FormItem>
+                        <FormLabel>{t("budget")}</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="number"
+                            placeholder={t("enterBudget")}
+                            {...field}
+                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => field.onChange(e.target.value ? Number(e.target.value) : '')}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
                 
+
                 <FormField
                   control={form.control as FormControl}
                   name="startDate"
@@ -498,6 +456,59 @@ export default function NewProjectPage() {
                     </FormItem>
                   )}
                 />
+
+                            {/* Project Plan File */}
+            <FormField
+              control={form.control}
+              name="projectPlanFile"
+              render={({ field }: any) => (
+                <FormItem>
+                  <FormLabel>{t("projectPlan")} <span className="text-red-500">*</span></FormLabel>
+                  <FormControl>
+                    <Input
+                      type="file"
+                      accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt"
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                        const file = e.target.files?.[0];
+                        field.onChange(file);
+                      }}
+                      className="file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-qatar-maroon file:text-white hover:file:bg-qatar-maroon/90"
+                    />
+                  </FormControl>
+                  <FormDescription>
+                    {t("projectPlanDescription")}
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+                            {/* Additional Attachments */}
+            <FormField
+              control={form.control}
+              name="attachments"
+              render={({ field }: any) => (
+                <FormItem>
+                  <FormLabel>{t("additionalAttachments")}</FormLabel>
+                  <FormControl>
+                    <Input
+                      type="file"
+                      multiple
+                      accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.jpg,.jpeg,.png,.gif"
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                        const files = Array.from(e.target.files || []);
+                        field.onChange(files);
+                      }}
+                      className="file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-qatar-maroon file:text-white hover:file:bg-qatar-maroon/90"
+                    />
+                  </FormControl>
+                  <FormDescription>
+                    {t("additionalAttachmentsDescription")}
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
               </div>
 
               <FormField
@@ -554,14 +565,18 @@ export default function NewProjectPage() {
                                     <SelectValue placeholder={t("selectGoal")} />
                                   </SelectTrigger>
                                   <SelectContent>
-                                    {goals.map((goal: Goal) => (
+                                    {goals && goals.length > 0 ? goals.map((goal: Goal) => (
                                       <SelectItem
                                         key={goal.id}
                                         value={goal.id.toString()}
                                       >
                                         {goal.title}
                                       </SelectItem>
-                                    ))}
+                                    )) : (
+                                      <SelectItem value="0" disabled>
+                                        {isLoadingGoals ? t("loading") : t("noGoalsAvailable")}
+                                      </SelectItem>
+                                    )}
                                   </SelectContent>
                                 </Select>
                               </FormItem>
@@ -755,7 +770,6 @@ export default function NewProjectPage() {
                   {t("createProject")}
                 </Button>
               </div>
-            </form>
           </FormRoot>
         </CardContent>
       </Card>

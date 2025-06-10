@@ -71,6 +71,7 @@ export default function NewAssignmentPage() {
     defaultValues: {
       title: "",
       description: "",
+      assignedToUserId: undefined,
       priority: "Medium",
     },
   });
@@ -159,13 +160,12 @@ export default function NewAssignmentPage() {
           <CardDescription>{t("fillDetailsBelow")}</CardDescription>
         </CardHeader>
         <CardContent>
-          <FormRoot form={form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+          <FormRoot form={form} onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
               {/* Assignment Name */}
               <FormField
                 control={form.control}
                 name="title"
-                render={({ field }) => (
+                render={({ field }: { field: any }) => (
                   <FormItem>
                     <FormLabel>{t("assignmentName")}</FormLabel>
                     <FormControl>
@@ -180,7 +180,7 @@ export default function NewAssignmentPage() {
               <FormField
                 control={form.control}
                 name="description"
-                render={({ field }) => (
+                render={({ field }: { field: any }) => (
                   <FormItem>
                     <FormLabel>{t("description")}</FormLabel>
                     <FormControl>
@@ -201,11 +201,11 @@ export default function NewAssignmentPage() {
                 <FormField
                   control={form.control}
                   name="assignedToUserId"
-                  render={({ field }) => (
+                  render={({ field }: { field: any }) => (
                     <FormItem>
                       <FormLabel>{t("assignee")}</FormLabel>
                       <Select 
-                        onValueChange={(value) => field.onChange(parseInt(value))}
+                        onValueChange={(value: string) => field.onChange(parseInt(value))}
                         defaultValue={field.value?.toString()}
                       >
                         <FormControl>
@@ -234,7 +234,7 @@ export default function NewAssignmentPage() {
                 <FormField
                   control={form.control}
                   name="priority"
-                  render={({ field }) => (
+                  render={({ field }: { field: any }) => (
                     <FormItem>
                       <FormLabel>{t("priority")}</FormLabel>
                       <Select 
@@ -262,7 +262,7 @@ export default function NewAssignmentPage() {
                 <FormField
                   control={form.control}
                   name="deadline"
-                  render={({ field }) => (
+                  render={({ field }: { field: any }) => (
                     <FormItem className="flex flex-col">
                       <FormLabel>{t("deadline")}</FormLabel>
                       <Popover>
@@ -315,7 +315,6 @@ export default function NewAssignmentPage() {
                   {createAssignment.isPending ? t("creating") : t("createAssignment")}
                 </Button>
               </div>
-            </form>
           </FormRoot>
         </CardContent>
       </Card>

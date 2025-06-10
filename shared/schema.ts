@@ -1,1089 +1,458 @@
-import { pgTable, text, serial, integer, boolean, timestamp, doublePrecision, pgEnum, varchar, jsonb, unique, index } from "drizzle-orm/pg-core";
-import { createInsertSchema } from "drizzle-zod";
+import { pgTable, text, serial, integer, boolean, timestamp, doublePrecision, pgEnum, varchar, jsonb, unique } from "drizzle-orm/pg-core";
+import { createInsertSchema, createSelectSchema } from "drizzle-zod";
 import { z } from "zod";
 
 // Enums
-export const roleEnum = pgEnum('role', ['User', 'ProjectManager', 'SubPMO', 'MainPMO', 'DepartmentDirector', 'Executive', 'Administrator']);
-export const userStatusEnum = pgEnum('user_status', ['Pending', 'Active', 'Inactive', 'Rejected']);
-export const projectStatusEnum = pgEnum('project_status', ['Pending', 'Planning', 'InProgress', 'OnHold', 'Completed']);
-export const taskStatusEnum = pgEnum('task_status', ['Todo', 'InProgress', 'Review', 'Completed', 'OnHold']);
+export const userRole = pgEnum('user_role', ['User', 'ProjectManager', 'SubPMO', 'MainPMO', 'DepartmentDirector', 'Executive', 'Administrator']);
+export const userStatus = pgEnum('user_status', ['Active', 'Inactive', 'Pending']);
+export const projectStatus = pgEnum('project_status', ['Pending', 'Approved', 'Rejected', 'InProgress', 'Completed', 'OnHold']);
+export const taskStatus = pgEnum('task_status', ['Pending', 'InProgress', 'Completed', 'OnHold']);
 export const priorityEnum = pgEnum('priority', ['Low', 'Medium', 'High', 'Critical']);
 export const changeRequestTypeEnum = pgEnum('change_request_type', ['Schedule', 'Budget', 'Scope', 'Delegation', 'Status', 'Closure', 'AdjustTeam', 'Faculty']);
-export const changeRequestStatusEnum = pgEnum('change_request_status', ['Pending', 'PendingMainPMO', 'Approved', 'Rejected', 'ReturnedToProjectManager', 'ReturnedToSubPMO']);
-export const riskTypeEnum = pgEnum('risk_type', ['Risk', 'Issue']);
-export const riskStatusEnum = pgEnum('risk_status', ['Open', 'InProgress', 'Resolved', 'Closed']);
+export const changeRequestStatus = pgEnum('change_request_status', ['Pending', 'Approved', 'Rejected']);
+export const riskIssueType = pgEnum('risk_issue_type', ['Risk', 'Issue']);
+export const riskIssueSeverity = pgEnum('risk_issue_severity', ['Low', 'Medium', 'High']);
+export const riskIssueStatus = pgEnum('risk_issue_status', ['Open', 'InProgress', 'Closed']);
 export const milestoneStatusEnum = pgEnum('milestone_status', ['NotStarted', 'InProgress', 'Completed', 'Delayed', 'AtRisk']);
+export const actionItemStatus = pgEnum('action_item_status', ['Open', 'Completed']);
 
-// Department
+// TABLES
+
 export const departments = pgTable('departments', {
   id: serial('id').primaryKey(),
-  name: text('name').notNull(),
-  nameAr: text('name_ar'),
-  code: text('code').notNull(),
+  name: varchar('name', { length: 255 }).notNull(),
+  namear: text('namear'),
+  code: varchar('code', { length: 50 }),
   description: text('description'),
-  descriptionAr: text('description_ar'),
-  directorUserId: integer('director_user_id'),
-  headUserId: integer('head_user_id'),
+  descriptionar: text('descriptionar'),
+  directoruserid: integer('directoruserid'),
+  headuserid: integer('headuserid'),
   budget: doublePrecision('budget').default(0),
   location: text('location'),
-  phone: text('phone'),
-  email: text('email'),
-  isActive: boolean('is_active').default(true),
-  createdAt: timestamp('created_at').defaultNow(),
-  updatedAt: timestamp('updated_at').defaultNow(),
+  phone: varchar('phone', { length: 50 }),
+  email: varchar('email', { length: 255 }),
+  isactive: boolean('isactive').default(true),
+  createdat: timestamp('createdat').defaultNow(),
+  updatedat: timestamp('updatedat').defaultNow(),
 });
 
-// Create insertDepartmentSchema
-export const insertDepartmentSchema = createInsertSchema(departments).omit({ id: true });
-
-// User
 export const users = pgTable('users', {
   id: serial('id').primaryKey(),
-  name: text('name').notNull(),
-  email: text('email').notNull().unique(),
-  phone: text('phone'),
-  username: text('username').notNull().unique(),
+  name: varchar('name', { length: 255 }).notNull(),
+  email: varchar('email', { length: 255 }).unique().notNull(),
+  phone: varchar('phone', { length: 50 }),
+  username: varchar('username', { length: 255 }).unique().notNull(),
   password: text('password').notNull(),
-  role: roleEnum('role').default('User'),
-  status: userStatusEnum('status').default('Pending'),
-  departmentId: integer('department_id'),
-  passportImage: text('passport_image'),
-  idCardImage: text('id_card_image'),
-  preferredLanguage: text('preferred_language').default('en'),
-  createdAt: timestamp('created_at').defaultNow(),
-  updatedAt: timestamp('updated_at').defaultNow(),
+  role: userRole('role').default('User'),
+  status: userStatus('status').default('Pending'),
+  departmentid: integer('departmentid'),
+  passportimage: text('passportimage'),
+  idcardimage: text('idcardimage'),
+  language: varchar('language', { length: 10 }).default('en'),
+  lastlogin: timestamp('lastlogin'),
+  createdat: timestamp('createdat').defaultNow(),
+  updatedat: timestamp('updatedat').defaultNow(),
 });
 
-// Project
 export const projects = pgTable('projects', {
   id: serial('id').primaryKey(),
-  title: text('title').notNull(),
-  titleAr: text('title_ar'),
+  name: varchar('name', { length: 255 }).notNull(),
+  titlear: text('titlear'),
   description: text('description'),
-  descriptionAr: text('description_ar'),
-  managerUserId: integer('manager_user_id').notNull(),
-  departmentId: integer('department_id').notNull(),
+  descriptionar: text('descriptionar'),
+  manageruserid: integer('manageruserid').notNull(),
+  departmentid: integer('departmentid').notNull(),
   client: text('client').notNull(),
-  budget: doublePrecision('budget').default(0),
+  budget: integer('budget'),
   priority: priorityEnum('priority').default('Medium'),
-  startDate: timestamp('start_date').defaultNow(),
-  endDate: timestamp('end_date'),
+  startdate: timestamp('startdate'),
+  enddate: timestamp('enddate'),
   deadline: timestamp('deadline'),
-  status: projectStatusEnum('status').default('Pending'),
-  actualCost: doublePrecision('actual_cost').default(0),
-  createdAt: timestamp('created_at').defaultNow(),
-  updatedAt: timestamp('updated_at').defaultNow(),
+  status: projectStatus('status').default('Pending'),
+  actualcost: doublePrecision('actualcost').default(0),
+  createdat: timestamp('createdat').defaultNow(),
+  updatedat: timestamp('updatedat').defaultNow(),
 });
 
-// Project Team Members (Many-to-Many)
 export const projectMembers = pgTable('project_members', {
   id: serial('id').primaryKey(),
-  projectId: integer('project_id').notNull(),
-  userId: integer('user_id').notNull(),
+  projectid: integer('projectid').notNull(),
+  userid: integer('userid').notNull(),
 });
 
-// Project Dependencies (Self-referencing Many-to-Many)
 export const projectDependencies = pgTable('project_dependencies', {
   id: serial('id').primaryKey(),
-  projectId: integer('project_id').notNull(),
-  dependsOnProjectId: integer('depends_on_project_id').notNull(),
+  projectid: integer('projectid').notNull(),
+  dependsonprojectid: integer('dependsonprojectid').notNull(),
 });
 
-// Project Cost History
 export const projectCostHistory = pgTable('project_cost_history', {
   id: serial('id').primaryKey(),
-  projectId: integer('project_id').notNull(),
+  projectid: integer('projectid').notNull(),
   amount: doublePrecision('amount').notNull(),
-  updatedByUserId: integer('updated_by_user_id').notNull(),
+  updatedbyuserid: integer('updatedbyuserid').notNull(),
   notes: text('notes'),
-  createdAt: timestamp('created_at').defaultNow(),
-  updatedAt: timestamp('updated_at').defaultNow(),
+  createdat: timestamp('createdat').defaultNow(),
+  updatedat: timestamp('updatedat').defaultNow(),
 });
 
-// Task
+export const weeklyUpdates = pgTable('weekly_updates', {
+    id: serial('id').primaryKey(),
+    projectid: integer('projectid').notNull(),
+    weeknumber: integer('weeknumber').notNull(),
+    year: integer('year').notNull(),
+    summary: text('summary'),
+    status: text('status'),
+    progresssnapshot: jsonb('progresssnapshot'),
+    userid: integer('userid').notNull(),
+    createdat: timestamp('createdat').defaultNow(),
+    updatedat: timestamp('updatedat').defaultNow(),
+});
+
 export const tasks = pgTable('tasks', {
   id: serial('id').primaryKey(),
-  projectId: integer('project_id').notNull(),
-  title: text('title').notNull(),
-  titleAr: text('title_ar'),
+  projectid: integer('projectid').notNull(),
+  name: varchar('name', { length: 255 }).notNull(),
+  titlear: text('titlear'),
   description: text('description'),
-  descriptionAr: text('description_ar'),
-  assignedUserId: integer('assigned_user_id'),
+  descriptionar: text('descriptionar'),
+  assigneduserid: integer('assigneduserid'),
   deadline: timestamp('deadline'),
   priority: priorityEnum('priority').default('Medium'),
-  status: taskStatusEnum('status').default('Todo'),
-  createdByUserId: integer('created_by_user_id').notNull(),
-  priorityOrder: integer('priority_order'),
-  createdAt: timestamp('created_at').defaultNow(),
-  updatedAt: timestamp('updated_at').defaultNow(),
+  status: taskStatus('status').default('Pending'),
+  createdbyuserid: integer('createdbyuserid').notNull(),
+  priorityorder: integer('priorityorder'),
+  startdate: timestamp('startdate'),
+  enddate: timestamp('enddate'),
+  createdat: timestamp('createdat').defaultNow(),
+  updatedat: timestamp('updatedat').defaultNow(),
 });
 
-// Task Comments
 export const taskComments = pgTable('task_comments', {
   id: serial('id').primaryKey(),
-  taskId: integer('task_id').notNull(),
-  userId: integer('user_id').notNull(),
+  taskid: integer('taskid').notNull(),
+  userid: integer('userid').notNull(),
   content: text('content').notNull(),
-  createdAt: timestamp('created_at').defaultNow(),
-  updatedAt: timestamp('updated_at').defaultNow(),
+  createdat: timestamp('createdat').defaultNow(),
+  updatedat: timestamp('updatedat').defaultNow(),
 });
 
-// Assignment Comments
 export const assignmentComments = pgTable('assignment_comments', {
   id: serial('id').primaryKey(),
-  assignmentId: integer('assignment_id').notNull(),
-  userId: integer('user_id').notNull(),
+  assignmentid: integer('assignmentid').notNull(),
+  userid: integer('userid').notNull(),
   content: text('content').notNull(),
-  createdAt: timestamp('created_at').defaultNow(),
-  updatedAt: timestamp('updated_at').defaultNow(),
+  createdat: timestamp('createdat').defaultNow(),
+  updatedat: timestamp('updatedat').defaultNow(),
 });
 
-// Change Requests
 export const changeRequests = pgTable('change_requests', {
   id: serial('id').primaryKey(),
-  projectId: integer('project_id').notNull(),
-  type: changeRequestTypeEnum('type').notNull(),
-  details: text('details').notNull(),
-  detailsAr: text('details_ar'),
-  requestedByUserId: integer('requested_by_user_id').notNull(),
-  requestedAt: timestamp('requested_at').defaultNow(),
-  status: changeRequestStatusEnum('status').default('Pending'),
-  reviewedByUserId: integer('reviewed_by_user_id'),
-  reviewedAt: timestamp('reviewed_at'),
-  rejectionReason: text('rejection_reason'),
-  returnTo: varchar('return_to', { length: 50 }),
-  comments: text('comments'),
-  createdAt: timestamp('created_at').defaultNow(),
-  updatedAt: timestamp('updated_at').defaultNow(),
+  projectid: integer('projectId').notNull(),
+  type: text('type').notNull(),
+  details: text('details'),
+  status: changeRequestStatus('status').default('Pending'),
+  impact: text('impact'),
+  requestedbyuserid: integer('requestedByUserId').notNull(),
+  reviewedbyuserid: integer('reviewedByUserId'),
+  reviewedat: timestamp('reviewedAt'),
+  createdat: timestamp('createdAt').defaultNow(),
+  updatedat: timestamp('updatedAt').defaultNow(),
 });
 
-// Goals
 export const goals = pgTable('goals', {
   id: serial('id').primaryKey(),
-  title: text('title').notNull(),
-  titleAr: text('title_ar'),
+  name: varchar('name', { length: 255 }).notNull(),
+  titlear: text('titlear'),
   description: text('description'),
-  descriptionAr: text('description_ar'),
+  descriptionar: text('descriptionar'),
   deadline: timestamp('deadline'),
   priority: priorityEnum('priority').default('Medium'),
-  createdByUserId: integer('created_by_user_id').notNull(),
-  isStrategic: boolean('is_strategic').default(false),
-  departmentId: integer('department_id'),
-  isAnnual: boolean('is_annual').default(true),
-  createdAt: timestamp('created_at').defaultNow(),
-  updatedAt: timestamp('updated_at').defaultNow(),
+  createdbyuserid: integer('createdbyuserid').notNull(),
+  isstrategic: boolean('isstrategic').default(false),
+  departmentid: integer('departmentid'),
+  isannual: boolean('isannual').default(true),
+  createdat: timestamp('createdat').defaultNow(),
+  updatedat: timestamp('updatedat').defaultNow(),
 });
 
-// Project Goals (Many-to-Many with weight)
-export const projectGoals = pgTable('project_goals', {
+export const projectGoals = pgTable('projectgoals', {
   id: serial('id').primaryKey(),
-  projectId: integer('project_id').notNull(),
-  goalId: integer('goal_id').notNull(),
+  projectid: integer('projectid').notNull(),
+  goalid: integer('goalid').notNull(),
   weight: doublePrecision('weight').default(1),
-  createdAt: timestamp('created_at').defaultNow(),
-  updatedAt: timestamp('updated_at').defaultNow(),
+  createdat: timestamp('createdat').defaultNow(),
+  updatedat: timestamp('updatedat').defaultNow(),
 });
 
-// Goal-to-Goal relationships (with weight)
-export const goalRelationships = pgTable('goal_relationships', {
+export const goalRelationships = pgTable('goalrelationships', {
   id: serial('id').primaryKey(),
-  parentGoalId: integer('parent_goal_id').notNull(),
-  childGoalId: integer('child_goal_id').notNull(),
+  parentgoalid: integer('parentgoalid').notNull(),
+  childgoalid: integer('childgoalid').notNull(),
   weight: doublePrecision('weight').default(1),
-  createdAt: timestamp('created_at').defaultNow(),
-  updatedAt: timestamp('updated_at').defaultNow(),
+  createdat: timestamp('createdat').defaultNow(),
+  updatedat: timestamp('updatedat').defaultNow(),
 });
 
-// Risks & Issues
 export const risksIssues = pgTable('risks_issues', {
   id: serial('id').primaryKey(),
-  projectId: integer('project_id').notNull(),
-  type: riskTypeEnum('type').notNull(),
+  projectid: integer('projectId').notNull(),
+  type: riskIssueType('type').notNull(),
   title: text('title').notNull(),
-  description: text('description').notNull(),
-  descriptionAr: text('description_ar'),
-  priority: priorityEnum('priority').default('Medium'),
-  status: riskStatusEnum('status').default('Open'),
-  createdByUserId: integer('created_by_user_id').notNull(),
-  createdAt: timestamp('created_at').defaultNow(),
-  updatedAt: timestamp('updated_at').defaultNow(),
+  description: text('description'),
+  severity: text('severity').default('Medium'),
+  status: riskIssueStatus('status').default('Open'),
+  impact: text('impact'),
+  mitigationplan: text('mitigationPlan'),
+  createdbyuserid: integer('createdByUserId').notNull(),
+  resolvedat: timestamp('resolvedAt'),
+  createdat: timestamp('createdAt').defaultNow(),
+  updatedat: timestamp('updatedAt').defaultNow(),
 });
 
-// Notifications
 export const notifications = pgTable('notifications', {
   id: serial('id').primaryKey(),
-  userId: integer('user_id').notNull(),
-  relatedEntity: text('related_entity'),
-  relatedEntityId: integer('related_entity_id'),
+  userid: integer('userid').notNull(),
+  relatedentity: text('relatedentity'),
+  relatedentityid: integer('relatedentityid'),
   message: text('message').notNull(),
-  messageAr: text('message_ar'),
-  isRead: boolean('is_read').default(false),
-  requiresApproval: boolean('requires_approval').default(false),
-  lastReminderSent: timestamp('last_reminder_sent'),
-  createdAt: timestamp('created_at').defaultNow(),
-  updatedAt: timestamp('updated_at').defaultNow(),
+  messagear: text('messagear'),
+  isread: boolean('isread').default(false),
+  requiresapproval: boolean('requiresapproval').default(false),
+  lastremindersent: timestamp('lastremindersent'),
+  createdat: timestamp('createdat').defaultNow(),
+  updatedat: timestamp('updatedat').defaultNow(),
 });
 
-// Assignments
 export const assignments = pgTable('assignments', {
   id: serial('id').primaryKey(),
-  assignedByUserId: integer('assigned_by_user_id').notNull(),
-  assignedToUserId: integer('assigned_to_user_id').notNull(),
-  title: text('title').notNull(),
-  titleAr: text('title_ar'),
+  assignedbyuserid: integer('assignedbyuserid').notNull(),
+  assignedtouserid: integer('assignedtouserid').notNull(),
+  title: varchar('title', { length: 255 }).notNull(),
+  titlear: text('titlear'),
   description: text('description'),
-  descriptionAr: text('description_ar'),
+  descriptionar: text('descriptionar'),
   deadline: timestamp('deadline'),
   priority: priorityEnum('priority').default('Medium'),
-  status: taskStatusEnum('status').default('Todo'),
-  createdAt: timestamp('created_at').defaultNow(),
-  updatedAt: timestamp('updated_at').defaultNow(),
+  status: taskStatus('status').default('Pending'),
+  createdat: timestamp('createdat').defaultNow(),
+  updatedat: timestamp('updatedat').defaultNow(),
 });
 
-// Action Items (Personal To-dos)
-export const actionItems = pgTable('action_items', {
+export const actionItems = pgTable('actionitems', {
   id: serial('id').primaryKey(),
-  userId: integer('user_id').notNull(),
-  title: text('title').notNull(),
-  titleAr: text('title_ar'),
+  userid: integer('userid').notNull(),
+  title: varchar('title', { length: 255 }).notNull(),
+  titlear: text('titlear'),
   description: text('description'),
-  descriptionAr: text('description_ar'),
+  descriptionar: text('descriptionar'),
   deadline: timestamp('deadline'),
-  priority: priorityEnum('priority').default('Medium'),
-  status: taskStatusEnum('status').default('Todo'),
-  createdAt: timestamp('created_at').defaultNow(),
-  updatedAt: timestamp('updated_at').defaultNow(),
+  projectid: integer('projectid'),
+  assignedtouserid: integer('assignedtouserid'),
+  status: actionItemStatus('status').default('Open'),
+  createdat: timestamp('createdat').defaultNow(),
+  updatedat: timestamp('updatedat').defaultNow(),
 });
 
-// Weekly Updates
-export const weeklyUpdates = pgTable('weekly_updates', {
-  id: serial('id').primaryKey(),
-  projectId: integer('project_id').notNull(),
-  weekNumber: integer('week_number').notNull(),
-  year: integer('year').notNull(),
-  achievements: text('achievements'),
-  challenges: text('challenges'),
-  nextSteps: text('next_steps'),
-  risksIssues: text('risks_issues'),
-  progressSnapshot: doublePrecision('progress_snapshot').default(0), // Progress at time of update
-  previousWeekProgress: doublePrecision('previous_week_progress').default(0), // Progress from previous week
-  managerComment: text('manager_comment'), // Project manager comment
-  submittedAt: timestamp('submitted_at'),
-  createdByUserId: integer('created_by_user_id').notNull(),
-  createdAt: timestamp('created_at').defaultNow(),
-  updatedAt: timestamp('updated_at').defaultNow(),
-});
-
-// Milestones
 export const milestones = pgTable('milestones', {
   id: serial('id').primaryKey(),
-  projectId: integer('project_id').notNull(),
-  title: text('title').notNull(),
-  titleAr: text('title_ar'),
+  projectid: integer('projectid').notNull(),
+  name: varchar('name', { length: 255 }).notNull(),
+  titlear: text('titlear'),
   description: text('description'),
-  descriptionAr: text('description_ar'),
+  descriptionar: text('descriptionar'),
   deadline: timestamp('deadline'),
   status: milestoneStatusEnum('status').default('NotStarted'),
-  completionPercentage: doublePrecision('completion_percentage').default(0),
-  createdByUserId: integer('created_by_user_id').notNull(),
-  createdAt: timestamp('created_at').defaultNow(),
-  updatedAt: timestamp('updated_at').defaultNow(),
+  completionpercentage: integer('completionpercentage').default(0),
+  createdat: timestamp('createdat').defaultNow(),
+  updatedat: timestamp('updatedat').defaultNow(),
 });
 
-// Task-Milestone Relationship
-export const taskMilestones = pgTable('task_milestones', {
+export const taskMilestones = pgTable('taskmilestones', {
   id: serial('id').primaryKey(),
-  taskId: integer('task_id').notNull(),
-  milestoneId: integer('milestone_id').notNull(),
-  weight: doublePrecision('weight').default(1), // Weight for milestone completion calculation
-  createdAt: timestamp('created_at').defaultNow(),
-  updatedAt: timestamp('updated_at').defaultNow(),
-});
-
-// Audit Logs
-export const auditLogs = pgTable('audit_logs', {
-  id: serial('id').primaryKey(),
-  userId: integer('user_id').references(() => users.id, { onDelete: 'set null' }),
-  action: text('action').notNull(),
-  entityType: text('entity_type').notNull(),
-  entityId: integer('entity_id'),
-  details: jsonb('details'),
-  ipAddress: text('ip_address'),
-  userAgent: text('user_agent'),
-  departmentId: integer('department_id').references(() => departments.id, { onDelete: 'set null' }),
-  createdAt: timestamp('created_at').defaultNow(),
-});
-
-// Project Favorites
-export const projectFavorites = pgTable('project_favorites', {
-  id: serial('id').primaryKey(),
-  userId: integer('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
-  projectId: integer('project_id').notNull().references(() => projects.id, { onDelete: 'cascade' }),
-  createdAt: timestamp('created_at').defaultNow().notNull(),
-  updatedAt: timestamp('updated_at').defaultNow().notNull(),
-}, (table) => ({
-  // Composite unique constraint to prevent duplicate favorites
-  uniqueFavorite: unique().on(table.userId, table.projectId),
-  userIdIdx: index('favorites_user_id_idx').on(table.userId),
-  projectIdIdx: index('favorites_project_id_idx').on(table.projectId),
+    taskid: integer('taskid').notNull(),
+    milestoneid: integer('milestoneid').notNull(),
+    weight: doublePrecision('weight').default(1),
+    createdat: timestamp('createdat').defaultNow(),
+    updatedat: timestamp('updatedat').defaultNow(),
+}, (t) => ({
+    unq: unique().on(t.taskid, t.milestoneid),
 }));
 
-// ===== Insert Schemas =====
-
-export const insertUserSchema = createInsertSchema(users).omit({ id: true });
-export const insertProjectSchema = createInsertSchema(projects)
-  .omit({ id: true, createdAt: true, updatedAt: true })
-  .refine((data: any) => {
-    // Ensure startDate is provided when creating a project
-    return data.startDate !== null && data.startDate !== undefined;
-  }, {
-    message: "Start date is required for new projects",
-    path: ["startDate"]
-  })
-  .transform((data: any) => {
-    // Convert date strings to Date objects, ensuring startDate is always a Date
-    return {
-      ...data,
-      startDate: data.startDate ? new Date(data.startDate) : new Date(),
-      endDate: data.endDate ? new Date(data.endDate) : data.endDate,
-    };
-  });
-
-// Define updateProjectSchema for partial updates
-export const updateProjectSchema = z.object({
-  id: z.number().optional(),
-  title: z.string().optional(),
-  titleAr: z.string().optional().nullable(),
-  description: z.string().optional().nullable(),
-  descriptionAr: z.string().optional().nullable(),
-  managerUserId: z.number().optional(),
-  departmentId: z.number().optional(),
-  client: z.string().optional(),
-  budget: z.number().optional().nullable(),
-  priority: z.enum(['Low', 'Medium', 'High', 'Critical']).optional(),
-  startDate: z.date().optional().nullable(),
-  endDate: z.date().optional().nullable(),
-  status: z.enum(['Pending', 'Planning', 'InProgress', 'OnHold', 'Completed', 'Cancelled']).optional(),
-  actualCost: z.number().optional().nullable(),
-  createdAt: z.date().optional(),
-  updatedAt: z.date().optional()
-}).transform((data: any) => {
-  // Ensure date fields are properly converted
-  return {
-    ...data,
-    startDate: data.startDate ? new Date(data.startDate) : data.startDate,
-    endDate: data.endDate ? new Date(data.endDate) : data.endDate,
-  };
+export const auditLogs = pgTable('auditlogs', {
+  id: serial('id').primaryKey(),
+  userid: integer('userid'),
+  action: varchar('action', { length: 255 }).notNull(),
+  relatedentitytype: varchar('relatedentitytype', { length: 100 }),
+  relatedentityid: integer('relatedentityid'),
+  details: jsonb('details'),
+  departmentid: integer('departmentid'),
+  createdat: timestamp('createdat').defaultNow(),
+  updatedat: timestamp('updatedat').defaultNow(),
 });
 
-export const insertChangeRequestSchema = createInsertSchema(changeRequests).omit({ id: true, requestedAt: true, reviewedAt: true });
+export const projectFavorites = pgTable('project_favorites', {
+  id: serial('id').primaryKey(),
+    user_id: integer('user_id').notNull(),
+    project_id: integer('project_id').notNull(),
+    created_at: timestamp('created_at').defaultNow(),
+    updated_at: timestamp('updated_at').defaultNow(),
+}, (t) => ({
+    unq: unique().on(t.user_id, t.project_id),
+}));
 
-export const insertGoalSchema = createInsertSchema(goals).omit({ id: true, createdAt: true, updatedAt: true });
-
-export const insertTaskSchema = createInsertSchema(tasks)
-  .omit({ id: true, createdAt: true, updatedAt: true })
-  .transform((data: any) => {
-    // Convert date strings to Date objects
-    return {
-      ...data,
-      deadline: data.deadline ? new Date(data.deadline) : data.deadline,
-    };
-  });
-
-export const insertRiskIssueSchema = createInsertSchema(risksIssues).omit({ id: true, createdAt: true, updatedAt: true });
-
-export const insertNotificationSchema = createInsertSchema(notifications).omit({ id: true, createdAt: true });
-
-export const insertAssignmentSchema = createInsertSchema(assignments)
-  .omit({ id: true, createdAt: true, updatedAt: true })
-  .transform((data: any) => {
-    // Convert date strings to Date objects
-    return {
-      ...data,
-      deadline: data.deadline ? new Date(data.deadline) : data.deadline,
-    };
-  });
-
-export const insertActionItemSchema = createInsertSchema(actionItems).omit({ id: true, createdAt: true, updatedAt: true });
-export const insertWeeklyUpdateSchema = createInsertSchema(weeklyUpdates).omit({ id: true, createdAt: true, progressSnapshot: true, previousWeekProgress: true });
-export const insertProjectCostHistorySchema = createInsertSchema(projectCostHistory).omit({ id: true, updatedAt: true });
-export const insertProjectGoalSchema = createInsertSchema(projectGoals).omit({ id: true });
-export const insertGoalRelationshipSchema = createInsertSchema(goalRelationships).omit({ id: true });
-
-export const insertTaskCommentSchema = createInsertSchema(taskComments)
-  .omit({ id: true, createdAt: true });
-
-export const insertAssignmentCommentSchema = createInsertSchema(assignmentComments)
-  .omit({ id: true, createdAt: true });
-
-export const insertProjectDependencySchema = createInsertSchema(projectDependencies).omit({ id: true });
-
-export const insertMilestoneSchema = createInsertSchema(milestones)
-  .omit({ id: true, createdAt: true, updatedAt: true, completionPercentage: true })
-  .transform((data: any) => {
-    // Convert date strings to Date objects
-    return {
-      ...data,
-      deadline: data.deadline ? new Date(data.deadline) : data.deadline,
-    };
-  });
-
-export const insertTaskMilestoneSchema = createInsertSchema(taskMilestones).omit({ id: true });
-
-export const insertAuditLogSchema = createInsertSchema(auditLogs).omit({ 
-  id: true,
-  createdAt: true 
-}).extend({
-  details: z.record(z.any()).optional(),
-  ipAddress: z.string().optional(),
-  userAgent: z.string().optional(),
-  departmentId: z.number().optional(),
-  userId: z.number().optional(),
+export const projectAttachments = pgTable('project_attachments', {
+  id: serial('id').primaryKey(),
+  projectid: integer('projectid').notNull(),
+  uploadeduserid: integer('uploadeduserid').notNull(),
+  filename: varchar('filename', { length: 255 }).notNull(),
+  originalname: varchar('originalname', { length: 255 }).notNull(),
+  filesize: integer('filesize').notNull(),
+  filetype: varchar('filetype', { length: 100 }).notNull(),
+  filepath: text('filepath').notNull(),
+  filecategory: varchar('filecategory', { length: 50 }).default('general'), // 'plan', 'general', 'document', etc.
+  description: text('description'),
+  isprojectplan: boolean('isprojectplan').default(false),
+  createdat: timestamp('createdat').defaultNow(),
+  updatedat: timestamp('updatedat').defaultNow(),
 });
 
-export const insertProjectFavoriteSchema = createInsertSchema(projectFavorites).omit({ 
-  id: true, 
-  createdAt: true, 
-  updatedAt: true 
-});
 
-// Login schema (subset of user)
+// ZOD INSERT SCHEMAS
+export const insertDepartmentSchema = createInsertSchema(departments) as z.AnyZodObject;
+export const insertUserSchema = createInsertSchema(users) as z.AnyZodObject;
+export const insertProjectSchema = createInsertSchema(projects) as z.AnyZodObject;
+export const insertProjectMemberSchema = createInsertSchema(projectMembers) as z.AnyZodObject;
+export const insertProjectDependencySchema = createInsertSchema(projectDependencies) as z.AnyZodObject;
+export const insertProjectCostHistorySchema = createInsertSchema(projectCostHistory) as z.AnyZodObject;
+export const insertWeeklyUpdateSchema = createInsertSchema(weeklyUpdates, { progresssnapshot: (schema) => schema.optional() }) as z.AnyZodObject;
+export const insertTaskSchema = createInsertSchema(tasks) as z.AnyZodObject;
+export const insertTaskCommentSchema = createInsertSchema(taskComments) as z.AnyZodObject;
+export const insertAssignmentCommentSchema = createInsertSchema(assignmentComments) as z.AnyZodObject;
+export const insertChangeRequestSchema = createInsertSchema(changeRequests) as z.AnyZodObject;
+export const insertGoalSchema = createInsertSchema(goals) as z.AnyZodObject;
+export const insertProjectGoalSchema = createInsertSchema(projectGoals) as z.AnyZodObject;
+export const insertGoalRelationshipSchema = createInsertSchema(goalRelationships) as z.AnyZodObject;
+export const insertRiskIssueSchema = createInsertSchema(risksIssues) as z.AnyZodObject;
+export const insertNotificationSchema = createInsertSchema(notifications) as z.AnyZodObject;
+export const insertAssignmentSchema = createInsertSchema(assignments) as z.AnyZodObject;
+export const insertActionItemSchema = createInsertSchema(actionItems) as z.AnyZodObject;
+export const insertMilestoneSchema = createInsertSchema(milestones) as z.AnyZodObject;
+export const insertTaskMilestoneSchema = createInsertSchema(taskMilestones) as z.AnyZodObject;
+export const insertAuditLogSchema = createInsertSchema(auditLogs) as z.AnyZodObject;
+export const insertProjectFavoriteSchema = createInsertSchema(projectFavorites) as z.AnyZodObject;
+export const insertProjectAttachmentSchema = createInsertSchema(projectAttachments) as z.AnyZodObject;
+
+// ZOD SELECT SCHEMAS
+export const departmentSchema = createSelectSchema(departments) as z.AnyZodObject;
+export const userSchema = createSelectSchema(users) as z.AnyZodObject;
+export const projectSchema = createSelectSchema(projects) as z.AnyZodObject;
+export const projectMemberSchema = createSelectSchema(projectMembers) as z.AnyZodObject;
+export const projectDependencySchema = createSelectSchema(projectDependencies) as z.AnyZodObject;
+export const projectCostHistorySchema = createSelectSchema(projectCostHistory) as z.AnyZodObject;
+export const weeklyUpdateSchema = createSelectSchema(weeklyUpdates) as z.AnyZodObject;
+export const taskSchema = createSelectSchema(tasks) as z.AnyZodObject;
+export const taskCommentSchema = createSelectSchema(taskComments) as z.AnyZodObject;
+export const assignmentCommentSchema = createSelectSchema(assignmentComments) as z.AnyZodObject;
+export const changeRequestSchema = createSelectSchema(changeRequests) as z.AnyZodObject;
+export const goalSchema = createSelectSchema(goals) as z.AnyZodObject;
+export const projectGoalSchema = createSelectSchema(projectGoals) as z.AnyZodObject;
+export const goalRelationshipSchema = createSelectSchema(goalRelationships) as z.AnyZodObject;
+export const riskIssueSchema = createSelectSchema(risksIssues) as z.AnyZodObject;
+export const notificationSchema = createSelectSchema(notifications) as z.AnyZodObject;
+export const assignmentSchema = createSelectSchema(assignments) as z.AnyZodObject;
+export const actionItemSchema = createSelectSchema(actionItems) as z.AnyZodObject;
+export const milestoneSchema = createSelectSchema(milestones) as z.AnyZodObject;
+export const taskMilestoneSchema = createSelectSchema(taskMilestones) as z.AnyZodObject;
+export const auditLogSchema = createSelectSchema(auditLogs) as z.AnyZodObject;
+export const projectFavoriteSchema = createSelectSchema(projectFavorites) as z.AnyZodObject;
+export const projectAttachmentSchema = createSelectSchema(projectAttachments) as z.AnyZodObject;
+
+
+// INSERT TYPES
+export type InsertDepartment = z.infer<typeof insertDepartmentSchema>;
+export type InsertUser = z.infer<typeof insertUserSchema>;
+export type InsertProject = z.infer<typeof insertProjectSchema>;
+export type InsertProjectMember = z.infer<typeof insertProjectMemberSchema>;
+export type InsertProjectDependency = z.infer<typeof insertProjectDependencySchema>;
+export type InsertProjectCostHistory = z.infer<typeof insertProjectCostHistorySchema>;
+export type InsertWeeklyUpdate = z.infer<typeof insertWeeklyUpdateSchema>;
+export type InsertTask = z.infer<typeof insertTaskSchema>;
+export type InsertTaskComment = z.infer<typeof insertTaskCommentSchema>;
+export type InsertAssignmentComment = z.infer<typeof insertAssignmentCommentSchema>;
+export type InsertChangeRequest = z.infer<typeof insertChangeRequestSchema>;
+export type InsertGoal = z.infer<typeof insertGoalSchema>;
+export type InsertProjectGoal = z.infer<typeof insertProjectGoalSchema>;
+export type InsertGoalRelationship = z.infer<typeof insertGoalRelationshipSchema>;
+export type InsertRiskIssue = z.infer<typeof insertRiskIssueSchema>;
+export type InsertNotification = z.infer<typeof insertNotificationSchema>;
+export type InsertAssignment = z.infer<typeof insertAssignmentSchema>;
+export type InsertActionItem = z.infer<typeof insertActionItemSchema>;
+export type InsertMilestone = z.infer<typeof insertMilestoneSchema>;
+export type InsertTaskMilestone = z.infer<typeof insertTaskMilestoneSchema>;
+export type InsertAuditLog = z.infer<typeof insertAuditLogSchema>;
+export type InsertProjectFavorite = z.infer<typeof insertProjectFavoriteSchema>;
+export type InsertProjectAttachment = z.infer<typeof insertProjectAttachmentSchema>;
+
+
+// SELECT TYPES (MODELS)
+export type Department = z.infer<typeof departmentSchema>;
+export type User = z.infer<typeof userSchema>;
+export type Project = z.infer<typeof projectSchema>;
+export type ProjectMember = z.infer<typeof projectMemberSchema>;
+export type ProjectDependency = z.infer<typeof projectDependencySchema>;
+export type ProjectCostHistory = z.infer<typeof projectCostHistorySchema>;
+export type WeeklyUpdate = z.infer<typeof weeklyUpdateSchema>;
+export type Task = z.infer<typeof taskSchema>;
+export type TaskComment = z.infer<typeof taskCommentSchema>;
+export type AssignmentComment = z.infer<typeof assignmentCommentSchema>;
+export type ChangeRequest = z.infer<typeof changeRequestSchema>;
+export type Goal = z.infer<typeof goalSchema>;
+export type ProjectGoal = z.infer<typeof projectGoalSchema>;
+export type GoalRelationship = z.infer<typeof goalRelationshipSchema>;
+export type RiskIssue = z.infer<typeof riskIssueSchema>;
+export type Notification = z.infer<typeof notificationSchema>;
+export type Assignment = z.infer<typeof assignmentSchema>;
+export type ActionItem = z.infer<typeof actionItemSchema>;
+export type Milestone = z.infer<typeof milestoneSchema>;
+export type TaskMilestone = z.infer<typeof taskMilestoneSchema>;
+export type AuditLog = z.infer<typeof auditLogSchema>;
+export type ProjectFavorite = z.infer<typeof projectFavoriteSchema>;
+export type ProjectAttachment = z.infer<typeof projectAttachmentSchema>;
+
+
+// OTHER ZOD SCHEMAS
 export const loginSchema = z.object({
-  username: z.string().min(1, "Username is required"),
-  password: z.string().min(1, "Password is required"),
+  username: z.string(),
+  password: z.string(),
 });
-
-// ===== Types =====
-
-// Insert Types
-export type InsertUser = {
-  name: string;
-  email: string;
-  phone?: string | null;
-  username: string;
-  password: string;
-  role?: "User" | "ProjectManager" | "SubPMO" | "MainPMO" | "DepartmentDirector" | "Executive" | "Administrator" | null;
-  status?: "Pending" | "Active" | "Inactive" | "Rejected" | null;
-  departmentId?: number | null;
-  passportImage?: string | null;
-  idCardImage?: string | null;
-  preferredLanguage?: string | null;
-};
-
-export type InsertDepartment = {
-  name: string;
-  nameAr?: string | null;
-  code: string;
-  description?: string | null;
-  descriptionAr?: string | null;
-  directorUserId?: number | null;
-  headUserId?: number | null;
-  budget?: number | null;
-  location?: string | null;
-  phone?: string | null;
-  email?: string | null;
-  isActive?: boolean;
-};
-
-export type InsertProject = {
-  status?: "Pending" | "Planning" | "InProgress" | "OnHold" | "Completed" | null;
-  title: string;
-  titleAr?: string | null;
-  managerUserId: number;
-  description?: string | null;
-  descriptionAr?: string | null;
-  startDate: Date;
-  endDate?: Date | null;
-  departmentId: number;
-  client: string;
-  priority?: "Low" | "Medium" | "High" | "Critical" | null;
-  budget?: number | null;
-  actualCost?: number | null;
-};
-
-export type InsertTask = {
-  status?: "Todo" | "InProgress" | "Review" | "Completed" | "OnHold" | null;
-  title: string;
-  titleAr?: string | null;
-  description?: string | null;
-  descriptionAr?: string | null;
-  deadline?: Date | null;
-  projectId: number;
-  assignedUserId?: number | null;
-  priority?: "Low" | "Medium" | "High" | "Critical" | null;
-  createdByUserId: number;
-  priorityOrder?: number | null;
-};
-
-export type InsertChangeRequest = {
-  projectId: number;
-  type: 'Schedule' | 'Budget' | 'Scope' | 'Delegation' | 'Status' | 'Closure' | 'AdjustTeam' | 'Faculty';
-  details: string;
-  detailsAr?: string | null;
-  requestedByUserId: number;
-  status?: 'Pending' | 'PendingMainPMO' | 'Approved' | 'Rejected' | 'ReturnedToProjectManager' | 'ReturnedToSubPMO' | null;
-  reviewedByUserId?: number | null;
-  reviewedAt?: Date | null;
-  rejectionReason?: string | null;
-  returnTo?: string | null;
-  comments?: string | null;
-};
-
-export type InsertGoal = {
-  title: string;
-  titleAr?: string | null;
-  description?: string | null;
-  descriptionAr?: string | null;
-  createdByUserId: number;
-  isStrategic?: boolean;
-  isAnnual?: boolean;
-  departmentId?: number | null;
-  startDate?: Date | null;
-  deadline?: Date | null;
-  status?: 'Active' | 'Completed' | 'OnHold' | 'Cancelled' | null;
-  priority?: 'Low' | 'Medium' | 'High' | 'Critical' | null;
-  progress?: number;
-};
-
-export type InsertRiskIssue = {
-  status?: 'InProgress' | 'Resolved' | 'Open' | 'Closed' | null;
-  type: 'Risk' | 'Issue';
-  title: string;
-  description: string;
-  impact?: string | null;
-  mitigation?: string | null;
-  priority?: 'Low' | 'Medium' | 'High' | 'Critical' | null;
-  projectId: number;
-  createdByUserId: number;
-};
-
-export type InsertNotification = {
-  message: string;
-  userId: number;
-  relatedEntity?: string | null;
-  relatedEntityId?: number | null;
-  messageAr?: string | null;
-  isRead?: boolean;
-  requiresApproval?: boolean;
-  lastReminderSent?: Date | null;
-};
-
-export type InsertAssignment = {
-  status?: 'Todo' | 'InProgress' | 'Review' | 'Completed' | 'OnHold' | null;
-  title: string;
-  titleAr?: string | null;
-  description?: string | null;
-  descriptionAr?: string | null;
-  assignedByUserId: number;
-  assignedToUserId: number;
-  deadline?: Date | null;
-  priority?: 'Low' | 'Medium' | 'High' | 'Critical' | null;
-};
-
-export type InsertActionItem = {
-  status?: 'Todo' | 'InProgress' | 'Review' | 'Completed' | 'OnHold' | null;
-  title: string;
-  titleAr?: string | null;
-  description?: string | null;
-  descriptionAr?: string | null;
-  meetingId?: number | null;
-  deadline?: Date | null;
-  priority?: 'Low' | 'Medium' | 'High' | 'Critical' | null;
-  userId: number;
-};
-
-export type InsertWeeklyUpdate = {
-  weekNumber: number;
-  year: number;
-  projectId: number;
-  achievements?: string | null;
-  challenges?: string | null;
-  nextSteps?: string | null;
-  risksIssues?: string | null;
-  progressSnapshot: number;
-  previousWeekProgress: number;
-  managerComment?: string | null;
-  submittedAt?: Date | null;
-  createdByUserId: number;
-};
-
-export type InsertProjectCostHistory = {
-  projectId: number;
-  amount: number;
-  updatedByUserId: number;
-  notes?: string | null;
-};
-
-export type InsertProjectGoal = {
-  projectId: number;
-  goalId: number;
-  weight?: number | null;
-};
-
-export type InsertGoalRelationship = {
-  parentGoalId: number;
-  childGoalId: number;
-  weight?: number | null;
-};
-
-export type InsertTaskComment = {
-  content: string;
-  taskId: number;
-  userId: number;
-};
-
-export type InsertAssignmentComment = {
-  content: string;
-  assignmentId: number;
-  userId: number;
-};
-
-export type InsertProjectDependency = {
-  projectId: number;
-  dependsOnProjectId: number;
-};
-
-export type InsertMilestone = {
-  status?: 'NotStarted' | 'InProgress' | 'Completed' | 'Delayed' | 'AtRisk' | null;
-  title: string;
-  titleAr?: string | null;
-  description?: string | null;
-  descriptionAr?: string | null;
-  projectId: number;
-  deadline?: Date | null;
-  completionPercentage?: number;
-  createdByUserId: number;
-};
-
-export type InsertAuditLog = {
-  action: string;
-  entityType: string;
-  entityId?: number | null;
-  details?: Record<string, any> | null;
-  ipAddress?: string | null;
-  userAgent?: string | null;
-  departmentId?: number | null;
-  userId?: number | null;
-  createdAt: Date;
-};
-
-export type InsertProjectFavorite = {
-  userId: number;
-  projectId: number;
-};
-
-// Login Type
 export type LoginData = z.infer<typeof loginSchema>;
 
-export const updateTaskSchema = z.object({
-  id: z.number().optional(),
-  projectId: z.number().optional(),
-  assignedUserId: z.number().optional().nullable(),
-  title: z.string().optional(),
-  titleAr: z.string().optional().nullable(),
-  description: z.string().optional().nullable(),
-  descriptionAr: z.string().optional().nullable(),
-  deadline: z.date().optional().nullable(),
-  priority: z.enum(['Low', 'Medium', 'High', 'Critical']).optional(),
-  status: z.enum(['Todo', 'InProgress', 'Review', 'Completed', 'OnHold']).optional(),
-  createdByUserId: z.number().optional(),
-  priorityOrder: z.number().optional().nullable(),
-  createdAt: z.date().optional(),
-  updatedAt: z.date().optional()
-}).transform((data: any) => {
-  // Ensure date fields are properly converted
-  return {
-    ...data,
-    deadline: data.deadline ? new Date(data.deadline) : data.deadline,
-  };
+export const registerSchema = insertUserSchema.extend({
+  confirmPassword: z.string(),
+}).refine((data: any) => data.password === data.confirmPassword, {
+  message: "Passwords don't match",
+  path: ["confirmPassword"],
 });
+export type RegisterData = z.infer<typeof registerSchema>;
 
-export const updateChangeRequestSchema = z.object({
-  id: z.number().optional(),
-  projectId: z.number().optional(),
-  type: z.enum(['Schedule', 'Budget', 'Scope', 'Delegation', 'Status', 'Closure', 'AdjustTeam', 'Faculty']).optional(),
-  details: z.string().optional(),
-  detailsAr: z.string().optional().nullable(),
-  requestedByUserId: z.number().optional(),
-  requestedAt: z.date().optional(),
-  status: z.enum(['Pending', 'PendingMainPMO', 'Approved', 'Rejected', 'ReturnedToProjectManager', 'ReturnedToSubPMO']).optional(),
-  reviewedByUserId: z.number().optional().nullable(),
-  reviewedAt: z.date().optional().nullable(),
-  rejectionReason: z.string().optional().nullable(),
-  returnTo: z.string().optional().nullable(),
-  comments: z.string().optional().nullable()
-});
-
-export const updateAssignmentSchema = z.object({
-  id: z.number().optional(),
-  assignedByUserId: z.number().optional(),
-  assignedToUserId: z.number().optional(),
-  title: z.string().optional(),
-  titleAr: z.string().optional().nullable(),
-  description: z.string().optional().nullable(),
-  descriptionAr: z.string().optional().nullable(),
-  deadline: z.date().optional().nullable(),
-  priority: z.enum(['Low', 'Medium', 'High', 'Critical']).optional(),
-  status: z.enum(['Todo', 'InProgress', 'Review', 'Completed', 'OnHold']).optional(),
-  createdAt: z.date().optional(),
-  updatedAt: z.date().optional()
-}).transform((data: any) => {
-  // Ensure date fields are properly converted
-  return {
-    ...data,
-    deadline: data.deadline ? new Date(data.deadline) : data.deadline,
-  };
-});
-
-export const updateActionItemSchema = z.object({
-  id: z.number().optional(),
-  userId: z.number().optional(),
-  title: z.string().optional(),
-  titleAr: z.string().optional().nullable(),
-  description: z.string().optional().nullable(),
-  descriptionAr: z.string().optional().nullable(),
-  deadline: z.date().optional().nullable(),
-  priority: z.enum(['Low', 'Medium', 'High', 'Critical']).optional(),
-  status: z.enum(['Todo', 'InProgress', 'Review', 'Completed', 'OnHold']).optional(),
-  createdAt: z.date().optional(),
-  updatedAt: z.date().optional()
-}).transform((data: any) => {
-  // Ensure date fields are properly converted
-  return {
-    ...data,
-    deadline: data.deadline ? new Date(data.deadline) : data.deadline,
-  };
-});
-
-export const updateWeeklyUpdateSchema = z.object({
-  id: z.number().optional(),
-  projectId: z.number().optional(),
-  weekNumber: z.number().optional(),
-  year: z.number().optional(),
-  achievements: z.string().optional(),
-  challenges: z.string().optional(),
-  nextSteps: z.string().optional(),
-  risksIssues: z.string().optional(),
-  progressSnapshot: z.number().optional(),
-  previousWeekProgress: z.number().optional(),
-  managerComment: z.string().optional(),
-  submittedAt: z.date().optional(),
-  createdByUserId: z.number().optional(),
-  createdAt: z.date().optional(),
-  updatedAt: z.date().optional()
-}).transform((data: any) => {
-  // Ensure date fields are properly converted
-  return {
-    ...data,
-    submittedAt: data.submittedAt ? new Date(data.submittedAt) : data.submittedAt,
-    createdAt: data.createdAt ? new Date(data.createdAt) : data.createdAt,
-    updatedAt: data.updatedAt ? new Date(data.updatedAt) : data.updatedAt,
-  };
-});
-
-export const updateMilestoneSchema = z.object({
-  id: z.number().optional(),
-  projectId: z.number().optional(),
-  title: z.string().optional(),
-  titleAr: z.string().optional().nullable(),
-  description: z.string().optional().nullable(),
-  descriptionAr: z.string().optional().nullable(),
-  deadline: z.date().optional().nullable(),
-  status: z.enum(['NotStarted', 'InProgress', 'Completed', 'Delayed', 'AtRisk']).optional(),
-  completionPercentage: z.number().optional(),
-  createdByUserId: z.number().optional(),
-  createdAt: z.date().optional(),
-  updatedAt: z.date().optional()
-}).transform((data: any) => {
-  // Ensure date fields are properly converted
-  return {
-    ...data,
-    deadline: data.deadline ? new Date(data.deadline) : data.deadline,
-  };
-});
-
-// Add types for update schemas
+export const updateTaskSchema = insertTaskSchema.partial();
 export type UpdateTask = z.infer<typeof updateTaskSchema>;
+
+export const updateChangeRequestSchema = insertChangeRequestSchema.partial();
 export type UpdateChangeRequest = z.infer<typeof updateChangeRequestSchema>;
+
+export const updateAssignmentSchema = insertAssignmentSchema.partial();
 export type UpdateAssignment = z.infer<typeof updateAssignmentSchema>;
+
+export const updateActionItemSchema = insertActionItemSchema.partial();
 export type UpdateActionItem = z.infer<typeof updateActionItemSchema>;
+
+export const updateProjectSchema = insertProjectSchema.partial();
 export type UpdateProject = z.infer<typeof updateProjectSchema>;
+
+export const updateWeeklyUpdateSchema = insertWeeklyUpdateSchema.partial();
 export type UpdateWeeklyUpdate = z.infer<typeof updateWeeklyUpdateSchema>;
+
+export const updateMilestoneSchema = insertMilestoneSchema.partial();
 export type UpdateMilestone = z.infer<typeof updateMilestoneSchema>;
-
-// Select Types
-export type User = {
-  id: number;
-  name: string;
-  email: string;
-  phone?: string | null;
-  username: string;
-  password: string;
-  role?: string | null;
-  status?: string | null;
-  departmentId?: number | null;
-  passportImage?: string | null;
-  idCardImage?: string | null;
-  preferredLanguage?: string | null;
-  createdAt: Date;
-  updatedAt: Date;
-};
-
-export type Department = {
-  id: number;
-  name: string;
-  nameAr?: string | null;
-  code: string;
-  description?: string | null;
-  descriptionAr?: string | null;
-  directorUserId?: number | null;
-  headUserId?: number | null;
-  budget?: number | null;
-  location?: string | null;
-  phone?: string | null;
-  email?: string | null;
-  isActive: boolean;
-  createdAt: Date;
-  updatedAt: Date;
-};
-
-export type Project = {
-  id: number;
-  status?: string | null;
-  title: string;
-  titleAr?: string | null;
-  managerUserId: number;
-  description?: string | null;
-  descriptionAr?: string | null;
-  startDate: Date;
-  endDate?: Date | null;
-  deadline?: Date | null;
-  departmentId: number;
-  client: string;
-  priority?: string | null;
-  budget?: number | null;
-  actualCost?: number | null;
-  createdAt: Date;
-  updatedAt: Date;
-};
-
-export type Task = {
-  id: number;
-  status?: string | null;
-  title: string;
-  titleAr?: string | null;
-  description?: string | null;
-  descriptionAr?: string | null;
-  deadline?: Date | null;
-  projectId: number;
-  assignedUserId?: number | null;
-  priority?: string | null;
-  createdByUserId: number;
-  priorityOrder?: number | null;
-  createdAt: Date;
-  updatedAt: Date;
-};
-
-export type ChangeRequest = {
-  id: number;
-  projectId: number;
-  type: string;
-  details: string;
-  detailsAr?: string | null;
-  requestedByUserId: number;
-  requestedAt: Date;
-  status?: string | null;
-  reviewedByUserId?: number | null;
-  reviewedAt?: Date | null;
-  rejectionReason?: string | null;
-  returnTo?: string | null;
-  comments?: string | null;
-  createdAt: Date;
-  updatedAt: Date;
-};
-
-export type Goal = {
-  id: number;
-  title: string;
-  titleAr?: string | null;
-  description?: string | null;
-  descriptionAr?: string | null;
-  createdByUserId: number;
-  isStrategic: boolean;
-  isAnnual: boolean;
-  departmentId?: number | null;
-  startDate?: Date | null;
-  deadline?: Date | null;
-  status?: string | null;
-  priority?: string | null;
-  progress: number;
-  createdAt: Date;
-  updatedAt: Date;
-};
-
-export type RiskIssue = {
-  id: number;
-  status?: string | null;
-  type: string;
-  title: string;
-  description: string;
-  impact?: string | null;
-  mitigation?: string | null;
-  priority?: string | null;
-  projectId: number;
-  createdByUserId: number;
-  createdAt: Date;
-  updatedAt: Date;
-};
-
-export type Notification = {
-  id: number;
-  message: string;
-  userId: number;
-  relatedEntity?: string | null;
-  relatedEntityId?: number | null;
-  messageAr?: string | null;
-  isRead: boolean;
-  requiresApproval: boolean;
-  lastReminderSent?: Date | null;
-  createdAt: Date;
-  updatedAt: Date;
-};
-
-export type Assignment = {
-  id: number;
-  status?: string | null;
-  title: string;
-  titleAr?: string | null;
-  description?: string | null;
-  descriptionAr?: string | null;
-  assignedByUserId: number;
-  assignedToUserId: number;
-  deadline?: Date | null;
-  priority?: string | null;
-  createdAt: Date;
-  updatedAt: Date;
-};
-
-export type ActionItem = {
-  id: number;
-  status?: string | null;
-  title: string;
-  titleAr?: string | null;
-  description?: string | null;
-  descriptionAr?: string | null;
-  meetingId?: number | null;
-  deadline?: Date | null;
-  priority?: string | null;
-  userId: number;
-  createdAt: Date;
-  updatedAt: Date;
-};
-
-export type WeeklyUpdate = {
-  id: number;
-  weekNumber: number;
-  year: number;
-  projectId: number;
-  achievements?: string | null;
-  challenges?: string | null;
-  nextSteps?: string | null;
-  risksIssues?: string | null;
-  progressSnapshot: number;
-  previousWeekProgress: number;
-  managerComment?: string | null;
-  submittedAt?: Date | null;
-  createdByUserId: number;
-  createdAt: Date;
-  updatedAt: Date;
-};
-
-export type ProjectCostHistory = {
-  id: number;
-  projectId: number;
-  amount: number;
-  updatedByUserId: number;
-  notes?: string | null;
-  createdAt: Date;
-};
-
-export type ProjectGoal = {
-  id: number;
-  projectId: number;
-  goalId: number;
-  weight?: number | null;
-  createdAt: Date;
-  updatedAt: Date;
-};
-
-export type GoalRelationship = {
-  id: number;
-  parentGoalId: number;
-  childGoalId: number;
-  weight?: number | null;
-  createdAt: Date;
-  updatedAt: Date;
-};
-
-export type TaskComment = {
-  id: number;
-  content: string;
-  taskId: number;
-  userId: number;
-  createdAt: Date;
-  updatedAt: Date;
-};
-
-export type AssignmentComment = {
-  id: number;
-  content: string;
-  assignmentId: number;
-  userId: number;
-  createdAt: Date;
-  updatedAt: Date;
-};
-
-export type Milestone = {
-  id: number;
-  status?: string | null;
-  title: string;
-  titleAr?: string | null;
-  description?: string | null;
-  descriptionAr?: string | null;
-  projectId: number;
-  deadline?: Date | null;
-  completionPercentage: number;
-  createdByUserId: number;
-  createdAt: Date;
-  updatedAt: Date;
-};
-
-export type TaskMilestone = {
-  id: number;
-  taskId: number;
-  milestoneId: number;
-  weight?: number | null;
-  createdAt: Date;
-  updatedAt: Date;
-};
-
-export type AuditLog = {
-  id: number;
-  action: string;
-  entityType: string;
-  entityId?: number | null;
-  details?: Record<string, any> | null;
-  ipAddress?: string | null;
-  userAgent?: string | null;
-  departmentId?: number | null;
-  userId?: number | null;
-  createdAt: Date;
-};
-
-export type ProjectFavorite = {
-  id: number;
-  userId: number;
-  projectId: number;
-  createdAt: Date;
-  updatedAt: Date;
-};

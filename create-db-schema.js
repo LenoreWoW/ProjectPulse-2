@@ -35,6 +35,10 @@ async function createSchema() {
     `);
     console.log("Session table created or already exists");
 
+    // Drop the departments table if it exists, to ensure a clean slate
+    await pool.query('DROP TABLE IF EXISTS "departments" CASCADE');
+    console.log("Dropped existing departments table");
+
     // Create departments table with correct column names
     await pool.query(`
       CREATE TABLE IF NOT EXISTS "departments" (

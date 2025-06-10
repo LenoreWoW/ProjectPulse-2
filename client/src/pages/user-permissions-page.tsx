@@ -19,7 +19,6 @@ import {
 import {
   Table,
   TableBody,
-  TableCaption,
   TableCell,
   TableHead,
   TableHeader,
@@ -290,7 +289,7 @@ export default function UserPermissionsPage() {
                 <Input
                   placeholder={t("searchUsers")}
                   value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchTerm(e.target.value)}
                   className="pl-10"
                 />
                 <div className="absolute left-3 top-3 text-gray-400 dark:text-gray-500">
@@ -325,7 +324,7 @@ export default function UserPermissionsPage() {
                       <TableCell className="font-medium">{user.name}</TableCell>
                       <TableCell>{user.email}</TableCell>
                       <TableCell>
-                        <span className="bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded-full text-xs">
+                        <span className="bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-white px-2 py-1 rounded-full text-xs">
                           {user.role ? t(user.role) : t("User")}
                         </span>
                       </TableCell>
@@ -349,11 +348,11 @@ export default function UserPermissionsPage() {
                   
                   {filteredUsers.length === 0 && (
                     <TableRow>
-                      <TableCell colSpan={4} className="text-center py-10">
+                      <td colSpan={4} className="text-center py-10">
                         {searchTerm 
                           ? t("noUsersMatchSearch") 
                           : t("noUsersFound")}
-                      </TableCell>
+                      </td>
                     </TableRow>
                   )}
                 </TableBody>

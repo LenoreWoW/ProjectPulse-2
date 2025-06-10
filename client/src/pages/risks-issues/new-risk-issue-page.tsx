@@ -69,6 +69,7 @@ export default function NewRiskIssuePage() {
     resolver: zodResolver(formSchema),
     defaultValues: {
       type: "Risk",
+      projectId: "",
       priority: "Medium",
       status: "Open",
       title: "",
@@ -139,188 +140,186 @@ export default function NewRiskIssuePage() {
           <CardDescription>{form.watch("type") === "Risk" ? t("createRiskDescription") : t("createIssueDescription")}</CardDescription>
         </CardHeader>
         <CardContent>
-          <FormRoot form={form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-              {/* Type Selection */}
-              <FormField
-                control={form.control}
-                name="type"
-                render={({ field }) => (
-                  <FormItem className="space-y-3">
-                    <FormLabel>{t("type")}</FormLabel>
-                    <FormControl>
-                      <RadioGroup
-                        onValueChange={field.onChange}
-                        defaultValue={field.value}
-                        className="flex space-x-4"
-                      >
-                        <div className="flex items-center space-x-2">
-                          <RadioGroupItem value="Risk" id="risk" />
-                          <label htmlFor="risk" className="flex items-center cursor-pointer">
-                            <AlertTriangle className="h-4 w-4 mr-1 text-yellow-600" />
-                            <span>{t("risk")}</span>
-                          </label>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                          <RadioGroupItem value="Issue" id="issue" />
-                          <label htmlFor="issue" className="flex items-center cursor-pointer">
-                            <AlertCircle className="h-4 w-4 mr-1 text-red-600" />
-                            <span>{t("issue")}</span>
-                          </label>
-                        </div>
-                      </RadioGroup>
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              {/* Project Select */}
-              <FormField
-                control={form.control}
-                name="projectId"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>{t("project")}</FormLabel>
-                    <FormControl>
-                      <Select
-                        value={field.value}
-                        onValueChange={field.onChange}
-                        disabled={isLoadingProjects}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder={t("selectProject")} />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {projects.map((project) => (
-                            <SelectItem
-                              key={project.id}
-                              value={project.id.toString()}
-                            >
-                              {project.title}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              {/* Priority Select */}
-              <FormField
-                control={form.control}
-                name="priority"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>{t("priority")}</FormLabel>
-                    <FormControl>
-                      <Select
-                        value={field.value}
-                        onValueChange={field.onChange}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder={t("selectPriority")} />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="Low">{t("low")}</SelectItem>
-                          <SelectItem value="Medium">{t("medium")}</SelectItem>
-                          <SelectItem value="High">{t("high")}</SelectItem>
-                          <SelectItem value="Critical">{t("critical")}</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              {form.watch("type") === "Issue" && (
-                <FormField
-                  control={form.control}
-                  name="status"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>{t("status")}</FormLabel>
-                      <FormControl>
-                        <Select
-                          value={field.value}
-                          onValueChange={field.onChange}
-                        >
-                          <SelectTrigger>
-                            <SelectValue placeholder={t("selectStatus")} />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="Open">{t("open")}</SelectItem>
-                            <SelectItem value="InProgress">{t("inProgress")}</SelectItem>
-                            <SelectItem value="Resolved">{t("resolved")}</SelectItem>
-                            <SelectItem value="Closed">{t("closed")}</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+          <FormRoot form={form} onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+            {/* Type Selection */}
+            <FormField
+              control={form.control}
+              name="type"
+              render={({ field }: { field: any }) => (
+                <FormItem className="space-y-3">
+                  <FormLabel>{t("type")}</FormLabel>
+                  <FormControl>
+                    <RadioGroup
+                      onValueChange={field.onChange}
+                      defaultValue={field.value}
+                      className="flex space-x-4"
+                    >
+                      <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="Risk" id="risk" />
+                        <label htmlFor="risk" className="flex items-center cursor-pointer">
+                          <AlertTriangle className="h-4 w-4 mr-1 text-yellow-600" />
+                          <span>{t("risk")}</span>
+                        </label>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="Issue" id="issue" />
+                        <label htmlFor="issue" className="flex items-center cursor-pointer">
+                          <AlertCircle className="h-4 w-4 mr-1 text-red-600" />
+                          <span>{t("issue")}</span>
+                        </label>
+                      </div>
+                    </RadioGroup>
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
               )}
+            />
 
-              {/* Description */}
+            {/* Project Select */}
+            <FormField
+              control={form.control}
+              name="projectId"
+              render={({ field }: { field: any }) => (
+                <FormItem>
+                  <FormLabel>{t("project")}</FormLabel>
+                  <FormControl>
+                    <Select
+                      value={field.value}
+                      onValueChange={field.onChange}
+                      disabled={isLoadingProjects}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder={t("selectProject")} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {projects.map((project) => (
+                          <SelectItem
+                            key={project.id}
+                            value={project.id.toString()}
+                          >
+                            {project.title}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            {/* Priority Select */}
+            <FormField
+              control={form.control}
+              name="priority"
+              render={({ field }: { field: any }) => (
+                <FormItem>
+                  <FormLabel>{t("priority")}</FormLabel>
+                  <FormControl>
+                    <Select
+                      value={field.value}
+                      onValueChange={field.onChange}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder={t("selectPriority")} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Low">{t("low")}</SelectItem>
+                        <SelectItem value="Medium">{t("medium")}</SelectItem>
+                        <SelectItem value="High">{t("high")}</SelectItem>
+                        <SelectItem value="Critical">{t("critical")}</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            {form.watch("type") === "Issue" && (
               <FormField
                 control={form.control}
-                name="description"
-                render={({ field }) => (
+                name="status"
+                render={({ field }: { field: any }) => (
                   <FormItem>
-                    <FormLabel>{t("description")}</FormLabel>
+                    <FormLabel>{t("status")}</FormLabel>
                     <FormControl>
-                      <Textarea 
-                        placeholder={t("enterDescription")}
-                        className="min-h-[100px]"
-                        {...field} 
-                      />
+                      <Select
+                        value={field.value}
+                        onValueChange={field.onChange}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder={t("selectStatus")} />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Open">{t("open")}</SelectItem>
+                          <SelectItem value="InProgress">{t("inProgress")}</SelectItem>
+                          <SelectItem value="Resolved">{t("resolved")}</SelectItem>
+                          <SelectItem value="Closed">{t("closed")}</SelectItem>
+                        </SelectContent>
+                      </Select>
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
+            )}
 
-              {/* Arabic Description (optional) */}
-              <FormField
-                control={form.control}
-                name="descriptionAr"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>{t("descriptionAr")}</FormLabel>
-                    <FormControl>
-                      <Textarea 
-                        placeholder={t("enterDescriptionAr")}
-                        className="min-h-[100px] dir-rtl"
-                        {...field} 
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+            {/* Description */}
+            <FormField
+              control={form.control}
+              name="description"
+              render={({ field }: { field: any }) => (
+                <FormItem>
+                  <FormLabel>{t("description")}</FormLabel>
+                  <FormControl>
+                    <Textarea 
+                      placeholder={t("enterDescription")}
+                      className="min-h-[100px]"
+                      {...field} 
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
-              <div className="flex justify-end space-x-4">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => navigate("/risks-issues")}
-                >
-                  {t("cancel")}
-                </Button>
-                <Button
-                  type="submit"
-                  className="bg-qatar-maroon hover:bg-maroon-800 text-white"
-                  disabled={isLoading}
-                >
-                  {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  {t("create")}
-                </Button>
-              </div>
-            </form>
+            {/* Arabic Description (optional) */}
+            <FormField
+              control={form.control}
+              name="descriptionAr"
+              render={({ field }: { field: any }) => (
+                <FormItem>
+                  <FormLabel>{t("descriptionAr")}</FormLabel>
+                  <FormControl>
+                    <Textarea 
+                      placeholder={t("enterDescriptionAr")}
+                      className="min-h-[100px] dir-rtl"
+                      {...field} 
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <div className="flex justify-end space-x-4">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => navigate("/risks-issues")}
+              >
+                {t("cancel")}
+              </Button>
+              <Button
+                type="submit"
+                className="bg-qatar-maroon hover:bg-maroon-800 text-white"
+                disabled={isLoading}
+              >
+                {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                {t("create")}
+              </Button>
+            </div>
           </FormRoot>
         </CardContent>
       </Card>

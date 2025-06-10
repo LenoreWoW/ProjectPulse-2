@@ -341,7 +341,7 @@ const CustomAnalyticsPage = () => {
                     <Label htmlFor="status">{t("status")}</Label>
                     <Select
                       value={filters.status}
-                      onValueChange={(value) => handleFilterChange('status', value)}
+                      onValueChange={(value: string) => handleFilterChange('status', value)}
                     >
                       <SelectTrigger id="status">
                         <SelectValue placeholder={t("allStatuses")} />
@@ -359,7 +359,7 @@ const CustomAnalyticsPage = () => {
                     <Label htmlFor="priority">{t("priority")}</Label>
                     <Select
                       value={filters.priority}
-                      onValueChange={(value) => handleFilterChange('priority', value)}
+                      onValueChange={(value: string) => handleFilterChange('priority', value)}
                     >
                       <SelectTrigger id="priority">
                         <SelectValue placeholder={t("allPriorities")} />
@@ -379,7 +379,7 @@ const CustomAnalyticsPage = () => {
                         <Label htmlFor="department">{t("department")}</Label>
                         <Select
                           value={filters.department}
-                          onValueChange={(value) => handleFilterChange('department', value)}
+                          onValueChange={(value: string) => handleFilterChange('department', value)}
                         >
                           <SelectTrigger id="department">
                             <SelectValue placeholder={t("allDepartments")} />
@@ -397,7 +397,7 @@ const CustomAnalyticsPage = () => {
                         <Label htmlFor="client">{t("client")}</Label>
                         <Select
                           value={filters.client}
-                          onValueChange={(value) => handleFilterChange('client', value)}
+                          onValueChange={(value: string) => handleFilterChange('client', value)}
                         >
                           <SelectTrigger id="client">
                             <SelectValue placeholder={t("allClients")} />
@@ -435,7 +435,7 @@ const CustomAnalyticsPage = () => {
                   <Input
                     id="reportName"
                     value={reportName}
-                    onChange={(e) => setReportName(e.target.value)}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setReportName(e.target.value)}
                     placeholder={t("enterReportName")}
                   />
                 </div>

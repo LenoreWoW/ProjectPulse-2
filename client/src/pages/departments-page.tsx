@@ -295,7 +295,12 @@ export default function DepartmentsPage() {
           {canManageDepartments && (
             <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
               <DialogTrigger asChild>
-                <Button className="bg-qatar-maroon hover:bg-maroon-800">
+                <Button 
+                  className="text-white font-medium"
+                  style={{ backgroundColor: '#8a1538' }}
+                  onMouseEnter={(e: React.MouseEvent<HTMLButtonElement>) => e.currentTarget.style.backgroundColor = '#7c1b38'}
+                  onMouseLeave={(e: React.MouseEvent<HTMLButtonElement>) => e.currentTarget.style.backgroundColor = '#8a1538'}
+                >
                   <Plus className="mr-2 h-4 w-4" />
                   {t("addDepartment")}
                 </Button>
@@ -307,8 +312,7 @@ export default function DepartmentsPage() {
                     {t("addDepartmentDescription")}
                   </DialogDescription>
                 </DialogHeader>
-                <FormRoot form={form}>
-                  <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                <FormRoot form={form} onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
                     <FormField
                       control={form.control}
                       name="name"
@@ -463,11 +467,16 @@ export default function DepartmentsPage() {
                       >
                         {t("cancel")}
                       </Button>
-                      <Button type="submit" className="bg-qatar-maroon hover:bg-maroon-800">
+                      <Button 
+                        type="submit" 
+                        className="text-white font-medium"
+                        style={{ backgroundColor: '#8a1538' }}
+                        onMouseEnter={(e: React.MouseEvent<HTMLButtonElement>) => e.currentTarget.style.backgroundColor = '#7c1b38'}
+                        onMouseLeave={(e: React.MouseEvent<HTMLButtonElement>) => e.currentTarget.style.backgroundColor = '#8a1538'}
+                      >
                         {t("addDepartment")}
                       </Button>
                     </DialogFooter>
-                  </form>
                 </FormRoot>
               </DialogContent>
             </Dialog>
@@ -482,8 +491,7 @@ export default function DepartmentsPage() {
                   {t("editDepartmentDescription")}
                 </DialogDescription>
               </DialogHeader>
-              <FormRoot form={form}>
-                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+              <FormRoot form={form} onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
                   <FormField
                     control={form.control}
                     name="name"
@@ -639,11 +647,16 @@ export default function DepartmentsPage() {
                     >
                       {t("cancel")}
                     </Button>
-                    <Button type="submit" className="bg-qatar-maroon hover:bg-maroon-800">
+                    <Button 
+                      type="submit" 
+                      className="text-white font-medium"
+                      style={{ backgroundColor: '#8a1538' }}
+                      onMouseEnter={(e: React.MouseEvent<HTMLButtonElement>) => e.currentTarget.style.backgroundColor = '#7c1b38'}
+                      onMouseLeave={(e: React.MouseEvent<HTMLButtonElement>) => e.currentTarget.style.backgroundColor = '#8a1538'}
+                    >
                       {t("updateDepartment")}
                     </Button>
                   </DialogFooter>
-                </form>
               </FormRoot>
             </DialogContent>
           </Dialog>
@@ -758,10 +771,16 @@ export default function DepartmentsPage() {
                 {t("close")}
               </Button>
               {canManageDepartments && (
-                <Button onClick={() => {
-                  setViewingDepartment(null);
-                  handleEdit(viewingDepartment);
-                }} className="bg-qatar-maroon hover:bg-maroon-800">
+                <Button 
+                  onClick={() => {
+                    setViewingDepartment(null);
+                    handleEdit(viewingDepartment);
+                  }} 
+                  className="text-white font-medium"
+                  style={{ backgroundColor: '#8a1538' }}
+                  onMouseEnter={(e: React.MouseEvent<HTMLButtonElement>) => e.currentTarget.style.backgroundColor = '#7c1b38'}
+                  onMouseLeave={(e: React.MouseEvent<HTMLButtonElement>) => e.currentTarget.style.backgroundColor = '#8a1538'}
+                >
                   <Pencil className="mr-2 h-4 w-4" />
                   {t("edit")}
                 </Button>
@@ -806,7 +825,10 @@ export default function DepartmentsPage() {
                 <p className="text-gray-500 dark:text-gray-400 mt-1 mb-4">{t("tryAdjustingFilters")}</p>
                 {canManageDepartments && (
                   <Button
-                    className="bg-qatar-maroon hover:bg-maroon-800"
+                    className="text-white font-medium"
+                    style={{ backgroundColor: '#8a1538' }}
+                    onMouseEnter={(e: React.MouseEvent<HTMLButtonElement>) => e.currentTarget.style.backgroundColor = '#7c1b38'}
+                    onMouseLeave={(e: React.MouseEvent<HTMLButtonElement>) => e.currentTarget.style.backgroundColor = '#8a1538'}
                     onClick={() => setIsAddDialogOpen(true)}
                   >
                     <Plus className="mr-2 h-4 w-4" />

@@ -99,21 +99,21 @@ export default function ProjectsPage() {
 
   // Get color for status badge
   const getStatusClasses = (status: string | null) => {
-    if (!status) return 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-300';
+    if (!status) return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-100';
     
     switch (status) {
       case 'InProgress':
-        return 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300';
+        return 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-200';
       case 'OnHold':
-        return 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300';
+        return 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-200';
       case 'Completed':
-        return 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300';
+        return 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-200';
       case 'Planning':
-        return 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300';
+        return 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-200';
       case 'Pending':
-        return 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300';
+        return 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-200';
       default:
-        return 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-300';
+        return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-100';
     }
   };
 
@@ -161,10 +161,29 @@ export default function ProjectsPage() {
     return new Intl.NumberFormat('en-QA', { maximumFractionDigits: 0 }).format(budget);
   };
 
-  // Calculate project progress
-  const calculateProgress = (project: Project) => {
-    // This is a simplified calculation - in reality you might want to fetch tasks
-    return Math.floor(Math.random() * 100); // Placeholder
+  // Calculate project progress based on milestone completion
+  const calculateProgress = (project: any) => {
+    // Use milestone-based completion percentage if available
+    if (project.completionPercentage !== null && project.completionPercentage !== undefined) {
+      return project.completionPercentage;
+    }
+    
+    // Fallback based on project status for projects without milestones/tasks
+    switch (project.status) {
+      case 'Completed':
+        return 100;
+      case 'InProgress':
+        return 50;
+      case 'Planning':
+      case 'Proposed':
+        return 10;
+      case 'OnHold':
+        return 25;
+      case 'Cancelled':
+        return 0;
+      default:
+        return 0;
+    }
   };
 
   // ProjectCard component with color system
@@ -286,7 +305,12 @@ export default function ProjectsPage() {
         <h1 className="text-2xl font-bold text-contrast dark:text-white">{t("projects")}</h1>
         <PermissionGate permission="canCreateProject">
           <Link href="/projects/new">
-            <Button className="bg-qatar-maroon hover:bg-maroon-800 text-white">
+            <Button 
+              className="text-white font-medium"
+              style={{ backgroundColor: '#8a1538' }}
+              onMouseEnter={(e: React.MouseEvent<HTMLButtonElement>) => e.currentTarget.style.backgroundColor = '#7c1b38'}
+              onMouseLeave={(e: React.MouseEvent<HTMLButtonElement>) => e.currentTarget.style.backgroundColor = '#8a1538'}
+            >
               <Plus className="mr-2 h-4 w-4" />
               <span>{t("newProject")}</span>
             </Button>
@@ -353,39 +377,25 @@ export default function ProjectsPage() {
           </div>
           
           <div className="flex gap-2">
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button 
-                    variant={viewMode === "list" ? "default" : "outline"} 
-                    size="icon"
-                    onClick={() => setViewMode("list")}
-                    className={viewMode === "list" ? "bg-maroon-700 hover:bg-maroon-800" : ""}
-                  >
-                    <LayoutList className="h-4 w-4" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>{t("listView")}</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
+            <Button 
+              variant={viewMode === "list" ? "default" : "outline"} 
+              size="icon"
+              onClick={() => setViewMode("list")}
+              className={viewMode === "list" ? "bg-maroon-700 hover:bg-maroon-800" : ""}
+              title={t("listView")}
+            >
+              <LayoutList className="h-4 w-4" />
+            </Button>
             
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button 
-                  variant={viewMode === "kanban" ? "default" : "outline"} 
-                  size="icon"
-                  onClick={() => setViewMode("kanban")}
-                  className={viewMode === "kanban" ? "bg-maroon-700 hover:bg-maroon-800" : ""}
-                >
-                  <Calendar className="h-4 w-4" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>{t("kanbanView")}</p>
-              </TooltipContent>
-            </Tooltip>
+            <Button 
+              variant={viewMode === "kanban" ? "default" : "outline"} 
+              size="icon"
+              onClick={() => setViewMode("kanban")}
+              className={viewMode === "kanban" ? "bg-maroon-700 hover:bg-maroon-800" : ""}
+              title={t("kanbanView")}
+            >
+              <Calendar className="h-4 w-4" />
+            </Button>
           </div>
         </div>
       </div>

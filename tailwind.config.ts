@@ -17,6 +17,19 @@ export default {
           maroon: "#8a1538",
           white: "#ffffff"
         },
+        maroon: {
+          50: "#fdf2f5",
+          100: "#fce7eb",
+          200: "#f9d2da",
+          300: "#f4acbc",
+          400: "#ec7c96",
+          500: "#de5374",
+          600: "#c93356",
+          700: "#ab2447",
+          800: "#8a1538", // This is the main qatar maroon
+          900: "#7c1b38",
+          950: "#450b1c"
+        },
         card: {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",

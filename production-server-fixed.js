@@ -260,9 +260,35 @@ function isAuthenticated(req, res, next) {
 }
 
 // API routes
-app.get('/api/users', getUsers);
-app.get('/api/projects', getProjects);
-app.get('/api/departments', getDepartments);
+app.get('/api/users', isAuthenticated, async (req, res) => {
+    try {
+        const users = await getUsers();
+        res.json(users);
+    } catch (error) {
+        console.error('Error fetching users:', error);
+        res.status(500).json({ message: 'Error fetching users' });
+    }
+});
+
+app.get('/api/projects', isAuthenticated, async (req, res) => {
+    try {
+        const projects = await getProjects();
+        res.json(projects);
+    } catch (error) {
+        console.error('Error fetching projects:', error);
+        res.status(500).json({ message: 'Error fetching projects' });
+    }
+});
+
+app.get('/api/departments', isAuthenticated, async (req, res) => {
+    try {
+        const departments = await getDepartments();
+        res.json(departments);
+    } catch (error) {
+        console.error('Error fetching departments:', error);
+        res.status(500).json({ message: 'Error fetching departments' });
+    }
+});
 
 // Login route using the custom handler
 app.post('/api/login', handleAuth);
@@ -280,53 +306,16 @@ app.post('/api/logout', (req, res, next) => {
 // Get current user route
 app.get('/api/user', (req, res) => {
   if (req.isAuthenticated()) {
-    res.json(req.user);
+    const { password, ...userWithoutPassword } = req.user;
+    res.json(userWithoutPassword);
   } else {
     res.status(401).json({ message: 'Not authenticated' });
   }
 });
 
-// Serve static files from the 'public' directory with cache-busting headers
-const publicPath = path.join(__dirname, 'dist', 'public');
-app.use(express.static(publicPath, {
-  setHeaders: (res, path) => {
-    // Set cache-busting headers for assets
-    if (path.endsWith('.js') || path.endsWith('.css')) {
-      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
-      res.setHeader('Pragma', 'no-cache');
-      res.setHeader('Expires', '0');
-    }
-    // Set reasonable cache for images
-    if (path.match(/\.(jpg|jpeg|png|gif|ico|svg)$/)) {
-      res.setHeader('Cache-Control', 'public, max-age=3600'); // 1 hour
-    }
-  }
-}));
-
-// Serve static files from the root directory for HTML files
-app.use(express.static(__dirname, {
-  setHeaders: (res, path) => {
-    if (path.endsWith('.html')) {
-      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
-      res.setHeader('Pragma', 'no-cache');
-      res.setHeader('Expires', '0');
-    }
-  }
-}));
-
-// Catch-all handler to serve index.html for SPA routing
-app.get('*', (req, res) => {
-  // Don't intercept API calls
-  if (req.path.startsWith('/api/')) {
-    return res.status(404).json({ message: 'API endpoint not found' });
-  }
-  
-  // Serve index.html with cache-busting headers
-  res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
-  res.setHeader('Pragma', 'no-cache');
-  res.setHeader('Expires', '0');
-  res.sendFile(path.join(__dirname, 'dist', 'public', 'index.html'));
-});
+// Serve static files from the 'public' directory
+const publicPath = path.join(__dirname, '..', 'public');
+app.use(express.static(publicPath));
 
 // Custom authentication handler to manage multiple strategies
 function handleAuth(req, res, next) {
@@ -353,10 +342,12 @@ function handleAuthResult(err, user, info, req, res) {
   if (err) {
     console.log(`Login error:`, err);
     if (err.code === 'ECONNREFUSED' || err.name === 'LdapAuthenticationError') {
-      return res.status(500).json({
-        message: 'Authentication service is temporarily unavailable. Please try again later or use a local account.',
-        error: 'LDAP_UNAVAILABLE'
-      });
+      // Fallback to local authentication
+      console.log('LDAP connection failed, falling back to local strategy.');
+      passport.authenticate('local', (localErr, localUser, localInfo) => {
+        handleAuthResult(localErr, localUser, localInfo, req, res);
+      })(req, res, next);
+      return;
     }
     return res.status(500).json({ message: 'An unexpected error occurred during authentication.' });
   }
@@ -379,4 +370,4 @@ function handleAuthResult(err, user, info, req, res) {
 app.listen(port, () => {
   console.log(`Server is running on port ${port}`);
   console.log(`Server URL: http://localhost:${port}`);
-});
+}); 

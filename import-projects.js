@@ -10,15 +10,15 @@ import bcrypt from 'bcrypt';
 import pg from 'pg';
 import dotenv from 'dotenv';
 import { randomUUID } from 'crypto';
+import crypto from 'crypto';
 
 // Load environment variables
 dotenv.config();
 
 // Constants
 const CSV_FILE_PATH = process.argv[2] || 'Projects.csv';
-const DEFAULT_PASSWORD = 'ProjectPulse@2023';
 const SALT_ROUNDS = 10;
-const SIGNAL_CORPS_DEPT_ID = 1; // Assuming Signal Corps department has ID 1
+const SIGNAL_CORPS_DEPT_ID = 3; // Signal Corps department ID
 
 // Set up PostgreSQL connection
 const { Pool } = pg;
@@ -31,6 +31,31 @@ const ROLES = {
   ADMIN: 'Administrator',
   VIEWER: 'Viewer'
 };
+
+// Generate a strong password
+function generateStrongPassword(length = 16) {
+  // Character sets for strong passwords
+  const lowercase = 'abcdefghijklmnopqrstuvwxyz';
+  const uppercase = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+  const numbers = '0123456789';
+  const symbols = '!@#$%^&*()_+-=[]{}|;:,.<>?';
+  
+  // Ensure at least one character from each set
+  let password = '';
+  password += lowercase[crypto.randomInt(lowercase.length)];
+  password += uppercase[crypto.randomInt(uppercase.length)];
+  password += numbers[crypto.randomInt(numbers.length)];
+  password += symbols[crypto.randomInt(symbols.length)];
+  
+  // Fill the rest with random characters from all sets
+  const allChars = lowercase + uppercase + numbers + symbols;
+  for (let i = password.length; i < length; i++) {
+    password += allChars[crypto.randomInt(allChars.length)];
+  }
+  
+  // Shuffle the password to avoid predictable patterns
+  return password.split('').sort(() => crypto.randomInt(3) - 1).join('');
+}
 
 // Common CSV field variations
 const FIELD_MAPPINGS = {
@@ -110,7 +135,7 @@ async function createUser(email, name, role) {
     const username = email.split('@')[0];
     
     // Generate a random password
-    const password = await hashPassword(DEFAULT_PASSWORD);
+    const password = await hashPassword(generateStrongPassword());
     
     // Get available columns in the users table
     const availableColumnsResult = await client.query(
@@ -705,7 +730,7 @@ async function importProjects() {
               const username = officerEmail.split('@')[0];
               
               // Generate a random password
-              const password = await hashPassword(DEFAULT_PASSWORD);
+              const password = await hashPassword(generateStrongPassword());
               
               // Get available columns in the users table
               const availableColumnsResult = await rowClient.query(

@@ -228,7 +228,12 @@ export default function AssignmentsPage() {
         <h1 className="text-2xl font-bold text-contrast dark:text-white">{t("assignments")}</h1>
         <PermissionGate permission={'canCreateAssignment' as keyof Permission}>
           <Link href="/assignments/new">
-            <Button className="bg-qatar-maroon hover:bg-maroon-800 text-white">
+            <Button 
+              className="text-white font-medium"
+              style={{ backgroundColor: '#8a1538' }}
+              onMouseEnter={(e: React.MouseEvent<HTMLButtonElement>) => e.currentTarget.style.backgroundColor = '#7c1b38'}
+              onMouseLeave={(e: React.MouseEvent<HTMLButtonElement>) => e.currentTarget.style.backgroundColor = '#8a1538'}
+            >
               <Plus className="mr-2 h-4 w-4" />
               <span>{t("newAssignment")}</span>
             </Button>

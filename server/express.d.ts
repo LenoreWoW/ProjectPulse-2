@@ -12,12 +12,13 @@ declare global {
       password: string;
       role?: string | null;
       status?: string | null;
-      departmentId?: number | null;
+      departmentid?: number | null;
       passportImage?: string | null;
       idCardImage?: string | null;
-      preferredLanguage?: string | null;
-      createdAt: Date;
-      updatedAt: Date;
+      language?: string | null;
+      lastlogin?: Date | null;
+      createdat: Date;
+      updatedat: Date;
     }
   }
 }

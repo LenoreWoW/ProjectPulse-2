@@ -53,7 +53,7 @@ export function RecentProjects({ className = "" }: RecentProjectsProps) {
       case 'Pending':
         return 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300';
       default:
-        return 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-300';
+        return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-100';
     }
   };
   
@@ -87,30 +87,29 @@ export function RecentProjects({ className = "" }: RecentProjectsProps) {
     return diffDays > 0 ? `${t('dueIn')} ${diffDays} ${t('days')}` : t('overdue');
   };
   
-  // Calculate progress percentage
-  const getProgress = (project: Project) => {
-    // In a real app, this would come from a calculation of completed tasks
-    // For now, just base it on a simple calculation
-    let progress = 0;
-    
-    if (project.status === 'Completed') {
-      progress = 100;
-    } else if (project.status === 'InProgress') {
-      // Simple logic: based on time elapsed between start date and deadline
-      if (!project.startDate) return 0;
-      
-      const start = new Date(project.startDate).getTime();
-      const end = project.deadline 
-        ? new Date(project.deadline).getTime() 
-        : Date.now() + 30 * 24 * 60 * 60 * 1000;
-      const now = Date.now();
-      
-      progress = Math.min(100, Math.max(0, Math.round(((now - start) / (end - start)) * 100)));
-    } else if (project.status === 'Planning') {
-      progress = 20;
+  // Calculate progress percentage based on milestone completion
+  const getProgress = (project: any) => {
+    // Use milestone-based completion percentage if available
+    if (project.completionPercentage !== null && project.completionPercentage !== undefined) {
+      return project.completionPercentage;
     }
     
-    return progress;
+    // Fallback based on project status for projects without milestones
+    switch (project.status) {
+      case 'Completed':
+        return 100;
+      case 'InProgress':
+        return 50;
+      case 'Planning':
+      case 'Proposed':
+        return 10;
+      case 'OnHold':
+        return 25;
+      case 'Cancelled':
+        return 0;
+      default:
+        return 0;
+    }
   };
   
   // Generate project icon based on title
@@ -184,33 +183,33 @@ export function RecentProjects({ className = "" }: RecentProjectsProps) {
     .slice(0, 3);
   
   return (
-    <div className={`lg:col-span-2 bg-white dark:bg-gray-800 shadow-lg rounded-lg border ${className || 'border-maroon-200 dark:border-maroon-800'}`}>
-      <div className="p-6 border-b border-maroon-200 dark:border-maroon-800 bg-gradient-to-r from-maroon-100 to-white dark:from-maroon-900/30 dark:to-gray-800 flex justify-between items-center">
-        <h2 className="text-xl font-bold text-maroon-800 dark:text-maroon-200">{t("recentProjects")}</h2>
+    <div className={`lg:col-span-2 bg-white dark:bg-gray-800 shadow-lg rounded-lg border ${className || 'border-gray-200 dark:border-gray-700'}`}>
+      <div className="p-6 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 flex justify-between items-center">
+        <h2 className="text-xl font-bold text-gray-900 dark:text-white">{t("recentProjects")}</h2>
         <Link href="/projects" 
           className="text-sm text-maroon-700 dark:text-maroon-400 hover:text-maroon-900 dark:hover:text-maroon-300 hover:underline flex items-center gap-1">
           {t("viewAll")} <ArrowRight className="h-4 w-4" />
         </Link>
       </div>
       <div className="overflow-x-auto">
-        <table className="min-w-full divide-y divide-maroon-100 dark:divide-maroon-800">
-          <thead className="bg-maroon-50 dark:bg-maroon-900/20">
+        <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+          <thead className="bg-gray-50 dark:bg-gray-800">
             <tr>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-maroon-600 dark:text-maroon-300 uppercase tracking-wider">
+              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                 {t("project")}
               </th>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-maroon-600 dark:text-maroon-300 uppercase tracking-wider">
+              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                 {t("department")}
               </th>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-maroon-600 dark:text-maroon-300 uppercase tracking-wider">
+              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                 {t("status")}
               </th>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-maroon-600 dark:text-maroon-300 uppercase tracking-wider">
+              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                 {t("progress")}
               </th>
             </tr>
           </thead>
-          <tbody className="bg-white dark:bg-gray-800 divide-y divide-maroon-100 dark:divide-maroon-800">
+          <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
             {recentProjects.length === 0 ? (
               <tr>
                 <td colSpan={4} className="px-6 py-6 text-center">
@@ -226,7 +225,7 @@ export function RecentProjects({ className = "" }: RecentProjectsProps) {
               recentProjects.map((project) => {
                 const progress = getProgress(project);
                 return (
-                  <tr key={project.id} className="hover:bg-maroon-50 dark:hover:bg-maroon-900/10 transition-colors">
+                  <tr key={project.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center">
                         {getProjectIcon(project)}
@@ -258,7 +257,7 @@ export function RecentProjects({ className = "" }: RecentProjectsProps) {
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                      <div className="w-full bg-gray-100 dark:bg-gray-800 rounded-full h-3">
+                      <div className="w-full bg-gray-200 dark:bg-gray-600 rounded-full h-3">
                         <div 
                           className={`${
                             project.status === 'OnHold' ? 'bg-orange-600' :
@@ -269,7 +268,7 @@ export function RecentProjects({ className = "" }: RecentProjectsProps) {
                         ></div>
                       </div>
                       <div className="flex justify-between items-center mt-1">
-                        <span className="text-xs font-medium">{progress}%</span>
+                        <span className="text-xs font-medium text-gray-700 dark:text-gray-300">{progress}%</span>
                         <Link href={`/projects/${project.id}`} className="text-xs text-maroon-600 dark:text-maroon-400 hover:underline">
                           {t("details")}
                         </Link>

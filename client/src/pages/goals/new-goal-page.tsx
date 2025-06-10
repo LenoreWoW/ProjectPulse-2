@@ -246,374 +246,372 @@ export default function NewGoalPage() {
           <CardDescription>{t("createGoalDescription")}</CardDescription>
         </CardHeader>
         <CardContent>
-          <FormRoot form={form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-              {/* Basic Goal Information */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <FormField
-                  control={form.control}
-                  name="title"
-                  render={({ field }: any) => (
-                    <FormItem>
-                      <FormLabel>{t("title")}</FormLabel>
-                      <FormControl>
-                        <Input placeholder={t("enterTitle")} {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="priority"
-                  render={({ field }: any) => (
-                    <FormItem>
-                      <FormLabel>{t("priority")}</FormLabel>
-                      <FormControl>
-                        <Select onValueChange={field.onChange} value={field.value}>
-                          <SelectTrigger>
-                            <SelectValue placeholder={t("selectPriority")} />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="Low">{t("low")}</SelectItem>
-                            <SelectItem value="Medium">{t("medium")}</SelectItem>
-                            <SelectItem value="High">{t("high")}</SelectItem>
-                            <SelectItem value="Critical">{t("critical")}</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="deadline"
-                  render={({ field }: any) => (
-                    <FormItem className="flex flex-col">
-                      <FormLabel>{t("deadline")}</FormLabel>
-                      <Popover>
-                        <PopoverTrigger asChild>
-                          <FormControl>
-                            <Button
-                              variant={"outline"}
-                              className={cn(
-                                "w-full pl-3 text-left font-normal",
-                                !field.value && "text-muted-foreground"
-                              )}
-                            >
-                              {field.value ? (
-                                format(field.value, "PPP")
-                              ) : (
-                                <span>{t("pickDate")}</span>
-                              )}
-                              <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                            </Button>
-                          </FormControl>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-auto p-0" align="start">
-                          <Calendar
-                            mode="single"
-                            selected={field.value}
-                            onSelect={field.onChange}
-                            disabled={(date: Date) =>
-                              date < new Date() || date < new Date("1900-01-01")
-                            }
-                            initialFocus
-                          />
-                        </PopoverContent>
-                      </Popover>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <div className="space-y-4">
-                  <FormField
-                    control={form.control}
-                    name="isStrategic"
-                    render={({ field }: any) => (
-                      <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
-                        <FormControl>
-                          <Checkbox
-                            checked={field.value}
-                            onCheckedChange={field.onChange}
-                          />
-                        </FormControl>
-                        <div className="space-y-1 leading-none">
-                          <FormLabel>
-                            {t("strategicGoal")}
-                          </FormLabel>
-                          <FormDescription>
-                            {t("strategicGoalDescription")}
-                          </FormDescription>
-                        </div>
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="isAnnual"
-                    render={({ field }: any) => (
-                      <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
-                        <FormControl>
-                          <Checkbox
-                            checked={field.value}
-                            onCheckedChange={field.onChange}
-                          />
-                        </FormControl>
-                        <div className="space-y-1 leading-none">
-                          <FormLabel>
-                            {t("annualGoal")}
-                          </FormLabel>
-                          <FormDescription>
-                            {t("annualGoalDescription")}
-                          </FormDescription>
-                        </div>
-                      </FormItem>
-                    )}
-                  />
-                </div>
-              </div>
-
-              {/* Department Goal Section */}
-              {canCreateDepartmentGoal && (
-                <div className="rounded-md border p-4">
-                  <FormItem className="flex flex-row items-start space-x-3 space-y-0">
-                    <FormControl>
-                      <Checkbox
-                        checked={isDepartmentGoal}
-                        onCheckedChange={(value) => setIsDepartmentGoal(!!value)}
-                      />
-                    </FormControl>
-                    <div className="space-y-1 leading-none">
-                      <FormLabel>{t("departmentGoals")}</FormLabel>
-                      <FormDescription>
-                        {t("departmentGoalNote")}
-                      </FormDescription>
-                    </div>
-                  </FormItem>
-                </div>
-              )}
-
-              {/* Description Field */}
+          <FormRoot form={form} onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+            {/* Basic Goal Information */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <FormField
                 control={form.control}
-                name="description"
+                name="title"
                 render={({ field }: any) => (
                   <FormItem>
-                    <FormLabel>{t("description")}</FormLabel>
+                    <FormLabel>{t("title")}</FormLabel>
                     <FormControl>
-                      <Textarea
-                        placeholder={t("enterDescription")}
-                        className="resize-none"
-                        {...field}
-                      />
+                      <Input placeholder={t("enterTitle")} {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
 
-              {/* Related Projects Section */}
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-lg font-medium">{t("relatedProjects")}</h3>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => appendProject({ 
-                      projectId: projects.length > 0 ? projects[0].id : 0, 
-                      weight: 1 
-                    })}
-                    disabled={getAvailableProjects().length === 0}
-                  >
-                    <Plus className="mr-1 h-4 w-4" /> {t("addRelatedProject")}
-                  </Button>
-                </div>
-
-                {projectFields.length === 0 ? (
-                  <p className="text-sm text-gray-500">{t("noRelatedProjects")}</p>
-                ) : (
-                  <div className="space-y-3">
-                    {projectFields.map((field, index) => (
-                      <div key={field.id} className="flex items-center space-x-3 rounded-md border p-3">
-                        <div className="flex-1">
-                          <Select
-                            value={(field as ProjectFieldType).projectId.toString()}
-                            onValueChange={(value: string) => {
-                              const updatedProjects = [...form.getValues().relatedProjects || []];
-                              updatedProjects[index] = {
-                                ...updatedProjects[index],
-                                projectId: parseInt(value)
-                              };
-                              form.setValue("relatedProjects", updatedProjects);
-                            }}
-                          >
-                            <SelectTrigger>
-                              <SelectValue>
-                                {(field as ProjectFieldType).projectId ? getProjectName((field as ProjectFieldType).projectId) : t("selectProject")}
-                              </SelectValue>
-                            </SelectTrigger>
-                            <SelectContent>
-                              {getAvailableProjects().map((project) => (
-                                <SelectItem key={project.id} value={project.id.toString()}>
-                                  {project.title}
-                                </SelectItem>
-                              ))}
-                              {/* Keep the current selection even if not in available projects */}
-                              {(field as ProjectFieldType).projectId && !getAvailableProjects().some(p => p.id === (field as ProjectFieldType).projectId) && (
-                                <SelectItem value={(field as ProjectFieldType).projectId.toString()}>
-                                  {getProjectName((field as ProjectFieldType).projectId)}
-                                </SelectItem>
-                              )}
-                            </SelectContent>
-                          </Select>
-                        </div>
-                        <div className="w-24">
-                          <FormItem className="mb-0">
-                            <FormLabel className="text-xs">{t("weight")}</FormLabel>
-                            <Input
-                              type="number"
-                              min="1"
-                              max="10"
-                              value={(field as ProjectFieldType).weight}
-                              onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-                                const updatedProjects = [...form.getValues().relatedProjects || []];
-                                updatedProjects[index] = {
-                                  ...updatedProjects[index],
-                                  weight: parseInt(e.target.value)
-                                };
-                                form.setValue("relatedProjects", updatedProjects);
-                              }}
-                            />
-                          </FormItem>
-                        </div>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => removeProject(index)}
-                        >
-                          <Trash2 className="h-4 w-4 text-gray-500" />
-                        </Button>
-                      </div>
-                    ))}
-                  </div>
+              <FormField
+                control={form.control}
+                name="priority"
+                render={({ field }: any) => (
+                  <FormItem>
+                    <FormLabel>{t("priority")}</FormLabel>
+                    <FormControl>
+                      <Select onValueChange={field.onChange} value={field.value}>
+                        <SelectTrigger>
+                          <SelectValue placeholder={t("selectPriority")} />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Low">{t("low")}</SelectItem>
+                          <SelectItem value="Medium">{t("medium")}</SelectItem>
+                          <SelectItem value="High">{t("high")}</SelectItem>
+                          <SelectItem value="Critical">{t("critical")}</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
                 )}
-              </div>
+              />
 
-              {/* Related Goals Section */}
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-lg font-medium">{t("relatedGoals")}</h3>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => appendGoal({ 
-                      goalId: goals.length > 0 ? goals[0].id : 0, 
-                      weight: 1 
-                    })}
-                    disabled={getAvailableGoals().length === 0}
-                  >
-                    <Plus className="mr-1 h-4 w-4" /> {t("addRelatedGoal")}
-                  </Button>
-                </div>
-
-                {goalFields.length === 0 ? (
-                  <p className="text-sm text-gray-500">{t("noRelatedGoals")}</p>
-                ) : (
-                  <div className="space-y-3">
-                    {goalFields.map((field, index) => (
-                      <div key={field.id} className="flex items-center space-x-3 rounded-md border p-3">
-                        <div className="flex-1">
-                          <Select
-                            value={(field as GoalFieldType).goalId.toString()}
-                            onValueChange={(value: string) => {
-                              const updatedGoals = [...form.getValues().relatedGoals || []];
-                              updatedGoals[index] = {
-                                ...updatedGoals[index],
-                                goalId: parseInt(value)
-                              };
-                              form.setValue("relatedGoals", updatedGoals);
-                            }}
+              <FormField
+                control={form.control}
+                name="deadline"
+                render={({ field }: any) => (
+                  <FormItem className="flex flex-col">
+                    <FormLabel>{t("deadline")}</FormLabel>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <FormControl>
+                          <Button
+                            variant={"outline"}
+                            className={cn(
+                              "w-full pl-3 text-left font-normal",
+                              !field.value && "text-muted-foreground"
+                            )}
                           >
-                            <SelectTrigger>
-                              <SelectValue>
-                                {(field as GoalFieldType).goalId ? getGoalTitle((field as GoalFieldType).goalId) : t("selectGoal")}
-                              </SelectValue>
-                            </SelectTrigger>
-                            <SelectContent>
-                              {getAvailableGoals().map((goal) => (
-                                <SelectItem key={goal.id} value={goal.id.toString()}>
-                                  {goal.title}
-                                </SelectItem>
-                              ))}
-                              {/* Keep the current selection even if not in available goals */}
-                              {(field as GoalFieldType).goalId && !getAvailableGoals().some(g => g.id === (field as GoalFieldType).goalId) && (
-                                <SelectItem value={(field as GoalFieldType).goalId.toString()}>
-                                  {getGoalTitle((field as GoalFieldType).goalId)}
-                                </SelectItem>
-                              )}
-                            </SelectContent>
-                          </Select>
-                        </div>
-                        <div className="w-24">
-                          <FormItem className="mb-0">
-                            <FormLabel className="text-xs">{t("weight")}</FormLabel>
-                            <Input
-                              type="number"
-                              min="1"
-                              max="10"
-                              value={(field as GoalFieldType).weight}
-                              onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-                                const updatedGoals = [...form.getValues().relatedGoals || []];
-                                updatedGoals[index] = {
-                                  ...updatedGoals[index],
-                                  weight: parseInt(e.target.value)
-                                };
-                                form.setValue("relatedGoals", updatedGoals);
-                              }}
-                            />
-                          </FormItem>
-                        </div>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => removeGoal(index)}
-                        >
-                          <Trash2 className="h-4 w-4 text-gray-500" />
-                        </Button>
-                      </div>
-                    ))}
-                  </div>
+                            {field.value ? (
+                              format(field.value, "PPP")
+                            ) : (
+                              <span>{t("pickDate")}</span>
+                            )}
+                            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                          </Button>
+                        </FormControl>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <Calendar
+                          mode="single"
+                          selected={field.value}
+                          onSelect={field.onChange}
+                          disabled={(date: Date) =>
+                            date < new Date() || date < new Date("1900-01-01")
+                          }
+                          initialFocus
+                        />
+                      </PopoverContent>
+                    </Popover>
+                    <FormMessage />
+                  </FormItem>
                 )}
-              </div>
+              />
 
-              <div className="flex justify-end space-x-4">
+              <div className="space-y-4">
+                <FormField
+                  control={form.control}
+                  name="isStrategic"
+                  render={({ field }: any) => (
+                    <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
+                      <FormControl>
+                        <Checkbox
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                        />
+                      </FormControl>
+                      <div className="space-y-1 leading-none">
+                        <FormLabel>
+                          {t("strategicGoal")}
+                        </FormLabel>
+                        <FormDescription>
+                          {t("strategicGoalDescription")}
+                        </FormDescription>
+                      </div>
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="isAnnual"
+                  render={({ field }: any) => (
+                    <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
+                      <FormControl>
+                        <Checkbox
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                        />
+                      </FormControl>
+                      <div className="space-y-1 leading-none">
+                        <FormLabel>
+                          {t("annualGoal")}
+                        </FormLabel>
+                        <FormDescription>
+                          {t("annualGoalDescription")}
+                        </FormDescription>
+                      </div>
+                    </FormItem>
+                  )}
+                />
+              </div>
+            </div>
+
+            {/* Department Goal Section */}
+            {canCreateDepartmentGoal && (
+              <div className="rounded-md border p-4">
+                <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                  <FormControl>
+                    <Checkbox
+                      checked={isDepartmentGoal}
+                      onCheckedChange={(value) => setIsDepartmentGoal(!!value)}
+                    />
+                  </FormControl>
+                  <div className="space-y-1 leading-none">
+                    <FormLabel>{t("departmentGoals")}</FormLabel>
+                    <FormDescription>
+                      {t("departmentGoalNote")}
+                    </FormDescription>
+                  </div>
+                </FormItem>
+              </div>
+            )}
+
+            {/* Description Field */}
+            <FormField
+              control={form.control}
+              name="description"
+              render={({ field }: any) => (
+                <FormItem>
+                  <FormLabel>{t("description")}</FormLabel>
+                  <FormControl>
+                    <Textarea
+                      placeholder={t("enterDescription")}
+                      className="resize-none"
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            {/* Related Projects Section */}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-medium">{t("relatedProjects")}</h3>
                 <Button
                   type="button"
                   variant="outline"
-                  onClick={() => navigate("/goals")}
+                  size="sm"
+                  onClick={() => appendProject({ 
+                    projectId: projects.length > 0 ? projects[0].id : 0, 
+                    weight: 1 
+                  })}
+                  disabled={getAvailableProjects().length === 0}
                 >
-                  {t("cancel")}
-                </Button>
-                <Button
-                  type="submit"
-                  className="bg-qatar-maroon hover:bg-maroon-800 text-white"
-                  disabled={isLoading}
-                >
-                  {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  {t("createGoal")}
+                  <Plus className="mr-1 h-4 w-4" /> {t("addRelatedProject")}
                 </Button>
               </div>
-            </form>
+
+              {projectFields.length === 0 ? (
+                <p className="text-sm text-gray-500">{t("noRelatedProjects")}</p>
+              ) : (
+                <div className="space-y-3">
+                  {projectFields.map((field, index) => (
+                    <div key={field.id} className="flex items-center space-x-3 rounded-md border p-3">
+                      <div className="flex-1">
+                        <Select
+                          value={(field as ProjectFieldType).projectId.toString()}
+                          onValueChange={(value: string) => {
+                            const updatedProjects = [...form.getValues().relatedProjects || []];
+                            updatedProjects[index] = {
+                              ...updatedProjects[index],
+                              projectId: parseInt(value)
+                            };
+                            form.setValue("relatedProjects", updatedProjects);
+                          }}
+                        >
+                          <SelectTrigger>
+                            <SelectValue>
+                              {(field as ProjectFieldType).projectId ? getProjectName((field as ProjectFieldType).projectId) : t("selectProject")}
+                            </SelectValue>
+                          </SelectTrigger>
+                          <SelectContent>
+                            {getAvailableProjects().map((project) => (
+                              <SelectItem key={project.id} value={project.id.toString()}>
+                                {project.title}
+                              </SelectItem>
+                            ))}
+                            {/* Keep the current selection even if not in available projects */}
+                            {(field as ProjectFieldType).projectId && !getAvailableProjects().some(p => p.id === (field as ProjectFieldType).projectId) && (
+                              <SelectItem value={(field as ProjectFieldType).projectId.toString()}>
+                                {getProjectName((field as ProjectFieldType).projectId)}
+                              </SelectItem>
+                            )}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="w-24">
+                        <FormItem className="mb-0">
+                          <FormLabel className="text-xs">{t("weight")}</FormLabel>
+                          <Input
+                            type="number"
+                            min="1"
+                            max="10"
+                            value={(field as ProjectFieldType).weight}
+                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                              const updatedProjects = [...form.getValues().relatedProjects || []];
+                              updatedProjects[index] = {
+                                ...updatedProjects[index],
+                                weight: parseInt(e.target.value)
+                              };
+                              form.setValue("relatedProjects", updatedProjects);
+                            }}
+                          />
+                        </FormItem>
+                      </div>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => removeProject(index)}
+                      >
+                        <Trash2 className="h-4 w-4 text-gray-500" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Related Goals Section */}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-medium">{t("relatedGoals")}</h3>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => appendGoal({ 
+                    goalId: goals.length > 0 ? goals[0].id : 0, 
+                    weight: 1 
+                  })}
+                  disabled={getAvailableGoals().length === 0}
+                >
+                  <Plus className="mr-1 h-4 w-4" /> {t("addRelatedGoal")}
+                </Button>
+              </div>
+
+              {goalFields.length === 0 ? (
+                <p className="text-sm text-gray-500">{t("noRelatedGoals")}</p>
+              ) : (
+                <div className="space-y-3">
+                  {goalFields.map((field, index) => (
+                    <div key={field.id} className="flex items-center space-x-3 rounded-md border p-3">
+                      <div className="flex-1">
+                        <Select
+                          value={(field as GoalFieldType).goalId.toString()}
+                          onValueChange={(value: string) => {
+                            const updatedGoals = [...form.getValues().relatedGoals || []];
+                            updatedGoals[index] = {
+                              ...updatedGoals[index],
+                              goalId: parseInt(value)
+                            };
+                            form.setValue("relatedGoals", updatedGoals);
+                          }}
+                        >
+                          <SelectTrigger>
+                            <SelectValue>
+                              {(field as GoalFieldType).goalId ? getGoalTitle((field as GoalFieldType).goalId) : t("selectGoal")}
+                            </SelectValue>
+                          </SelectTrigger>
+                          <SelectContent>
+                            {getAvailableGoals().map((goal) => (
+                              <SelectItem key={goal.id} value={goal.id.toString()}>
+                                {goal.title}
+                              </SelectItem>
+                            ))}
+                            {/* Keep the current selection even if not in available goals */}
+                            {(field as GoalFieldType).goalId && !getAvailableGoals().some(g => g.id === (field as GoalFieldType).goalId) && (
+                              <SelectItem value={(field as GoalFieldType).goalId.toString()}>
+                                {getGoalTitle((field as GoalFieldType).goalId)}
+                              </SelectItem>
+                            )}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="w-24">
+                        <FormItem className="mb-0">
+                          <FormLabel className="text-xs">{t("weight")}</FormLabel>
+                          <Input
+                            type="number"
+                            min="1"
+                            max="10"
+                            value={(field as GoalFieldType).weight}
+                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                              const updatedGoals = [...form.getValues().relatedGoals || []];
+                              updatedGoals[index] = {
+                                ...updatedGoals[index],
+                                weight: parseInt(e.target.value)
+                              };
+                              form.setValue("relatedGoals", updatedGoals);
+                            }}
+                          />
+                        </FormItem>
+                      </div>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => removeGoal(index)}
+                      >
+                        <Trash2 className="h-4 w-4 text-gray-500" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div className="flex justify-end space-x-4">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => navigate("/goals")}
+              >
+                {t("cancel")}
+              </Button>
+              <Button
+                type="submit"
+                className="bg-qatar-maroon hover:bg-maroon-800 text-white"
+                disabled={isLoading}
+              >
+                {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                {t("createGoal")}
+              </Button>
+            </div>
           </FormRoot>
         </CardContent>
       </Card>

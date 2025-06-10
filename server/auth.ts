@@ -9,7 +9,7 @@ import { randomBytes } from "crypto";
 // @ts-ignore - Ignoring missing type declarations for jsonwebtoken
 import jwt from "jsonwebtoken";
 import { PgStorage } from "./pg-storage";
-import { User as SelectUser, insertUserSchema, InsertUser } from "@shared/schema";
+import { User as SelectUser, insertUserSchema } from "@shared/schema";
 import { z } from "zod";
 import { sendRegistrationAcceptedEmail, sendRegistrationRejectedEmail } from "./email";
 
@@ -113,23 +113,32 @@ export function hasRole(allowedRoles: string[]) {
 }
 
 // Enhanced registration schema with extra validation
-const registerSchema = insertUserSchema.extend({
-  email: z.string()
-    .email("Invalid email address")
-    .refine(email => {
-      // Verify that the email domain is from Qatar Armed Forces or Ministry of Defense
-      const domain = email.split('@')[1].toLowerCase();
+const registerSchema = insertUserSchema
+  .extend({
+    password: z.string().min(6, 'Password must be at least 6 characters'),
+    confirmPassword: z.string(),
+    name: z.string().min(2, 'Name must be at least 2 characters'),
+    email: z.string().email('Invalid email address'),
+  })
+  .required({
+    name: true,
+    email: true,
+  })
+  .refine((data: any) => data.password === data.confirmPassword, {
+    message: "Passwords don't match",
+    path: ['confirmPassword'],
+  })
+  .refine(
+    (data: any) => {
+      if (!data.email) return true; // Let other validation handle empty email
+      const domain = data.email.split('@')[1]?.toLowerCase();
       return domain === 'qaf.mil.qa' || domain === 'mod.gov.qa';
-    }, {
-      message: "Only email addresses from @qaf.mil.qa or @mod.gov.qa domains are allowed",
-    }),
-  password: z.string().min(6, "Password must be at least 6 characters"),
-  confirmPassword: z.string(),
-  name: z.string().min(2, "Name must be at least 2 characters"),
-}).refine(data => data.password === data.confirmPassword, {
-  message: "Passwords don't match",
-  path: ["confirmPassword"],
-});
+    },
+    {
+      message: 'Only email addresses from @qaf.mil.qa or @mod.gov.qa domains are allowed',
+      path: ['email'],
+    }
+  );
 
 // LDAP configuration
 const LDAP_CONFIG = {
@@ -159,7 +168,7 @@ async function ensureHoldDepartmentExists(): Promise<number> {
       name: "Hold",
       code: "HOLD-001",
       description: "Temporary department for new LDAP users",
-      isActive: true
+      isactive: true
     });
     
     return newDepartment.id;
@@ -188,19 +197,37 @@ export function setupAuth(app: Express) {
 
   // Local authentication strategy
   passport.use('local', 
-    new LocalStrategy(async (username, password, done) => {
+    new LocalStrategy(async (username: string, password: string, done: any) => {
+      console.log("LocalStrategy called with username:", username);
       try {
+        console.log("Looking up user by username:", username);
         const user = await storage.getUserByUsername(username);
-        if (!user || !(await comparePasswords(password, user.password))) {
+        console.log("User lookup result:", user ? `Found user ID: ${user.id}` : "No user found");
+        
+        if (!user) {
+          console.log("No user found with username:", username);
           return done(null, false, { message: "Invalid username or password" });
         }
         
+        console.log("Comparing passwords...");
+        const passwordMatch = await comparePasswords(password, user.password);
+        console.log("Password match result:", passwordMatch);
+        
+        if (!passwordMatch) {
+          console.log("Password does not match for user:", username);
+          return done(null, false, { message: "Invalid username or password" });
+        }
+        
+        console.log("User status:", user.status);
         if (user.status !== "Active") {
+          console.log("User account is not active:", username);
           return done(null, false, { message: "Your account is not active. Please contact the administrator." });
         }
         
+        console.log("Authentication successful for user:", username);
         return done(null, user);
       } catch (error) {
+        console.error("LocalStrategy error:", error);
         return done(error);
       }
     }),
@@ -238,9 +265,9 @@ export function setupAuth(app: Express) {
             password: hashedPassword,
             role: 'User',
             status: 'Active',
-            departmentId: holdDepartmentId,
-            preferredLanguage: 'ar' // Default to Arabic
-          } as InsertUser);
+            departmentid: holdDepartmentId,
+            language: 'ar' // Default to Arabic
+          });
           
           return done(null, newUser);
         }
@@ -253,10 +280,10 @@ export function setupAuth(app: Express) {
         console.error('LDAP authentication error:', error);
         return done(error);
       }
-    })
+    }) as any
   );
 
-  passport.serializeUser((user, done) => done(null, user.id));
+  passport.serializeUser((user: any, done) => done(null, user.id));
   passport.deserializeUser(async (id: number, done) => {
     try {
       const user = await storage.getUser(id);
@@ -317,14 +344,15 @@ export function setupAuth(app: Express) {
       // Auto-login after registration
       req.login(user, (err) => {
         if (err) return next(err);
-        res.status(201).json(user);
+        const { password, ...userResponse } = user;
+        res.status(201).json(userResponse);
       });
     } catch (error) {
       if (error instanceof z.ZodError) {
         // Handle validation errors, including email domain check
         // Send rejection email if validation failed
-        if (req.body.email) {
-          await sendRegistrationRejectedEmail(req.body.email);
+        if ((req.body as any).email) {
+          await sendRegistrationRejectedEmail((req.body as any).email);
         }
         
         res.status(400).json({ 
@@ -338,10 +366,17 @@ export function setupAuth(app: Express) {
   });
 
   app.post("/api/login", (req, res, next) => {
+    console.log("Login attempt with username:", req.body.username);
+    
     passport.authenticate("local", (err: any, user: any, info: any) => {
+      console.log("Passport authenticate callback called");
+      console.log("Error:", err);
+      console.log("User:", user ? `User ID: ${user.id}` : "No user");
+      console.log("Info:", info);
+      
       if (err) {
         console.error("Authentication error:", err);
-        return res.status(500).json({ message: "Internal server error" });
+        return res.status(500).json({ message: "Internal server error", error: err.message });
       }
       if (!user) {
         console.log("Authentication failed:", info?.message || "Invalid credentials");
@@ -352,7 +387,7 @@ export function setupAuth(app: Express) {
       req.login(user, (loginErr) => {
         if (loginErr) {
           console.error("Session login error:", loginErr);
-          return res.status(500).json({ message: "Failed to establish session" });
+          return res.status(500).json({ message: "Failed to establish session", error: loginErr.message });
         }
         console.log("Session established for user:", user.id);
         
@@ -362,7 +397,8 @@ export function setupAuth(app: Express) {
           return;
         }
         
-        return res.status(200).json(user);
+        const { password, ...userResponse } = user;
+        return res.status(200).json(userResponse);
       });
     })(req, res, next);
   });
@@ -390,18 +426,24 @@ export function setupAuth(app: Express) {
     }
     
     try {
-      const updateData = req.body;
+      const user = req.user as Express.User;
+      const updateData: Partial<Express.User> = req.body;
       
-      // Don't allow updating role or status from this endpoint
-      delete updateData.roles;
+      // Prevent users from updating their own role or status
+      delete updateData.role;
       delete updateData.status;
-      
+
+      // Ensure departmentid is a number if present
+      if (updateData.departmentid) {
+        updateData.departmentid = Number(updateData.departmentid);
+      }
+
       // If password is being updated, hash it
       if (updateData.password) {
         updateData.password = await hashPassword(updateData.password);
       }
       
-      const updatedUser = await storage.updateUser(req.user.id, updateData);
+      const updatedUser = await storage.updateUser(user.id, updateData);
       if (!updatedUser) {
         res.status(404).json({ message: "User not found" });
         return;
@@ -413,44 +455,25 @@ export function setupAuth(app: Express) {
     }
   });
   
-  // Admin endpoint to update user roles/status
-  app.put("/api/users/:id", async (req: Request, res: Response, next: NextFunction): Promise<void> => {
-    if (!req.isAuthenticated()) {
-      res.status(401).json({ message: "Unauthorized" });
-      return;
-    }
-    
-    if (req.user.role !== "Administrator" && req.user.role !== "MainPMO" && req.user.role !== "DepartmentDirector") {
-      res.status(403).json({ message: "Forbidden: Insufficient permissions" });
-      return;
-    }
-    
+  // @ts-ignore
+  app.put("/api/users/:id", hasRole(["Administrator"]), async (req, res, next) => {
     try {
       const userId = parseInt(req.params.id);
       const updateData = req.body;
-      
-      // Department Directors can only update users in their department
-      if (req.user.role === "DepartmentDirector") {
-        const user = await storage.getUser(userId);
-        if (!user || user.departmentId !== req.user.departmentId) {
-          res.status(403).json({ message: "Forbidden: User is not in your department" });
-          return;
-        }
-        
-        // Department Directors cannot promote to Admin or MainPMO
-        if (updateData.role && (updateData.role === "Administrator" || updateData.role === "MainPMO")) {
-          res.status(403).json({ message: "Forbidden: Cannot assign this role" });
-          return;
-        }
+
+      // Ensure departmentid is a number if present
+      if (updateData.departmentid) {
+        updateData.departmentid = Number(updateData.departmentid);
       }
       
+      // Admins can update role and status
       const updatedUser = await storage.updateUser(userId, updateData);
       if (!updatedUser) {
-        res.status(404).json({ message: "User not found" });
-        return;
+        return res.status(404).json({ message: "User not found" });
       }
       
-      res.json(updatedUser);
+      const { password, ...userResponse } = updatedUser;
+      res.json(userResponse);
     } catch (error) {
       next(error);
     }

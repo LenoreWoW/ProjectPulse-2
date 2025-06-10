@@ -273,7 +273,7 @@ export default function UsersManagementPage() {
   );
 
   // Get department name by id
-  const getDepartmentName = (departmentId: number | null) => {
+  const getDepartmentName = (departmentId: number | null | undefined) => {
     if (!departmentId) return t("notAssigned");
     const department = departments.find((dept) => dept.id === departmentId);
     return department ? department.name : t("notAssigned");
@@ -294,7 +294,7 @@ export default function UsersManagementPage() {
               placeholder={t("searchUsers")}
               className="pl-10 w-full sm:w-[250px]"
               value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchTerm(e.target.value)}
             />
           </div>
           
@@ -318,11 +318,11 @@ export default function UsersManagementPage() {
                     <FormField
                       control={form.control}
                       name="name"
-                      render={({ field }) => (
+                      render={({ field }: { field: any }) => (
                         <FormItem>
                           <FormLabel>{t("name")}</FormLabel>
                           <FormControl>
-                            <Input {...field} placeholder={t("enterFullName")} />
+                            <Input placeholder={t("enterFullName")} {...field} />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -333,11 +333,11 @@ export default function UsersManagementPage() {
                       <FormField
                         control={form.control}
                         name="email"
-                        render={({ field }) => (
+                        render={({ field }: { field: any }) => (
                           <FormItem>
                             <FormLabel>{t("email")}</FormLabel>
                             <FormControl>
-                              <Input {...field} placeholder={t("enterEmail")} type="email" />
+                              <Input type="email" placeholder={t("enterEmail")} {...field} />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
@@ -347,11 +347,11 @@ export default function UsersManagementPage() {
                       <FormField
                         control={form.control}
                         name="phone"
-                        render={({ field }) => (
+                        render={({ field }: { field: any }) => (
                           <FormItem>
                             <FormLabel>{t("phone")}</FormLabel>
                             <FormControl>
-                              <Input {...field} placeholder={t("enterPhone")} />
+                              <Input placeholder={t("enterPhone")} {...field} />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
@@ -363,11 +363,11 @@ export default function UsersManagementPage() {
                       <FormField
                         control={form.control}
                         name="username"
-                        render={({ field }) => (
+                        render={({ field }: { field: any }) => (
                           <FormItem>
                             <FormLabel>{t("username")}</FormLabel>
                             <FormControl>
-                              <Input {...field} placeholder={t("enterUsername")} />
+                              <Input placeholder={t("enterUsername")} {...field} />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
@@ -377,14 +377,14 @@ export default function UsersManagementPage() {
                       <FormField
                         control={form.control}
                         name="password"
-                        render={({ field }) => (
+                        render={({ field }: { field: any }) => (
                           <FormItem>
                             <FormLabel>{editingUser ? t("newPassword") : t("password")}</FormLabel>
                             <FormControl>
                               <Input 
-                                {...field} 
                                 type="password" 
                                 placeholder={editingUser ? t("leaveEmptyToKeep") : t("enterPassword")} 
+                                {...field} 
                               />
                             </FormControl>
                             <FormMessage />
@@ -397,27 +397,29 @@ export default function UsersManagementPage() {
                       <FormField
                         control={form.control}
                         name="role"
-                        render={({ field }) => (
+                        render={({ field }: { field: any }) => (
                           <FormItem>
                             <FormLabel>{t("role")}</FormLabel>
-                            <Select 
-                              onValueChange={field.onChange} 
-                              defaultValue={field.value}
-                              value={field.value}
-                            >
-                              <FormControl>
-                                <SelectTrigger>
-                                  <SelectValue placeholder={t("selectRole")} />
-                                </SelectTrigger>
-                              </FormControl>
-                              <SelectContent>
-                                <SelectItem value="Administrator">{t("administrator")}</SelectItem>
-                                <SelectItem value="MainPMO">{t("mainPMO")}</SelectItem>
-                                <SelectItem value="SubPMO">{t("subPMO")}</SelectItem>
-                                <SelectItem value="DepartmentDirector">{t("departmentDirector")}</SelectItem>
-                                <SelectItem value="Executive">{t("executive")}</SelectItem>
-                              </SelectContent>
-                            </Select>
+                            <FormControl>
+                              <Select 
+                                onValueChange={field.onChange} 
+                                defaultValue={field.value}
+                                value={field.value}
+                              >
+                                <FormControl>
+                                  <SelectTrigger>
+                                    <SelectValue placeholder={t("selectRole")} />
+                                  </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                  <SelectItem value="Administrator">{t("administrator")}</SelectItem>
+                                  <SelectItem value="MainPMO">{t("mainPMO")}</SelectItem>
+                                  <SelectItem value="SubPMO">{t("subPMO")}</SelectItem>
+                                  <SelectItem value="DepartmentDirector">{t("departmentDirector")}</SelectItem>
+                                  <SelectItem value="Executive">{t("executive")}</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </FormControl>
                             <FormMessage />
                           </FormItem>
                         )}
@@ -426,28 +428,30 @@ export default function UsersManagementPage() {
                       <FormField
                         control={form.control}
                         name="departmentId"
-                        render={({ field }) => (
+                        render={({ field }: { field: any }) => (
                           <FormItem>
                             <FormLabel>{t("department")}</FormLabel>
-                            <Select 
-                              onValueChange={(value) => field.onChange(value === "none" ? null : parseInt(value))} 
-                              defaultValue={field.value?.toString() || "none"}
-                              value={field.value?.toString() || "none"}
-                            >
-                              <FormControl>
-                                <SelectTrigger>
-                                  <SelectValue placeholder={t("selectDepartment")} />
-                                </SelectTrigger>
-                              </FormControl>
-                              <SelectContent>
-                                <SelectItem value="none">{t("notAssigned")}</SelectItem>
-                                {departments.map((dept) => (
-                                  <SelectItem key={dept.id} value={dept.id.toString()}>
-                                    {dept.name}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
+                            <FormControl>
+                              <Select 
+                                onValueChange={(value: string) => field.onChange(value === "none" ? null : parseInt(value))} 
+                                defaultValue={field.value?.toString() || "none"}
+                                value={field.value?.toString() || "none"}
+                              >
+                                <FormControl>
+                                  <SelectTrigger>
+                                    <SelectValue placeholder={t("selectDepartment")} />
+                                  </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                  <SelectItem value="none">{t("notAssigned")}</SelectItem>
+                                  {departments.map((dept) => (
+                                    <SelectItem key={dept.id} value={dept.id.toString()}>
+                                      {dept.name}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </FormControl>
                             <FormMessage />
                           </FormItem>
                         )}
@@ -458,24 +462,26 @@ export default function UsersManagementPage() {
                       <FormField
                         control={form.control}
                         name="status"
-                        render={({ field }) => (
+                        render={({ field }: { field: any }) => (
                           <FormItem>
                             <FormLabel>{t("status")}</FormLabel>
-                            <Select 
-                              onValueChange={field.onChange} 
-                              defaultValue={field.value}
-                              value={field.value}
-                            >
-                              <FormControl>
-                                <SelectTrigger>
-                                  <SelectValue placeholder={t("selectStatus")} />
-                                </SelectTrigger>
-                              </FormControl>
-                              <SelectContent>
-                                <SelectItem value="Active">{t("active")}</SelectItem>
-                                <SelectItem value="Inactive">{t("inactive")}</SelectItem>
-                              </SelectContent>
-                            </Select>
+                            <FormControl>
+                              <Select 
+                                onValueChange={field.onChange} 
+                                defaultValue={field.value}
+                                value={field.value}
+                              >
+                                <FormControl>
+                                  <SelectTrigger>
+                                    <SelectValue placeholder={t("selectStatus")} />
+                                  </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                  <SelectItem value="Active">{t("active")}</SelectItem>
+                                  <SelectItem value="Inactive">{t("inactive")}</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </FormControl>
                             <FormMessage />
                           </FormItem>
                         )}
@@ -484,24 +490,26 @@ export default function UsersManagementPage() {
                       <FormField
                         control={form.control}
                         name="preferredLanguage"
-                        render={({ field }) => (
+                        render={({ field }: { field: any }) => (
                           <FormItem>
                             <FormLabel>{t("preferredLanguage")}</FormLabel>
-                            <Select 
-                              onValueChange={field.onChange} 
-                              defaultValue={field.value}
-                              value={field.value}
-                            >
-                              <FormControl>
-                                <SelectTrigger>
-                                  <SelectValue placeholder={t("selectLanguage")} />
-                                </SelectTrigger>
-                              </FormControl>
-                              <SelectContent>
-                                <SelectItem value="en">English</SelectItem>
-                                <SelectItem value="ar">العربية</SelectItem>
-                              </SelectContent>
-                            </Select>
+                            <FormControl>
+                              <Select 
+                                onValueChange={field.onChange} 
+                                defaultValue={field.value}
+                                value={field.value}
+                              >
+                                <FormControl>
+                                  <SelectTrigger>
+                                    <SelectValue placeholder={t("selectLanguage")} />
+                                  </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                  <SelectItem value="en">English</SelectItem>
+                                  <SelectItem value="ar">العربية</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </FormControl>
                             <FormMessage />
                           </FormItem>
                         )}
@@ -548,11 +556,11 @@ export default function UsersManagementPage() {
                   <FormField
                     control={form.control}
                     name="name"
-                    render={({ field }) => (
+                    render={({ field }: { field: any }) => (
                       <FormItem>
                         <FormLabel>{t("name")}</FormLabel>
                         <FormControl>
-                          <Input {...field} placeholder={t("enterFullName")} />
+                          <Input placeholder={t("enterFullName")} {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -563,11 +571,11 @@ export default function UsersManagementPage() {
                     <FormField
                       control={form.control}
                       name="email"
-                      render={({ field }) => (
+                      render={({ field }: { field: any }) => (
                         <FormItem>
                           <FormLabel>{t("email")}</FormLabel>
                           <FormControl>
-                            <Input {...field} placeholder={t("enterEmail")} type="email" />
+                            <Input type="email" placeholder={t("enterEmail")} {...field} />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -577,11 +585,11 @@ export default function UsersManagementPage() {
                     <FormField
                       control={form.control}
                       name="phone"
-                      render={({ field }) => (
+                      render={({ field }: { field: any }) => (
                         <FormItem>
                           <FormLabel>{t("phone")}</FormLabel>
                           <FormControl>
-                            <Input {...field} placeholder={t("enterPhone")} />
+                            <Input placeholder={t("enterPhone")} {...field} />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -593,11 +601,11 @@ export default function UsersManagementPage() {
                     <FormField
                       control={form.control}
                       name="username"
-                      render={({ field }) => (
+                      render={({ field }: { field: any }) => (
                         <FormItem>
                           <FormLabel>{t("username")}</FormLabel>
                           <FormControl>
-                            <Input {...field} placeholder={t("enterUsername")} />
+                            <Input placeholder={t("enterUsername")} {...field} />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -607,14 +615,14 @@ export default function UsersManagementPage() {
                     <FormField
                       control={form.control}
                       name="password"
-                      render={({ field }) => (
+                      render={({ field }: { field: any }) => (
                         <FormItem>
                           <FormLabel>{t("newPassword")}</FormLabel>
                           <FormControl>
                             <Input 
-                              {...field} 
                               type="password" 
                               placeholder={t("leaveEmptyToKeep")}
+                              {...field}
                             />
                           </FormControl>
                           <FormMessage />
@@ -627,27 +635,29 @@ export default function UsersManagementPage() {
                     <FormField
                       control={form.control}
                       name="role"
-                      render={({ field }) => (
+                      render={({ field }: { field: any }) => (
                         <FormItem>
                           <FormLabel>{t("role")}</FormLabel>
-                          <Select 
-                            onValueChange={field.onChange} 
-                            defaultValue={field.value}
-                            value={field.value}
-                          >
-                            <FormControl>
-                              <SelectTrigger>
-                                <SelectValue placeholder={t("selectRole")} />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              <SelectItem value="Administrator">{t("administrator")}</SelectItem>
-                              <SelectItem value="MainPMO">{t("mainPMO")}</SelectItem>
-                              <SelectItem value="SubPMO">{t("subPMO")}</SelectItem>
-                              <SelectItem value="DepartmentDirector">{t("departmentDirector")}</SelectItem>
-                              <SelectItem value="Executive">{t("executive")}</SelectItem>
-                            </SelectContent>
-                          </Select>
+                          <FormControl>
+                            <Select 
+                              onValueChange={field.onChange} 
+                              defaultValue={field.value}
+                              value={field.value}
+                            >
+                              <FormControl>
+                                <SelectTrigger>
+                                  <SelectValue placeholder={t("selectRole")} />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                <SelectItem value="Administrator">{t("administrator")}</SelectItem>
+                                <SelectItem value="MainPMO">{t("mainPMO")}</SelectItem>
+                                <SelectItem value="SubPMO">{t("subPMO")}</SelectItem>
+                                <SelectItem value="DepartmentDirector">{t("departmentDirector")}</SelectItem>
+                                <SelectItem value="Executive">{t("executive")}</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </FormControl>
                           <FormMessage />
                         </FormItem>
                       )}
@@ -656,28 +666,30 @@ export default function UsersManagementPage() {
                     <FormField
                       control={form.control}
                       name="departmentId"
-                      render={({ field }) => (
+                      render={({ field }: { field: any }) => (
                         <FormItem>
                           <FormLabel>{t("department")}</FormLabel>
-                          <Select 
-                            onValueChange={(value) => field.onChange(value === "none" ? null : parseInt(value))} 
-                            defaultValue={field.value?.toString() || "none"}
-                            value={field.value?.toString() || "none"}
-                          >
-                            <FormControl>
-                              <SelectTrigger>
-                                <SelectValue placeholder={t("selectDepartment")} />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              <SelectItem value="none">{t("notAssigned")}</SelectItem>
-                              {departments.map((dept) => (
-                                <SelectItem key={dept.id} value={dept.id.toString()}>
-                                  {dept.name}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
+                          <FormControl>
+                            <Select 
+                              onValueChange={(value: string) => field.onChange(value === "none" ? null : parseInt(value))} 
+                              defaultValue={field.value?.toString() || "none"}
+                              value={field.value?.toString() || "none"}
+                            >
+                              <FormControl>
+                                <SelectTrigger>
+                                  <SelectValue placeholder={t("selectDepartment")} />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                <SelectItem value="none">{t("notAssigned")}</SelectItem>
+                                {departments.map((dept) => (
+                                  <SelectItem key={dept.id} value={dept.id.toString()}>
+                                    {dept.name}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </FormControl>
                           <FormMessage />
                         </FormItem>
                       )}
@@ -688,24 +700,26 @@ export default function UsersManagementPage() {
                     <FormField
                       control={form.control}
                       name="status"
-                      render={({ field }) => (
+                      render={({ field }: { field: any }) => (
                         <FormItem>
                           <FormLabel>{t("status")}</FormLabel>
-                          <Select 
-                            onValueChange={field.onChange} 
-                            defaultValue={field.value}
-                            value={field.value}
-                          >
-                            <FormControl>
-                              <SelectTrigger>
-                                <SelectValue placeholder={t("selectStatus")} />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              <SelectItem value="Active">{t("active")}</SelectItem>
-                              <SelectItem value="Inactive">{t("inactive")}</SelectItem>
-                            </SelectContent>
-                          </Select>
+                          <FormControl>
+                            <Select 
+                              onValueChange={field.onChange} 
+                              defaultValue={field.value}
+                              value={field.value}
+                            >
+                              <FormControl>
+                                <SelectTrigger>
+                                  <SelectValue placeholder={t("selectStatus")} />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                <SelectItem value="Active">{t("active")}</SelectItem>
+                                <SelectItem value="Inactive">{t("inactive")}</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </FormControl>
                           <FormMessage />
                         </FormItem>
                       )}
@@ -714,24 +728,26 @@ export default function UsersManagementPage() {
                     <FormField
                       control={form.control}
                       name="preferredLanguage"
-                      render={({ field }) => (
+                      render={({ field }: { field: any }) => (
                         <FormItem>
                           <FormLabel>{t("preferredLanguage")}</FormLabel>
-                          <Select 
-                            onValueChange={field.onChange} 
-                            defaultValue={field.value}
-                            value={field.value}
-                          >
-                            <FormControl>
-                              <SelectTrigger>
-                                <SelectValue placeholder={t("selectLanguage")} />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              <SelectItem value="en">English</SelectItem>
-                              <SelectItem value="ar">العربية</SelectItem>
-                            </SelectContent>
-                          </Select>
+                          <FormControl>
+                            <Select 
+                              onValueChange={field.onChange} 
+                              defaultValue={field.value}
+                              value={field.value}
+                            >
+                              <FormControl>
+                                <SelectTrigger>
+                                  <SelectValue placeholder={t("selectLanguage")} />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                <SelectItem value="en">English</SelectItem>
+                                <SelectItem value="ar">العربية</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </FormControl>
                           <FormMessage />
                         </FormItem>
                       )}
@@ -945,7 +961,7 @@ export default function UsersManagementPage() {
                     className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium
                       ${user.status === 'Active' 
                         ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300'
-                        : 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-300'}`}
+                        : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-100'}`}
                   >
                     {user.status ? t(user.status.toLowerCase()) : '-'}
                   </span>

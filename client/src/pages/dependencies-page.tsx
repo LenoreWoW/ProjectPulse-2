@@ -58,7 +58,7 @@ interface GraphData {
 export default function DependenciesPage() {
   const { t } = useI18n();
   const { user } = useAuth();
-  const graphRef = useRef<any>();
+  const graphRef = useRef<any>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [graphData, setGraphData] = useState<GraphData>({ nodes: [], links: [] });
   const [highlightNodes, setHighlightNodes] = useState<Set<string>>(new Set());
@@ -299,7 +299,7 @@ export default function DependenciesPage() {
                 placeholder={t('searchDependenciesPlaceholder')}
                 className="pl-9"
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchQuery(e.target.value)}
               />
             </div>
             <DropdownMenu>

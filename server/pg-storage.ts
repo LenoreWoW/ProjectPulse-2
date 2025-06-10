@@ -5,32 +5,20 @@ import {
   RiskIssue, InsertRiskIssue, Notification, InsertNotification,
   Assignment, InsertAssignment, ActionItem, InsertActionItem,
   WeeklyUpdate, InsertWeeklyUpdate, ProjectCostHistory, InsertProjectCostHistory,
-  InsertProjectGoal, InsertGoalRelationship, InsertTaskComment, InsertAssignmentComment,
-  InsertProjectDependency, InsertMilestone,
-  ProjectGoal, GoalRelationship, TaskComment, AssignmentComment, Milestone, TaskMilestone,
-  AuditLog, InsertAuditLog, ProjectFavorite, InsertProjectFavorite
+  InsertProjectGoal, InsertGoalRelationship,
+  ProjectDependency, Milestone, TaskMilestone,
+  ProjectGoal, GoalRelationship, ProjectFavorite,
+  InsertMilestone, InsertTaskMilestone, AuditLog, InsertAuditLog,
+  InsertProjectFavorite, InsertProjectDependency, ProjectAttachment, InsertProjectAttachment
 } from '@shared/schema';
 import { IStorage } from './storage';
 import { Store } from 'express-session';
 import { pool } from './db-config';
 import pgSession from 'connect-pg-simple';
 import session from 'express-session';
-
-// Type for project dependency since it's not exported from schema
-interface ProjectDependency {
-  id: number;
-  projectId: number;
-  dependsOnProjectId: number;
-  createdAt: Date;
-  updatedAt: Date;
-}
-
-// Define an interface for TaskMilestone insertion since it's not in the shared schema
-interface InsertTaskMilestone {
-  taskId: number;
-  milestoneId: number;
-  weight?: number;
-}
+import { eq, and } from 'drizzle-orm';
+import { db } from './db';
+import * as schema from '@shared/schema';
 
 // Helper function to format JSON dates
 function formatJsonDates(obj: any): any {
@@ -132,23 +120,6 @@ export class PgStorage implements IStorage {
   }
   
   /**
-   * Execute a query within a transaction
-   */
-  private async queryWithTransaction<T>(
-    client: PoolClient, 
-    text: string, 
-    params: any[] = []
-  ): Promise<T[]> {
-    try {
-      const result = await client.query(text, params);
-      return result.rows.map((row: any) => formatJsonDates(row) as T);
-    } catch (error) {
-      console.error('Database transaction query error:', error);
-      throw error;
-    }
-  }
-  
-  /**
    * Common function to get a single entity by ID
    */
   private async getEntityById<T>(table: string, id: number, returnNullIfNotFound = true): Promise<T | undefined> {
@@ -165,53 +136,19 @@ export class PgStorage implements IStorage {
   /**
    * Common function to create an entity
    */
-  private async createEntity<T, U>(table: string, entity: T): Promise<U> {
-    // Filter out undefined values
-    const cleanEntity = Object.entries(entity as Record<string, any>)
-      .filter(([_, value]) => value !== undefined)
-      .reduce((acc, [key, value]) => ({ ...acc, [key]: value }), {});
-    
-    const keys = Object.keys(cleanEntity);
-    if (keys.length === 0) {
-      throw new Error(`Cannot create ${table} with empty entity`);
-    }
-    
-    const placeholders = keys.map((_, i) => `$${i + 1}`).join(', ');
-    const values = Object.values(cleanEntity);
-    const columns = keys.join(', ');
-    
-    const query = `INSERT INTO ${table} (${columns}) VALUES (${placeholders}) RETURNING *`;
-    const result = await this.query<U>(query, values);
-    
-    return result[0];
+  private async createEntity<TInsert, TSelect>(tableName: keyof typeof schema, data: TInsert): Promise<TSelect> {
+    // @ts-ignore
+    const result = await db.insert(schema[tableName]).values(data).returning();
+    return result[0] as TSelect;
   }
   
   /**
    * Common function to update an entity
    */
-  private async updateEntity<T, U>(table: string, id: number, updates: Partial<T>): Promise<U | undefined> {
-    // Filter out undefined values
-    const cleanUpdates = Object.entries(updates as Record<string, any>)
-      .filter(([_, value]) => value !== undefined)
-      .reduce((acc, [key, value]) => ({ ...acc, [key]: value }), {});
-    
-    // Add updatedAt if not present
-    if (!('updatedAt' in cleanUpdates)) {
-      (cleanUpdates as any).updatedAt = new Date();
-    }
-    
-    const keys = Object.keys(cleanUpdates);
-    if (keys.length === 0) {
-      throw new Error(`Cannot update ${table} with empty updates`);
-    }
-    
-    const setClause = keys.map((key, i) => `${key} = $${i + 2}`).join(', ');
-    const values = Object.values(cleanUpdates);
-    
-    const query = `UPDATE ${table} SET ${setClause} WHERE id = $1 RETURNING *`;
-    const result = await this.query<U>(query, [id, ...values]);
-    
-    return result.length > 0 ? result[0] : undefined;
+  private async updateEntity<TUpdate, TSelect>(tableName: keyof typeof schema, id: number, data: TUpdate): Promise<TSelect | undefined> {
+    // @ts-ignore
+    const result = await db.update(schema[tableName]).set(data).where(eq(schema[tableName].id, id)).returning();
+    return result[0] as TSelect | undefined;
   }
 
   // ------------------------------------------------------------------------
@@ -617,22 +554,27 @@ export class PgStorage implements IStorage {
   // Project Goal methods
   // ------------------------------------------------------------------------
   async createProjectGoal(projectGoal: InsertProjectGoal): Promise<ProjectGoal> {
-    return this.createEntity<InsertProjectGoal, ProjectGoal>('project_goals', projectGoal);
+    return this.createEntity<InsertProjectGoal, ProjectGoal>('projectGoals', projectGoal);
   }
 
   async getProjectGoals(projectId: number): Promise<ProjectGoal[]> {
-    return this.query<ProjectGoal>('SELECT * FROM project_goals WHERE projectid = $1', [projectId]);
+    return this.query<ProjectGoal>('SELECT * FROM projectGoals WHERE projectid = $1', [projectId]);
   }
 
   // ------------------------------------------------------------------------
   // Project Dependency methods
   // ------------------------------------------------------------------------
-  async createProjectDependency(dependency: InsertProjectDependency): Promise<ProjectDependency> {
-    return this.createEntity<InsertProjectDependency, ProjectDependency>('project_dependencies', dependency);
+  async getProjectDependencies(projectid: number): Promise<ProjectDependency[]> {
+    return db.select().from(schema.projectDependencies).where(eq(schema.projectDependencies.projectid, projectid));
   }
 
-  async getProjectDependencies(projectId: number): Promise<ProjectDependency[]> {
-    return this.query<ProjectDependency>('SELECT * FROM project_dependencies WHERE projectid = $1', [projectId]);
+  async createProjectDependency(dependency: InsertProjectDependency): Promise<ProjectDependency> {
+    return this.createEntity<InsertProjectDependency, ProjectDependency>('projectDependencies', dependency);
+  }
+
+  async removeProjectDependency(projectid: number, dependsonprojectid: number): Promise<boolean> {
+    const result = await db.delete(schema.projectDependencies).where(and(eq(schema.projectDependencies.projectid, projectid), eq(schema.projectDependencies.dependsonprojectid, dependsonprojectid)));
+    return (result.rowCount ?? 0) > 0;
   }
 
   // ------------------------------------------------------------------------
@@ -711,7 +653,7 @@ export class PgStorage implements IStorage {
   // Change Request methods
   // ------------------------------------------------------------------------
   async getChangeRequest(id: number): Promise<ChangeRequest | undefined> {
-    return this.getEntityById<ChangeRequest>('change_requests', id);
+    return this.query<ChangeRequest>('SELECT * FROM change_requests WHERE id = $1', [id]).then(results => results[0]);
   }
 
   async getChangeRequestsByProject(projectId: number): Promise<ChangeRequest[]> {
@@ -723,11 +665,56 @@ export class PgStorage implements IStorage {
   }
 
   async createChangeRequest(changeRequest: InsertChangeRequest): Promise<ChangeRequest> {
-    return this.createEntity<InsertChangeRequest, ChangeRequest>('change_requests', changeRequest);
+    const result = await this.query<ChangeRequest>(`
+      INSERT INTO change_requests (projectid, requestedbyuserid, type, details, status, impact, createdat, updatedat)
+      VALUES ($1, $2, $3, $4, $5, $6, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+      RETURNING *
+    `, [
+      changeRequest.projectid,
+      changeRequest.requestedbyuserid,
+      changeRequest.type,
+      changeRequest.details,
+      changeRequest.status || 'Pending',
+      changeRequest.impact
+    ]);
+    return result[0];
   }
 
   async updateChangeRequest(id: number, changeRequest: Partial<ChangeRequest>): Promise<ChangeRequest | undefined> {
-    return this.updateEntity<Partial<ChangeRequest>, ChangeRequest>('change_requests', id, changeRequest);
+    const updates: string[] = [];
+    const values: any[] = [];
+    let paramCount = 1;
+
+    if (changeRequest.status !== undefined) {
+      updates.push(`status = $${paramCount++}`);
+      values.push(changeRequest.status);
+    }
+    if (changeRequest.reviewedbyuserid !== undefined) {
+      updates.push(`reviewedbyuserid = $${paramCount++}`);
+      values.push(changeRequest.reviewedbyuserid);
+    }
+    if (changeRequest.reviewedat !== undefined) {
+      updates.push(`reviewedat = $${paramCount++}`);
+      values.push(changeRequest.reviewedat);
+    }
+    if (changeRequest.impact !== undefined) {
+      updates.push(`impact = $${paramCount++}`);
+      values.push(changeRequest.impact);
+    }
+
+    if (updates.length === 0) return this.getChangeRequest(id);
+
+    updates.push(`updatedat = CURRENT_TIMESTAMP`);
+    values.push(id);
+
+    const result = await this.query<ChangeRequest>(`
+      UPDATE change_requests 
+      SET ${updates.join(', ')}
+      WHERE id = $${paramCount}
+      RETURNING *
+    `, values);
+
+    return result[0];
   }
 
   // ------------------------------------------------------------------------
@@ -742,11 +729,11 @@ export class PgStorage implements IStorage {
   }
 
   async getStrategicGoals(): Promise<Goal[]> {
-    return this.query<Goal>('SELECT * FROM goals WHERE isstrategic = TRUE');
+    return this.query<Goal>('SELECT * FROM goals WHERE is_strategic = TRUE');
   }
 
   async getAnnualGoals(): Promise<Goal[]> {
-    return this.query<Goal>('SELECT * FROM goals WHERE isstrategic = FALSE');
+    return this.query<Goal>('SELECT * FROM goals WHERE is_strategic = FALSE');
   }
 
   async createGoal(goal: InsertGoal): Promise<Goal> {
@@ -761,7 +748,7 @@ export class PgStorage implements IStorage {
   // Risk & Issue methods
   // ------------------------------------------------------------------------
   async getRiskIssue(id: number): Promise<RiskIssue | undefined> {
-    return this.getEntityById<RiskIssue>('risks_issues', id);
+    return this.query<RiskIssue>('SELECT * FROM risks_issues WHERE id = $1', [id]).then(results => results[0]);
   }
 
   async getRiskIssuesByProject(projectId: number): Promise<RiskIssue[]> {
@@ -777,11 +764,71 @@ export class PgStorage implements IStorage {
   }
 
   async createRiskIssue(riskIssue: InsertRiskIssue): Promise<RiskIssue> {
-    return this.createEntity<InsertRiskIssue, RiskIssue>('risks_issues', riskIssue);
+    const result = await this.query<RiskIssue>(`
+      INSERT INTO risks_issues (projectid, createdbyuserid, title, description, type, status, severity, impact, mitigationplan, createdat, updatedat)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+      RETURNING *
+    `, [
+      riskIssue.projectid,
+      riskIssue.createdbyuserid,
+      riskIssue.title,
+      riskIssue.description || null,
+      riskIssue.type,
+      riskIssue.status || 'Open',
+      riskIssue.severity || 'Medium',
+      riskIssue.impact || null,
+      riskIssue.mitigationplan || null
+    ]);
+    return result[0];
   }
 
   async updateRiskIssue(id: number, riskIssue: Partial<RiskIssue>): Promise<RiskIssue | undefined> {
-    return this.updateEntity<Partial<RiskIssue>, RiskIssue>('risks_issues', id, riskIssue);
+    const updates: string[] = [];
+    const values: any[] = [];
+    let paramCount = 1;
+
+    if (riskIssue.title !== undefined) {
+      updates.push(`title = $${paramCount++}`);
+      values.push(riskIssue.title);
+    }
+    if (riskIssue.description !== undefined) {
+      updates.push(`description = $${paramCount++}`);
+      values.push(riskIssue.description);
+    }
+    if (riskIssue.status !== undefined) {
+      updates.push(`status = $${paramCount++}`);
+      values.push(riskIssue.status);
+    }
+    if (riskIssue.severity !== undefined) {
+      updates.push(`severity = $${paramCount++}`);
+      values.push(riskIssue.severity);
+    }
+    if (riskIssue.impact !== undefined) {
+      updates.push(`impact = $${paramCount++}`);
+      values.push(riskIssue.impact);
+    }
+    if (riskIssue.mitigationplan !== undefined) {
+      updates.push(`mitigationplan = $${paramCount++}`);
+      values.push(riskIssue.mitigationplan);
+    }
+    if (riskIssue.resolvedat !== undefined) {
+      updates.push(`resolvedat = $${paramCount++}`);
+      values.push(riskIssue.resolvedat);
+    }
+
+    if (updates.length === 0) return this.getRiskIssue(id);
+
+    updates.push(`updatedat = CURRENT_TIMESTAMP`);
+    values.push(id);
+
+    const result = await this.query<RiskIssue>(`
+      UPDATE risks_issues 
+      SET ${updates.join(', ')}
+      WHERE id = $${paramCount}
+      RETURNING *
+    `, values);
+
+    return result[0];
   }
 
   // ------------------------------------------------------------------------
@@ -792,7 +839,7 @@ export class PgStorage implements IStorage {
   }
 
   async getNotificationsByUser(userId: number): Promise<Notification[]> {
-    return this.query<Notification>('SELECT * FROM notifications WHERE userid = $1 ORDER BY createdat DESC', [userId]);
+    return this.query<Notification>('SELECT * FROM notifications WHERE user_id = $1 ORDER BY created_at DESC', [userId]);
   }
 
   async createNotification(notification: InsertNotification): Promise<Notification> {
@@ -808,7 +855,7 @@ export class PgStorage implements IStorage {
   }
 
   async updateNotificationReminderSent(id: number): Promise<Notification | undefined> {
-    return this.updateEntity<Partial<Notification>, Notification>('notifications', id, { lastReminderSent: new Date() });
+    return this.updateEntity<Partial<Notification>, Notification>('notifications', id, { lastremindersent: new Date() });
   }
 
   async getNotificationsNeedingReminders(hoursThreshold: number = 24): Promise<Notification[]> {
@@ -840,34 +887,79 @@ export class PgStorage implements IStorage {
   }
 
   async createAssignment(assignment: InsertAssignment): Promise<Assignment> {
-    return this.createEntity<InsertAssignment, Assignment>('assignments', assignment);
+    const result = await this.query<Assignment>(`
+      INSERT INTO assignments (title, description, assignedtouserid, assignedbyuserid, status, duedate, createdat, updatedat)
+      VALUES ($1, $2, $3, $4, $5, $6, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+      RETURNING *
+    `, [
+      assignment.title,
+      assignment.description || null,
+      assignment.assignedtouserid,
+      assignment.assignedbyuserid,
+      assignment.status || 'Pending',
+      assignment.deadline || null
+    ]);
+    return result[0];
   }
 
   async updateAssignment(id: number, assignment: Partial<Assignment>): Promise<Assignment | undefined> {
-    return this.updateEntity<Partial<Assignment>, Assignment>('assignments', id, assignment);
+    const updates: string[] = [];
+    const values: any[] = [];
+    let paramCount = 1;
+
+    if (assignment.title !== undefined) {
+      updates.push(`title = $${paramCount++}`);
+      values.push(assignment.title);
+    }
+    if (assignment.description !== undefined) {
+      updates.push(`description = $${paramCount++}`);
+      values.push(assignment.description);
+    }
+    if (assignment.status !== undefined) {
+      updates.push(`status = $${paramCount++}`);
+      values.push(assignment.status);
+    }
+    if (assignment.duedate !== undefined) {
+      updates.push(`duedate = $${paramCount++}`);
+      values.push(assignment.duedate);
+    }
+
+    if (updates.length === 0) return this.getAssignment(id);
+
+    updates.push(`updatedat = CURRENT_TIMESTAMP`);
+    values.push(id);
+
+    const result = await this.query<Assignment>(`
+      UPDATE assignments 
+      SET ${updates.join(', ')}
+      WHERE id = $${paramCount}
+      RETURNING *
+    `, values);
+
+    return result[0];
   }
 
   // ------------------------------------------------------------------------
   // Action Item methods
   // ------------------------------------------------------------------------
   async getActionItem(id: number): Promise<ActionItem | undefined> {
-    return this.getEntityById<ActionItem>('action_items', id);
+    return this.getEntityById<ActionItem>('actionItems', id);
   }
 
   async getActionItemsByMeeting(meetingId: number): Promise<ActionItem[]> {
-    return this.query<ActionItem>('SELECT * FROM action_items WHERE meetingid = $1', [meetingId]);
+    return this.query<ActionItem>('SELECT * FROM actionItems WHERE meeting_id = $1', [meetingId]);
   }
 
   async getActionItemsByAssignee(assignedToUserId: number): Promise<ActionItem[]> {
-    return this.query<ActionItem>('SELECT * FROM action_items WHERE userid = $1', [assignedToUserId]);
+    return this.query<ActionItem>('SELECT * FROM actionItems WHERE user_id = $1', [assignedToUserId]);
   }
 
   async createActionItem(actionItem: InsertActionItem): Promise<ActionItem> {
-    return this.createEntity<InsertActionItem, ActionItem>('action_items', actionItem);
+    return this.createEntity<InsertActionItem, ActionItem>('actionItems', actionItem);
   }
 
   async updateActionItem(id: number, actionItem: Partial<ActionItem>): Promise<ActionItem | undefined> {
-    return this.updateEntity<Partial<ActionItem>, ActionItem>('action_items', id, actionItem);
+    return this.updateEntity<Partial<ActionItem>, ActionItem>('actionItems', id, actionItem);
   }
 
   // ------------------------------------------------------------------------
@@ -881,70 +973,84 @@ export class PgStorage implements IStorage {
     return this.query<WeeklyUpdate>('SELECT * FROM weekly_updates WHERE projectid = $1', [projectId]);
   }
 
-  async createWeeklyUpdate(weeklyUpdate: InsertWeeklyUpdate): Promise<WeeklyUpdate> {
-    const client = await this.getClient();
-    try {
-      await client.query('BEGIN');
-      
-      // Calculate current progress for the project
-      const projectTasks = await this.queryWithTransaction<Task>(
-        client,
-        'SELECT * FROM tasks WHERE projectid = $1',
-        [weeklyUpdate.projectId]
-      );
-      
-      let currentProgress = 0;
-      if (projectTasks.length > 0) {
-        const completedTasks = projectTasks.filter(task => task.status === "Completed").length;
-        currentProgress = Math.floor((completedTasks / projectTasks.length) * 100);
-      }
-      
-      // Get previous week's progress if available
-      const existingUpdates = await this.queryWithTransaction<WeeklyUpdate>(
-        client,
-        'SELECT * FROM weekly_updates WHERE projectid = $1 ORDER BY year DESC, weeknumber DESC LIMIT 1',
-        [weeklyUpdate.projectId]
-      );
-      
-      const previousWeekProgress = existingUpdates.length > 0 ? existingUpdates[0].progressSnapshot : 0;
-      
-      // Create the weekly update with calculated progress values
-      const weeklyUpdateWithProgress = {
-        ...weeklyUpdate,
-        progressSnapshot: currentProgress,
-        previousWeekProgress,
-        submittedAt: new Date()
-      };
-      
-      const result = await this.createEntityWithTransaction<typeof weeklyUpdateWithProgress, WeeklyUpdate>(
-        client,
-        'weekly_updates',
-        weeklyUpdateWithProgress
-      );
-      
-      await client.query('COMMIT');
-      return result;
-    } catch (error) {
-      await client.query('ROLLBACK');
-      throw error;
-    } finally {
-      client.release();
-    }
+  async createWeeklyUpdate(updateData: InsertWeeklyUpdate): Promise<WeeklyUpdate> {
+    const [newUpdate] = await this.query<WeeklyUpdate>(`
+      INSERT INTO weekly_updates (projectid, weeknumber, year, summary, status, progresssnapshot, createdat, userid)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+      RETURNING id, projectid, weeknumber, year, summary, status, progresssnapshot, createdat, userid
+    `, [updateData.projectid, (updateData as any).weeknumber, updateData.year, updateData.summary, (updateData as any).status, (updateData as any).progresssnapshot, updateData.createdat, (updateData as any).userid]);
+    return newUpdate;
   }
 
-  private async createEntityWithTransaction<T, U>(client: PoolClient, table: string, entity: T): Promise<U> {
-    const keys = Object.keys(entity as Record<string, any>);
-    const values = Object.values(entity as Record<string, any>);
-    const placeholders = values.map((_, index) => `$${index + 1}`).join(', ');
+  async getWeeklyUpdatesForProject(projectid: number): Promise<WeeklyUpdate[]> {
+    return this.query<WeeklyUpdate>(`
+      SELECT 
+        id,
+        projectid,
+        weeknumber,
+        year,
+        summary,
+        status,
+        progresssnapshot,
+        createdat
+      FROM weekly_updates
+      WHERE projectid = $1
+      ORDER BY year DESC, weeknumber DESC
+    `, [projectid]);
+  }
+
+  // Create an initial snapshot for a project
+  async createInitialSnapshot(projectId: number, managerUserId: number): Promise<WeeklyUpdate> {
+    const currentDate = new Date();
+    const weekNumber = this.getWeekNumber(currentDate);
+    const year = currentDate.getFullYear();
     
-    const query = `INSERT INTO ${table} (${keys.join(', ')}) VALUES (${placeholders}) RETURNING *`;
-    const result = await this.queryWithTransaction<U>(client, query, values);
+    // Get current project progress
+    const project = await this.getProject(projectId);
+    const progressSnapshot = project?.completionPercentage || 0;
     
-    if (result.length === 0) {
-      throw new Error(`Failed to create entity in ${table}`);
-    }
+    const [snapshot] = await this.query<WeeklyUpdate>(`
+      INSERT INTO weekly_updates (
+        projectid, 
+        createdbyuserid,
+        weeknumber, 
+        year, 
+        achievements,
+        challenges,
+        nextsteps,
+        risksissues,
+        progresssnapshot, 
+        previousweekprogress,
+        createdat,
+        updatedat
+      )
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+      RETURNING *
+    `, [
+      projectId, 
+      managerUserId,
+      weekNumber, 
+      year, 
+      'Initial project snapshot created',
+      'Project initiated',
+      'Begin project execution and milestone tracking',
+      'No risks identified at project start',
+      progressSnapshot,
+      0, // Previous week was 0
+      currentDate,
+      currentDate
+    ]);
     
-    return formatJsonDates(result[0]);
+    return snapshot;
+  }
+
+  // Helper method to get ISO week number
+  private getWeekNumber(date: Date): number {
+    const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+    const dayNum = d.getUTCDay() || 7;
+    d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+    const yearStart = new Date(Date.UTC(d.getUTCFullYear(),0,1));
+    return Math.ceil((((d.getTime() - yearStart.getTime()) / 86400000) + 1)/7);
   }
 
   // ------------------------------------------------------------------------
@@ -959,7 +1065,7 @@ export class PgStorage implements IStorage {
   }
 
   async createProjectCostHistory(projectCostHistory: InsertProjectCostHistory): Promise<ProjectCostHistory> {
-    return this.createEntity<InsertProjectCostHistory, ProjectCostHistory>('project_cost_history', projectCostHistory);
+    return this.createEntity<InsertProjectCostHistory, ProjectCostHistory>('projectCostHistory', projectCostHistory);
   }
   
   // ------------------------------------------------------------------------
@@ -990,20 +1096,20 @@ export class PgStorage implements IStorage {
   // Task-Milestone relationship methods
   // ------------------------------------------------------------------------
   async getTaskMilestone(id: number): Promise<TaskMilestone | undefined> {
-    return this.getEntityById<TaskMilestone>('task_milestones', id);
+    return this.getEntityById<TaskMilestone>('taskMilestones', id);
   }
 
   async getTaskMilestonesByTask(taskId: number): Promise<TaskMilestone[]> {
-    return this.query<TaskMilestone>('SELECT * FROM task_milestones WHERE taskid = $1', [taskId]);
+    return this.query<TaskMilestone>('SELECT * FROM taskMilestones WHERE taskid = $1', [taskId]);
   }
 
   async getTaskMilestonesByMilestone(milestoneId: number): Promise<TaskMilestone[]> {
-    return this.query<TaskMilestone>('SELECT * FROM task_milestones WHERE milestoneid = $1', [milestoneId]);
+    return this.query<TaskMilestone>('SELECT * FROM taskMilestones WHERE milestoneid = $1', [milestoneId]);
   }
 
   async createTaskMilestone(taskMilestone: InsertTaskMilestone): Promise<TaskMilestone> {
-    const result = await this.createEntity<InsertTaskMilestone, TaskMilestone>('task_milestones', taskMilestone);
-    await this.recalculateMilestoneProgress(taskMilestone.milestoneId);
+    const result = await this.createEntity<InsertTaskMilestone, TaskMilestone>('taskMilestones', taskMilestone);
+    await this.recalculateMilestoneProgress(taskMilestone.milestoneid);
     return result;
   }
 
@@ -1013,8 +1119,8 @@ export class PgStorage implements IStorage {
       return undefined;
     }
     
-    const result = await this.updateEntity<Partial<TaskMilestone>, TaskMilestone>('task_milestones', id, taskMilestone);
-    await this.recalculateMilestoneProgress(existing.milestoneId);
+    const result = await this.updateEntity<Partial<TaskMilestone>, TaskMilestone>('taskMilestones', id, taskMilestone);
+    await this.recalculateMilestoneProgress(existing.milestoneid);
     return result;
   }
 
@@ -1025,12 +1131,12 @@ export class PgStorage implements IStorage {
         return false;
       }
       
-      const result = await this.query<{ id: number }>('DELETE FROM task_milestones WHERE id = $1 RETURNING id', [id]);
+      const result = await this.query<{ id: number }>('DELETE FROM taskMilestones WHERE id = $1 RETURNING id', [id]);
       if (result.length === 0) {
         return false;
       }
       
-      await this.recalculateMilestoneProgress(existing.milestoneId);
+      await this.recalculateMilestoneProgress(existing.milestoneid);
       return true;
     } catch (error) {
       console.error('Failed to delete task milestone:', error);
@@ -1067,7 +1173,7 @@ export class PgStorage implements IStorage {
       let completionPercentage = 0;
       
       for (const tm of taskMilestones) {
-        const task = await this.getTask(tm.taskId);
+        const task = await this.getTask(tm.taskid);
         if (!task) continue;
         
         // Weight of this task-milestone relationship (default to 1)
@@ -1135,51 +1241,27 @@ export class PgStorage implements IStorage {
   // ------------------------------------------------------------------------
   // Audit Log methods
   // ------------------------------------------------------------------------
-  async createAuditLog(auditLog: InsertAuditLog): Promise<AuditLog> {
-    // Map camelCase properties to database column names - but the database actually uses camelCase
-    const dbAuditLog = {
-      userId: auditLog.userId,
-      action: auditLog.action,
-      entityType: auditLog.entityType,
-      entityId: auditLog.entityId,
-      details: auditLog.details,
-      ipAddress: auditLog.ipAddress,
-      userAgent: auditLog.userAgent,
-      departmentId: auditLog.departmentId,
-      createdAt: auditLog.createdAt || new Date()
-    };
-
-    // Filter out undefined values
-    const cleanEntity = Object.entries(dbAuditLog)
-      .filter(([_, value]) => value !== undefined)
-      .reduce((acc, [key, value]) => ({ ...acc, [key]: value }), {});
-    
-    const keys = Object.keys(cleanEntity);
-    const placeholders = keys.map((_, i) => `$${i + 1}`).join(', ');
-    const values = Object.values(cleanEntity);
-    const columns = keys.join(', ');
-    
-    const query = `INSERT INTO audit_logs (${columns}) VALUES (${placeholders}) RETURNING *`;
-    const result = await this.query<AuditLog>(query, values);
-    
-    // The query method already handles the camelCase conversion, so direct return
-    return result[0];
+  async createAuditLog(log: InsertAuditLog): Promise<AuditLog> {
+    const [result] = await this.query<AuditLog>(`
+      INSERT INTO auditLogs (departmentid, userid, action, relatedentitytype, relatedentityid, details, createdat)
+      VALUES ($1, $2, $3, $4, $5, $6, $7)
+      RETURNING id, departmentid, userid, action, relatedentitytype, relatedentityid, details, createdat
+    `, [log.departmentid, log.userid, log.action, log.relatedentitytype, log.relatedentityid, log.details, log.createdat]);
+    return result;
   }
 
   async getAuditLog(id: number): Promise<AuditLog | undefined> {
     const result = await this.query<AuditLog>(`
       SELECT 
         id,
-        userId,
+        departmentid,
+        userid,
         action,
-        entityType,
-        entityId,
+        relatedentitytype,
+        relatedentityid,
         details,
-        ipAddress,
-        userAgent,
-        departmentId,
-        createdAt
-      FROM audit_logs 
+        createdat
+      FROM auditLogs 
       WHERE id = $1
     `, [id]);
     
@@ -1211,21 +1293,15 @@ export class PgStorage implements IStorage {
 
     let query = `
       SELECT 
-        al.id,
-        al.userId as "userId",
-        u.name as "userName",
-        al.action,
-        al.entityType as "entityType",
-        al.entityId as "entityId",
-        al.details,
-        al.ipAddress as "ipAddress",
-        al.userAgent as "userAgent",
-        al.createdAt as "createdAt",
-        al.departmentId as "departmentId",
-        d.name as "departmentName"
-      FROM audit_logs al
-      LEFT JOIN users u ON al.userId = u.id
-      LEFT JOIN departments d ON al.departmentId = d.id
+        id,
+        departmentid,
+        userid,
+        action,
+        entity_type,
+        entity_id,
+        details,
+        createdat
+      FROM audit_logs
     `;
     
     const whereClauses: string[] = [];
@@ -1233,31 +1309,31 @@ export class PgStorage implements IStorage {
     let paramIndex = 1;
 
     if (userId) {
-      whereClauses.push(`al.userId = $${paramIndex++}`);
+      whereClauses.push(`userid = $${paramIndex++}`);
       params.push(userId);
     }
     if (entityType) {
-      whereClauses.push(`al.entityType = $${paramIndex++}`);
+      whereClauses.push(`entity_type = $${paramIndex++}`);
       params.push(entityType);
     }
     if (entityId) {
-      whereClauses.push(`al.entityId = $${paramIndex++}`);
+      whereClauses.push(`entity_id = $${paramIndex++}`);
       params.push(entityId);
     }
     if (action) {
-      whereClauses.push(`al.action = $${paramIndex++}`);
+      whereClauses.push(`action = $${paramIndex++}`);
       params.push(action);
     }
     if (startDate) {
-      whereClauses.push(`al.createdAt >= $${paramIndex++}`);
+      whereClauses.push(`createdat >= $${paramIndex++}`);
       params.push(startDate);
     }
     if (endDate) {
-      whereClauses.push(`al.createdAt <= $${paramIndex++}`);
+      whereClauses.push(`createdat <= $${paramIndex++}`);
       params.push(endDate);
     }
     if (departmentId) {
-      whereClauses.push(`al.departmentId = $${paramIndex++}`);
+      whereClauses.push(`departmentid = $${paramIndex++}`);
       params.push(departmentId);
     }
 
@@ -1265,7 +1341,7 @@ export class PgStorage implements IStorage {
       query += ` WHERE ${whereClauses.join(' AND ')}`;
     }
 
-    query += ` ORDER BY al.createdAt DESC LIMIT $${paramIndex++} OFFSET $${paramIndex++}`;
+    query += ` ORDER BY createdat DESC LIMIT $${paramIndex++} OFFSET $${paramIndex++}`;
     params.push(limit, offset);
     
     console.log('PgStorage.getAuditLogs - About to execute query:');
@@ -1275,7 +1351,7 @@ export class PgStorage implements IStorage {
 
     try {
       // Use the internal query method that handles row formatting
-      const result = await this.query<AuditLog>(query, params);
+      const result = await this.query<any>(query, params);
       
       console.log('PgStorage.getAuditLogs - Query executed successfully, rows returned:', result.length);
       
@@ -1290,26 +1366,31 @@ export class PgStorage implements IStorage {
     }
   }
 
-  async getAuditLogsByUser(userId: number, limit: number = 50, offset: number = 0): Promise<AuditLog[]> {
+  async getAuditLogsByUser(userId: number, limit: number = 50, offset: number = 0): Promise<any[]> {
     return this.getAuditLogs({ userId, limit, offset });
   }
 
   // Goal Relationships
-  async createGoalRelationship(relationship: InsertGoalRelationship): Promise<GoalRelationship> {
-    return this.createEntity<InsertGoalRelationship, GoalRelationship>('goal_relationships', relationship);
+  async createGoalRelationship(
+    relationship: InsertGoalRelationship
+  ): Promise<GoalRelationship> {
+    return this.createEntity<InsertGoalRelationship, GoalRelationship>(
+      'goalRelationships',
+      relationship
+    );
   }
 
   async getGoalRelationshipsByParent(parentGoalId: number): Promise<GoalRelationship[]> {
     const result = await this.query<GoalRelationship>(`
       SELECT 
         id,
-        "parentGoalId",
-        "childGoalId",
+        parentgoalid as "parentGoalId",
+        childgoalid as "childGoalId",
         weight,
-        "createdAt",
-        "updatedAt"
-      FROM goal_relationships 
-      WHERE "parentGoalId" = $1
+        createdat as "createdAt",
+        updatedat as "updatedAt"
+      FROM goalRelationships 
+      WHERE parentgoalid = $1
     `, [parentGoalId]);
     return result;
   }
@@ -1318,28 +1399,20 @@ export class PgStorage implements IStorage {
     const result = await this.query<GoalRelationship>(`
       SELECT 
         id,
-        "parentGoalId",
-        "childGoalId",
+        parentgoalid as "parentGoalId",
+        childgoalid as "childGoalId",
         weight,
-        "createdAt",
-        "updatedAt"
-      FROM goal_relationships 
-      WHERE "childGoalId" = $1
+        createdat as "createdAt",
+        updatedat as "updatedAt"
+      FROM goalRelationships 
+      WHERE childgoalid = $1
     `, [childGoalId]);
     return result;
   }
 
   async deleteGoalRelationship(id: number): Promise<boolean> {
-    try {
-      const result = await this.query(`
-        DELETE FROM goal_relationships 
-        WHERE id = $1
-      `, [id]);
-      return true;
-    } catch (error) {
-      console.error('Error deleting goal relationship:', error);
-      return false;
-    }
+    await this.query("DELETE FROM goalRelationships WHERE id = $1", [id]);
+    return true; // Assuming success if no error is thrown
   }
 
   // Project-Goal Relationships
@@ -1347,46 +1420,38 @@ export class PgStorage implements IStorage {
     const result = await this.query<ProjectGoal>(`
       SELECT 
         id,
-        "projectId",
-        "goalId",
+        projectid as "projectId",
+        goalid as "goalId",
         weight,
-        "createdAt",
-        "updatedAt"
-      FROM project_goals 
-      WHERE "goalId" = $1
+        createdat as "createdAt",
+        updatedat as "updatedAt"
+      FROM projectGoals 
+      WHERE goalid = $1
     `, [goalId]);
     return result;
   }
 
   async deleteProjectGoal(id: number): Promise<boolean> {
-    try {
-      const result = await this.query(`
-        DELETE FROM project_goals 
-        WHERE id = $1
-      `, [id]);
-      return true;
-    } catch (error) {
-      console.error('Error deleting project goal:', error);
-      return false;
-    }
+    await this.query("DELETE FROM projectGoals WHERE id = $1", [id]);
+    return true; // Assuming success if no error
   }
 
   // Project Favorites methods
-  async addProjectFavorite(favorite: InsertProjectFavorite): Promise<ProjectFavorite> {
-    return this.createEntity<InsertProjectFavorite, ProjectFavorite>('project_favorites', favorite);
+  async addProjectFavorite(favorite: any): Promise<ProjectFavorite> {
+    // Convert camelCase properties to snake_case to match database schema
+    const favoriteData = {
+      user_id: favorite.userId,
+      project_id: favorite.projectId,
+    };
+    return this.createEntity<InsertProjectFavorite, ProjectFavorite>('projectFavorites', favoriteData as InsertProjectFavorite);
   }
 
   async removeProjectFavorite(userId: number, projectId: number): Promise<boolean> {
-    try {
-      const result = await this.query(`
-        DELETE FROM project_favorites 
-        WHERE user_id = $1 AND project_id = $2
-      `, [userId, projectId]);
-      return true;
-    } catch (error) {
-      console.error('Error removing project favorite:', error);
-      return false;
-    }
+    await this.query(
+      "DELETE FROM project_favorites WHERE user_id = $1 AND project_id = $2",
+      [userId, projectId]
+    );
+    return true;
   }
 
   async getUserFavoriteProjects(userId: number): Promise<ProjectFavorite[]> {
@@ -1404,7 +1469,7 @@ export class PgStorage implements IStorage {
     return result;
   }
 
-  async isProjectFavorited(userId: number, projectId: number): Promise<boolean> {
+  async isProjectFavorite(userId: number, projectId: number): Promise<boolean> {
     const result = await this.query<{count: string}>(`
       SELECT COUNT(*) as count 
       FROM project_favorites 
@@ -1412,5 +1477,131 @@ export class PgStorage implements IStorage {
     `, [userId, projectId]);
     
     return parseInt(result[0]?.count || '0') > 0;
+  }
+
+  async getTaskMilestonesForMilestone(milestoneid: number): Promise<TaskMilestone[]> {
+    return this.query<TaskMilestone>(`
+      SELECT * FROM taskMilestones WHERE milestoneid = $1
+    `, [milestoneid]);
+  }
+
+  async getTaskMilestonesForTask(taskid: number): Promise<any[]> {
+    const result = await this.query<any[]>(`
+      SELECT 
+        id,
+        taskid,
+        milestoneid,
+        milestoneName: milestones.name,
+        milestoneDueDate: milestones.duedate,
+        milestoneStatus: milestones.status
+      FROM taskMilestones
+      LEFT JOIN milestones ON taskMilestones.milestoneid = milestones.id
+      WHERE taskid = $1
+    `, [taskid]);
+    return result;
+  }
+
+  async getExistingTaskMilestone(taskid: number, milestoneid: number): Promise<TaskMilestone | undefined> {
+    const result = await this.query<TaskMilestone>(`
+      SELECT * FROM task_milestones 
+      WHERE taskid = $1 AND milestoneid = $2
+    `, [taskid, milestoneid]);
+    
+    return result[0];
+  }
+
+  // ------------------------------------------------------------------------
+  // Project Attachment methods
+  // ------------------------------------------------------------------------
+  
+  async createProjectAttachment(attachment: InsertProjectAttachment): Promise<ProjectAttachment> {
+    return this.createEntity<InsertProjectAttachment, ProjectAttachment>('projectAttachments', attachment);
+  }
+
+  async getProjectAttachment(id: number): Promise<ProjectAttachment | undefined> {
+    return this.getEntityById<ProjectAttachment>('project_attachments', id);
+  }
+
+  async getProjectAttachments(projectId: number): Promise<ProjectAttachment[]> {
+    return this.query<ProjectAttachment>(`
+      SELECT 
+        pa.*,
+        u.name as uploadedByName
+      FROM project_attachments pa
+      LEFT JOIN users u ON pa.uploadeduserid = u.id
+      WHERE pa.projectid = $1
+      ORDER BY pa.createdat DESC
+    `, [projectId]);
+  }
+
+  async getProjectAttachmentsByCategory(projectId: number, category: string): Promise<ProjectAttachment[]> {
+    return this.query<ProjectAttachment>(`
+      SELECT 
+        pa.*,
+        u.name as uploadedByName
+      FROM project_attachments pa
+      LEFT JOIN users u ON pa.uploadeduserid = u.id
+      WHERE pa.projectid = $1 AND pa.filecategory = $2
+      ORDER BY pa.createdat DESC
+    `, [projectId, category]);
+  }
+
+  async getProjectPlan(projectId: number): Promise<ProjectAttachment | undefined> {
+    const result = await this.query<ProjectAttachment>(`
+      SELECT 
+        pa.*,
+        u.name as uploadedByName
+      FROM project_attachments pa
+      LEFT JOIN users u ON pa.uploadeduserid = u.id
+      WHERE pa.projectid = $1 AND pa.isprojectplan = true
+      ORDER BY pa.createdat DESC
+      LIMIT 1
+    `, [projectId]);
+    
+    return result[0];
+  }
+
+  async updateProjectAttachment(id: number, attachment: Partial<ProjectAttachment>): Promise<ProjectAttachment | undefined> {
+    return this.updateEntity<Partial<ProjectAttachment>, ProjectAttachment>('projectAttachments', id, attachment);
+  }
+
+  async deleteProjectAttachment(id: number): Promise<boolean> {
+    try {
+      const result = await this.query(`DELETE FROM project_attachments WHERE id = $1`, [id]);
+      return true;
+    } catch (error) {
+      console.error('Failed to delete project attachment:', error);
+      return false;
+    }
+  }
+
+  async setProjectPlan(projectId: number, attachmentId: number): Promise<boolean> {
+    const client = await this.getClient();
+    try {
+      await client.query('BEGIN');
+      
+      // First, unset any existing project plan for this project
+      await client.query(`
+        UPDATE project_attachments 
+        SET isprojectplan = false 
+        WHERE projectid = $1 AND isprojectplan = true
+      `, [projectId]);
+      
+      // Then set the new project plan
+      await client.query(`
+        UPDATE project_attachments 
+        SET isprojectplan = true, filecategory = 'plan'
+        WHERE id = $1 AND projectid = $2
+      `, [attachmentId, projectId]);
+      
+      await client.query('COMMIT');
+      return true;
+    } catch (error) {
+      await client.query('ROLLBACK');
+      console.error('Failed to set project plan:', error);
+      return false;
+    } finally {
+      client.release();
+    }
   }
 }

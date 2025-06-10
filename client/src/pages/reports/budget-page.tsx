@@ -216,66 +216,66 @@ export default function BudgetReportPage() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead 
-                    className="cursor-pointer"
-                    onClick={() => requestSort('department')}
-                  >
-                    <div className="flex items-center gap-1">
+                  <TableHead>
+                    <div 
+                      className="flex items-center gap-1 cursor-pointer"
+                      onClick={() => requestSort('department')}
+                    >
                       {t("department")}
                       {getSortDirection('department') === 'asc' && <ChevronUp className="h-4 w-4" />}
                       {getSortDirection('department') === 'desc' && <ChevronDown className="h-4 w-4" />}
                       {!getSortDirection('department') && <ChevronsUpDown className="h-4 w-4 opacity-50" />}
                     </div>
                   </TableHead>
-                  <TableHead 
-                    className="text-right cursor-pointer"
-                    onClick={() => requestSort('budget')}
-                  >
-                    <div className="flex items-center justify-end gap-1">
+                  <TableHead className="text-right">
+                    <div 
+                      className="flex items-center justify-end gap-1 cursor-pointer"
+                      onClick={() => requestSort('budget')}
+                    >
                       {t("budget")}
                       {getSortDirection('budget') === 'asc' && <ChevronUp className="h-4 w-4" />}
                       {getSortDirection('budget') === 'desc' && <ChevronDown className="h-4 w-4" />}
                       {!getSortDirection('budget') && <ChevronsUpDown className="h-4 w-4 opacity-50" />}
                     </div>
                   </TableHead>
-                  <TableHead 
-                    className="text-right cursor-pointer"
-                    onClick={() => requestSort('spent')}
-                  >
-                    <div className="flex items-center justify-end gap-1">
+                  <TableHead className="text-right">
+                    <div 
+                      className="flex items-center justify-end gap-1 cursor-pointer"
+                      onClick={() => requestSort('spent')}
+                    >
                       {t("spent")}
                       {getSortDirection('spent') === 'asc' && <ChevronUp className="h-4 w-4" />}
                       {getSortDirection('spent') === 'desc' && <ChevronDown className="h-4 w-4" />}
                       {!getSortDirection('spent') && <ChevronsUpDown className="h-4 w-4 opacity-50" />}
                     </div>
                   </TableHead>
-                  <TableHead 
-                    className="text-right cursor-pointer"
-                    onClick={() => requestSort('remaining')}
-                  >
-                    <div className="flex items-center justify-end gap-1">
+                  <TableHead className="text-right">
+                    <div 
+                      className="flex items-center justify-end gap-1 cursor-pointer"
+                      onClick={() => requestSort('remaining')}
+                    >
                       {t("remaining")}
                       {getSortDirection('remaining') === 'asc' && <ChevronUp className="h-4 w-4" />}
                       {getSortDirection('remaining') === 'desc' && <ChevronDown className="h-4 w-4" />}
                       {!getSortDirection('remaining') && <ChevronsUpDown className="h-4 w-4 opacity-50" />}
                     </div>
                   </TableHead>
-                  <TableHead 
-                    className="text-right cursor-pointer"
-                    onClick={() => requestSort('percentSpent')}
-                  >
-                    <div className="flex items-center justify-end gap-1">
+                  <TableHead className="text-right">
+                    <div 
+                      className="flex items-center justify-end gap-1 cursor-pointer"
+                      onClick={() => requestSort('percentSpent')}
+                    >
                       {t("percentSpent")}
                       {getSortDirection('percentSpent') === 'asc' && <ChevronUp className="h-4 w-4" />}
                       {getSortDirection('percentSpent') === 'desc' && <ChevronDown className="h-4 w-4" />}
                       {!getSortDirection('percentSpent') && <ChevronsUpDown className="h-4 w-4 opacity-50" />}
                     </div>
                   </TableHead>
-                  <TableHead 
-                    className="text-right cursor-pointer"
-                    onClick={() => requestSort('status')}
-                  >
-                    <div className="flex items-center justify-end gap-1">
+                  <TableHead className="text-right">
+                    <div 
+                      className="flex items-center justify-end gap-1 cursor-pointer"
+                      onClick={() => requestSort('status')}
+                    >
                       {t("status")}
                       {getSortDirection('status') === 'asc' && <ChevronUp className="h-4 w-4" />}
                       {getSortDirection('status') === 'desc' && <ChevronDown className="h-4 w-4" />}

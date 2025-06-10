@@ -4,13 +4,14 @@ import {
   RiskIssue, InsertRiskIssue, Notification, InsertNotification,
   Assignment, InsertAssignment, ActionItem, InsertActionItem,
   WeeklyUpdate, InsertWeeklyUpdate, ProjectCostHistory, InsertProjectCostHistory,
-  projectStatusEnum, roleEnum, userStatusEnum, ProjectGoal, InsertProjectGoal, updateProjectSchema,
+  projectStatus, userStatus, ProjectGoal, InsertProjectGoal, updateProjectSchema,
   InsertProjectDependency, UpdateTask, UpdateAssignment, UpdateActionItem,
   insertDepartmentSchema, updateTaskSchema, updateAssignmentSchema, updateActionItemSchema,
   insertProjectSchema, insertTaskSchema, insertChangeRequestSchema,
   insertProjectCostHistorySchema, insertGoalSchema, insertRiskIssueSchema,
   insertAssignmentSchema, insertActionItemSchema, insertWeeklyUpdateSchema,
-  insertMilestoneSchema, updateMilestoneSchema, insertTaskMilestoneSchema
+  insertMilestoneSchema, updateMilestoneSchema, insertTaskMilestoneSchema,
+  ProjectAttachment, InsertProjectAttachment, insertProjectAttachmentSchema
 } from "@shared/schema";
 import { z } from "zod";
 import { Express, Request, Response, NextFunction } from "express";
@@ -26,9 +27,66 @@ import express from "express";
 import { sendEmail, sendPasswordResetEmail, sendApprovalNotificationEmail } from "./email";
 import path from "path";
 import http from 'http';
+import multer from 'multer';
+import fs from 'fs';
+import { v4 as uuidv4 } from 'uuid';
 
 // Create a new instance of the PostgreSQL storage
 export const storage = new PgStorage();
+
+// Configure multer for file uploads
+const storage_multer = multer.diskStorage({
+  destination: (req, file, cb) => {
+    const uploadPath = path.join(process.cwd(), 'uploads', 'projects');
+    
+    // Ensure directory exists
+    if (!fs.existsSync(uploadPath)) {
+      fs.mkdirSync(uploadPath, { recursive: true });
+    }
+    
+    cb(null, uploadPath);
+  },
+  filename: (req, file, cb) => {
+    // Generate unique filename with UUID
+    const uniqueName = `${uuidv4()}-${file.originalname}`;
+    cb(null, uniqueName);
+  }
+});
+
+const upload = multer({
+  storage: storage_multer,
+  limits: {
+    fileSize: 50 * 1024 * 1024, // 50MB limit
+  },
+  fileFilter: (req, file, cb) => {
+    // Allow various file types for project attachments
+    const allowedTypes = [
+      // Documents
+      'application/pdf',
+      'application/msword',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      'application/vnd.ms-excel',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      'application/vnd.ms-powerpoint',
+      'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+      'text/plain',
+      // Images
+      'image/jpeg',
+      'image/png',
+      'image/gif',
+      'image/webp',
+      // Archives
+      'application/zip',
+      'application/x-rar-compressed',
+    ];
+    
+    if (allowedTypes.includes(file.mimetype)) {
+      cb(null, true);
+    } else {
+      cb(new Error('Invalid file type. Only documents, images, and archives are allowed.'));
+    }
+  }
+});
 
 // Add a type declaration to extend Express.Request
 declare global {
@@ -59,7 +117,7 @@ async function sendApprovalNotifications(
     
     // Filter users by department if applicable
     const filteredUsers = item.departmentId
-      ? usersToNotify.filter(user => user.departmentId === item.departmentId)
+      ? usersToNotify.filter(user => user.departmentid === item.departmentId)
       : usersToNotify;
     
     // If no departmental approvers found, notify MainPMO as fallback
@@ -260,11 +318,11 @@ function hasDepartmentAccess() {
     switch (resourceType) {
       case 'projects':
         const project = await storage.getProject(resourceId);
-        departmentId = project?.departmentId ?? undefined;
+        departmentId = project?.departmentid ?? undefined;
         break;
       case 'users':
         const user = await storage.getUser(resourceId);
-        departmentId = user?.departmentId ?? undefined;
+        departmentId = user?.departmentid ?? undefined;
         break;
       // Add more resource types as needed
     }
@@ -274,7 +332,7 @@ function hasDepartmentAccess() {
       return;
     }
     
-    const userDeptId = req.user.departmentId ?? -1;
+    const userDeptId = req.user.departmentid ?? -1;
     
     // Department directors can only access their department's resources
     if (userRole === "DepartmentDirector" && userDeptId === departmentId) {
@@ -440,14 +498,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       if (req.currentUser.role === "DepartmentDirector") {
         // Department directors can only see users in their department
-        filteredUsers = users.filter(user => user.departmentId === req.currentUser.departmentId);
+        filteredUsers = users.filter(user => user.departmentid === req.currentUser.departmentid);
       } else if (req.currentUser.role === "SubPMO") {
         // Sub-PMO can only see users in their department
-        filteredUsers = users.filter(user => user.departmentId === req.currentUser.departmentId);
+        filteredUsers = users.filter(user => user.departmentid === req.currentUser.departmentid);
       } else if (!["Administrator", "MainPMO", "Executive"].includes(req.currentUser.role || '')) {
         // Other roles can only see users in their department
         filteredUsers = users.filter(user => 
-          user.departmentId === req.currentUser.departmentId
+          user.departmentid === req.currentUser.departmentid
         );
       }
       
@@ -478,7 +536,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         req.currentUser.role !== "Administrator" && 
         req.currentUser.role !== "MainPMO" && 
         req.currentUser.role !== "Executive" && 
-        req.currentUser.departmentId !== user.departmentId && 
+        req.currentUser.departmentid !== user.departmentid && 
         req.currentUser.id !== userId
       ) {
         res.status(403).json({ message: "Forbidden: Cannot view user from different department" });
@@ -504,22 +562,71 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       if (req.currentUser.role === "DepartmentDirector") {
           // Department directors can only see projects in their department
-        filteredProjects = projects.filter(project => project.departmentId === req.currentUser.departmentId);
+        filteredProjects = projects.filter(project => project.departmentid === req.currentUser.departmentid);
       } else if (req.currentUser.role === "SubPMO") {
           // Sub-PMO can only see projects in their department
-        filteredProjects = projects.filter(project => project.departmentId === req.currentUser.departmentId);
+        filteredProjects = projects.filter(project => project.departmentid === req.currentUser.departmentid);
       } else if (req.currentUser.role === "ProjectManager") {
           // Project managers can only see projects they manage or in their department
           filteredProjects = projects.filter(project => 
           project.managerUserId === req.currentUser.id || 
-          project.departmentId === req.currentUser.departmentId
+          project.departmentid === req.currentUser.departmentid
           );
       } else if (req.currentUser.role === "User") {
           // Regular users can only see projects in their department
-        filteredProjects = projects.filter(project => project.departmentId === req.currentUser.departmentId);
+        filteredProjects = projects.filter(project => project.departmentid === req.currentUser.departmentid);
       }
       
-      res.json(filteredProjects);
+      // Enhance projects with milestone-based progress calculation
+      const enhancedProjects = await Promise.all(
+        filteredProjects.map(async (project) => {
+          try {
+            // Get milestones for this project
+            const milestones = await storage.getMilestonesByProject(project.id);
+            
+            let completionPercentage = 0;
+            let totalMilestones = milestones.length;
+            let completedMilestones = 0;
+            
+            if (totalMilestones > 0) {
+              // Calculate project progress based on milestone completion percentages
+              const totalProgress = milestones.reduce((sum, milestone) => {
+                return sum + (milestone.completionPercentage || 0);
+              }, 0);
+              
+              completionPercentage = Math.round(totalProgress / totalMilestones);
+              completedMilestones = milestones.filter(m => (m.completionPercentage || 0) >= 100).length;
+            } else {
+              // Fallback: If no milestones, calculate based on tasks directly
+              const tasks = await storage.getTasksByProject(project.id);
+              const totalTasks = tasks.length;
+              
+              if (totalTasks > 0) {
+                const completedTasks = tasks.filter(task => task.status === "Completed").length;
+                completionPercentage = Math.round((completedTasks / totalTasks) * 100);
+              }
+            }
+            
+            return {
+              ...project,
+              completionPercentage,
+              totalMilestones,
+              completedMilestones
+            };
+          } catch (error) {
+            // If fetching fails for a project, return project with zero progress
+            console.error(`Failed to calculate progress for project ${project.id}:`, error);
+            return {
+              ...project,
+              completionPercentage: 0,
+              totalMilestones: 0,
+              completedMilestones: 0
+            };
+          }
+        })
+      );
+      
+      res.json(enhancedProjects);
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch projects" });
     }
@@ -540,7 +647,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         req.currentUser.role !== "Administrator" && 
         req.currentUser.role !== "MainPMO" && 
         req.currentUser.role !== "Executive" && 
-        req.currentUser.departmentId !== project.departmentId && 
+        req.currentUser.departmentid !== project.departmentid && 
         req.currentUser.id !== project.managerUserId
       ) {
         res.status(403).json({ message: "Forbidden: Cannot view project from different department" });
@@ -557,43 +664,88 @@ export async function registerRoutes(app: Express): Promise<Server> {
     "/api/projects", 
     isAuthenticated, 
     hasRole(["Administrator", "MainPMO", "SubPMO", "ProjectManager", "DepartmentDirector"]), 
-    validateBody(insertProjectSchema), 
+    upload.fields([
+      { name: 'projectPlanFile', maxCount: 1 },
+      { name: 'attachments', maxCount: 10 }
+    ]),
     hasAuth(async (req, res): Promise<void> => {
       try {
+        // Get the project manager to determine department
+        const managerId = parseInt(req.body.managerUserId);
+        const projectManager = await storage.getUser(managerId);
+        
+        if (!projectManager) {
+          res.status(400).json({ message: "Invalid project manager selected" });
+          return;
+        }
+
+        // Parse the project data from FormData
+        const projectData: any = {
+          title: req.body.title,
+          description: req.body.description || null,
+          priority: req.body.priority || 'Medium',
+          departmentId: projectManager.departmentid, // Automatically assign based on project manager
+          managerUserId: managerId,
+          budget: req.body.budget ? parseFloat(req.body.budget) : null,
+          startDate: new Date(req.body.startDate),
+          endDate: new Date(req.body.endDate),
+          status: 'Planning' // Default status for new projects
+        };
+
+        // Parse JSON fields
+        let projectGoals = [];
+        let relatedProjects = [];
+        let relatedToProjects = [];
+        
+        try {
+          if (req.body.projectGoals) {
+            projectGoals = JSON.parse(req.body.projectGoals);
+          }
+          if (req.body.relatedProjects) {
+            relatedProjects = JSON.parse(req.body.relatedProjects);
+          }
+          if (req.body.relatedToProjects) {
+            relatedToProjects = JSON.parse(req.body.relatedToProjects);
+          }
+        } catch (parseError) {
+          console.error('Error parsing JSON fields:', parseError);
+        }
+
         // Project Managers can only create projects in their department
         if (
           req.currentUser.role === "ProjectManager" && 
-          req.body.departmentId !== req.currentUser.departmentId
+          projectManager.departmentid !== req.currentUser.departmentid
         ) {
-          res.status(403).json({ message: "Forbidden: Cannot create project in different department" });
+          res.status(403).json({ message: "Forbidden: Cannot assign project manager from different department" });
           return;
         }
         
-        // If creating as Project Manager, set manager to self
-        if (req.currentUser.role === "ProjectManager" && !req.body.managerUserId) {
-          req.body.managerUserId = req.currentUser.id;
+        // Project Managers can only assign themselves as manager
+        if (
+          req.currentUser.role === "ProjectManager" && 
+          managerId !== req.currentUser.id
+        ) {
+          res.status(403).json({ message: "Forbidden: Project managers can only assign themselves as manager" });
+          return;
         }
         
         // Department Directors can only create projects in their department
         if (
           req.currentUser.role === "DepartmentDirector" && 
-          req.body.departmentId !== req.currentUser.departmentId
+          projectManager.departmentid !== req.currentUser.departmentid
         ) {
-          res.status(403).json({ message: "Forbidden: Cannot create project in different department" });
+          res.status(403).json({ message: "Forbidden: Cannot assign project manager from different department" });
           return;
         }
         
         // Sub-PMO can only create projects in their department
         if (
           req.currentUser.role === "SubPMO" && 
-          req.body.departmentId !== req.currentUser.departmentId
+          projectManager.departmentid !== req.currentUser.departmentid
         ) {
-          res.status(403).json({ message: "Forbidden: Cannot create project in different department" });
+          res.status(403).json({ message: "Forbidden: Cannot assign project manager from different department" });
           return;
         }
-        
-        // Extract the project goals and project relationships from request body
-        const { projectGoals, relatedProjects, relatedToProjects, ...projectData } = req.body;
         
         // Determine if project needs approval
         const needsApproval = req.currentUser.role === "ProjectManager";
@@ -605,6 +757,47 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         // Create the project
         const newProject = await storage.createProject(projectData);
+        
+        // Handle file uploads if any
+        const files = req.files as { [fieldname: string]: Express.Multer.File[] };
+        const attachments: any[] = [];
+        
+        // Handle project plan file
+        if (files && files.projectPlanFile && files.projectPlanFile.length > 0) {
+          const planFile = files.projectPlanFile[0];
+          const planAttachment = await storage.createProjectAttachment({
+            projectid: newProject.id,
+            uploadeduserid: req.currentUser.id,
+            filename: planFile.filename,
+            originalname: planFile.originalname,
+            filesize: planFile.size,
+            filetype: planFile.mimetype,
+            filepath: planFile.path,
+            filecategory: 'plan',
+            description: 'Project Plan Document',
+            isprojectplan: true,
+          });
+          attachments.push(planAttachment);
+        }
+        
+        // Handle additional attachments
+        if (files && files.attachments && files.attachments.length > 0) {
+          for (const file of files.attachments) {
+            const attachment = await storage.createProjectAttachment({
+              projectid: newProject.id,
+              uploadeduserid: req.currentUser.id,
+              filename: file.filename,
+              originalname: file.originalname,
+              filesize: file.size,
+              filetype: file.mimetype,
+              filepath: file.path,
+              filecategory: 'general',
+              description: 'Project Attachment',
+              isprojectplan: false,
+            });
+            attachments.push(attachment);
+          }
+        }
         
         // If project manager created this, notify the Sub-PMO of the same department
         if (needsApproval) {
@@ -655,7 +848,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
         }
         
-        res.status(201).json(newProject);
+        res.status(201).json({
+          ...newProject,
+          attachments: attachments
+        });
       } catch (error) {
         res.status(500).json({ message: "Failed to create project" });
       }
@@ -693,7 +889,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         if (
           currentUser && 
           currentUser.role === "DepartmentDirector" && 
-          project.departmentId !== currentUser.departmentId
+          project.departmentId !== currentUser.departmentid
         ) {
           res.status(403).json({ message: "Forbidden: Project is not in your department" });
           return;
@@ -703,7 +899,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         if (
           currentUser && 
           currentUser.role === "SubPMO" && 
-          project.departmentId !== currentUser.departmentId
+          project.departmentId !== currentUser.departmentid
         ) {
           res.status(403).json({ message: "Forbidden: Project is not in your department" });
           return;
@@ -715,7 +911,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
           return;
         }
         
+        // Check if status is changing to InProgress to create initial snapshot
+        const isStatusChangingToInProgress = req.body.status === "InProgress" && project.status !== "InProgress";
+        
         const updatedProject = await storage.updateProject(projectId, req.body);
+        
+        // Create initial snapshot if project just moved to InProgress
+        if (isStatusChangingToInProgress && updatedProject.manageruserid) {
+          try {
+            await storage.createInitialSnapshot(projectId, updatedProject.manageruserid);
+            console.log(`Created initial snapshot for project ${projectId}`);
+          } catch (snapshotError) {
+            console.error(`Failed to create initial snapshot for project ${projectId}:`, snapshotError);
+            // Don't fail the whole request if snapshot creation fails
+          }
+        }
+        
         res.json(updatedProject);
       } catch (error) {
         res.status(500).json({ message: "Failed to update project" });
@@ -743,7 +954,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           req.currentUser.role === "DepartmentDirector"
         ) {
           // Check if the project is in their department
-          if (project.departmentId !== req.currentUser.departmentId) {
+          if (project.departmentid !== req.currentUser.departmentid) {
             res.status(403).json({ message: "Forbidden: Project is not in your department" });
             return;
           }
@@ -801,7 +1012,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           req.currentUser.role === "DepartmentDirector"
         ) {
           // Check if the project is in their department
-          if (project.departmentId !== req.currentUser.departmentId) {
+          if (project.departmentid !== req.currentUser.departmentid) {
             res.status(403).json({ message: "Forbidden: Project is not in your department" });
             return;
           }
@@ -865,7 +1076,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         currentUser.role !== "Administrator" && 
         currentUser.role !== "MainPMO" && 
         currentUser.role !== "Executive" && 
-        currentUser.departmentId !== project.departmentId && 
+        currentUser.departmentid !== project.departmentid && 
         currentUser.id !== project.managerUserId
       ) {
         res.status(403).json({ message: "Forbidden: Cannot view tasks from different department's project" });
@@ -923,7 +1134,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         if (
           req.currentUser.role !== "Administrator" && 
           req.currentUser.role !== "MainPMO" && 
-          req.currentUser.departmentId !== project.departmentId && 
+          req.currentUser.departmentid !== project.departmentid && 
           req.currentUser.id !== project.managerUserId
         ) {
           res.status(403).json({ message: "Forbidden: Cannot create tasks in different department's project" });
@@ -978,7 +1189,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         if (
           req.currentUser.role !== "Administrator" && 
           req.currentUser.role !== "MainPMO" && 
-          req.currentUser.departmentId !== project.departmentId && 
+          req.currentUser.departmentid !== project.departmentid && 
           req.currentUser.id !== project.managerUserId
         ) {
           res.status(403).json({ message: "Forbidden: Cannot create tasks in different department's project" });
@@ -1022,7 +1233,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           req.currentUser.id !== task.createdByUserId && 
           req.currentUser.id !== project?.managerUserId && 
           req.currentUser.role !== "DepartmentDirector" && 
-          (req.currentUser.role === "DepartmentDirector" && req.currentUser.departmentId !== project?.departmentId)
+          (req.currentUser.role === "DepartmentDirector" && req.currentUser.departmentid !== project?.departmentid)
         ) {
           res.status(403).json({ message: "Forbidden: Insufficient permissions to update this task" });
           return;
@@ -1036,6 +1247,65 @@ export async function registerRoutes(app: Express): Promise<Server> {
     })
   );
   
+  // Project Members Routes
+  app.get("/api/projects/:projectId/members", isAuthenticated, async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const projectId = parseInt(req.params.projectId);
+      const project = await storage.getProject(projectId);
+      
+      if (!project) {
+        res.status(404).json({ message: "Project not found" });
+        return;
+      }
+      
+      // Check if user has access to this project's team
+      const currentUser = req.user;
+      if (
+        currentUser && 
+        currentUser.role !== "Administrator" && 
+        currentUser.role !== "MainPMO" && 
+        currentUser.role !== "Executive" && 
+        currentUser.departmentid !== project.departmentid && 
+        currentUser.id !== project.managerUserId
+      ) {
+        res.status(403).json({ message: "Forbidden: Cannot view team from different department's project" });
+        return;
+      }
+
+      // Get all users assigned to tasks in this project
+      const tasks = await storage.getTasksByProject(projectId);
+      const assignedUserIds = new Set<number>(tasks
+        .map(task => task.assignedUserId)
+        .filter((id): id is number => id !== null && id !== undefined));
+      
+      // Add the project manager if they exist
+      if (project.managerUserId) {
+        assignedUserIds.add(project.managerUserId);
+      }
+      
+      // Get user details for all team members
+      const members = [];
+      for (const userId of assignedUserIds) {
+        const user = await storage.getUser(userId);
+        if (user) {
+          members.push({
+            id: user.id,
+            name: user.name,
+            email: user.email,
+            role: user.role,
+            departmentId: user.departmentid,
+            isManager: user.id === project.managerUserId
+          });
+        }
+      }
+      
+      res.json(members);
+    } catch (error) {
+      console.error("Error fetching project members:", error);
+      res.status(500).json({ message: "Failed to fetch project members" });
+    }
+  });
+
   // Change Requests Routes
   app.get("/api/projects/:projectId/change-requests", isAuthenticated, async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
@@ -1054,7 +1324,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         currentUser.role !== "Administrator" && 
         currentUser.role !== "MainPMO" && 
         currentUser.role !== "Executive" && 
-        currentUser.departmentId !== project.departmentId && 
+        currentUser.departmentid !== project.departmentid && 
         currentUser.id !== project.managerUserId
       ) {
         res.status(403).json({ message: "Forbidden: Cannot view change requests from different department's project" });
@@ -1081,7 +1351,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         filteredChangeRequests = [];
         for (const cr of pendingChangeRequests) {
           const project = await storage.getProject(cr.projectId);
-          if (project && project.departmentId === currentUser.departmentId) {
+          if (project && project.departmentid === currentUser.departmentid) {
             filteredChangeRequests.push(cr);
           }
         }
@@ -1133,7 +1403,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           await sendApprovalNotifications('ChangeRequest', {
             id: newChangeRequest.id,
             title: newChangeRequest.details || `Change Request #${newChangeRequest.id}`,
-            departmentId: project.departmentId
+            departmentId: project.departmentid
           }, req.currentUser.id);
         } catch (notifyError) {
           console.error("Failed to send approval notifications:", notifyError);
@@ -1167,7 +1437,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           req.currentUser.role === "DepartmentDirector"
         ) {
           // Check if the project is in their department
-          if (project && project.departmentId !== req.currentUser.departmentId) {
+          if (project && project.departmentid !== req.currentUser.departmentid) {
             res.status(403).json({ message: "Forbidden: Change request is for a project outside your department" });
             return;
           }
@@ -1294,7 +1564,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             if (updatedStatus === "ReturnedToSubPMO") {
               // Find a SubPMO user from the same department (simplified approach)
               const subPMOUsers = await storage.getUsersByRole("SubPMO");
-              const departmentSubPMO = subPMOUsers.find(user => user.departmentId === project?.departmentId);
+              const departmentSubPMO = subPMOUsers.find(user => user.departmentid === project?.departmentid);
               if (departmentSubPMO) {
                 notifyUserId = departmentSubPMO.id;
               }
@@ -1378,7 +1648,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         currentUser.role !== "Administrator" && 
         currentUser.role !== "MainPMO" && 
         currentUser.role !== "Executive" && 
-        currentUser.departmentId !== project.departmentId && 
+        currentUser.departmentid !== project.departmentid && 
         currentUser.id !== project.managerUserId
       ) {
         res.status(403).json({ message: "Forbidden: Cannot view cost history from different department's project" });
@@ -1403,16 +1673,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       if (currentUser && currentUser.role === "DepartmentDirector") {
         // Department directors can only see projects in their department
-        filteredProjects = projects.filter(project => project.departmentId === currentUser.departmentId);
+        filteredProjects = projects.filter(project => project.departmentid === currentUser.departmentid);
       } else if (currentUser && currentUser.role === "SubPMO") {
         // Sub-PMO can only see projects in their department
-        filteredProjects = projects.filter(project => project.departmentId === currentUser.departmentId);
+        filteredProjects = projects.filter(project => project.departmentid === currentUser.departmentid);
       } else if (currentUser && currentUser.role === "ProjectManager") {
         // Project managers can only see projects they manage
         filteredProjects = projects.filter(project => project.managerUserId === currentUser.id);
       } else if (currentUser && currentUser.role === "User") {
         // Regular users can only see projects in their department
-        filteredProjects = projects.filter(project => project.departmentId === currentUser.departmentId);
+        filteredProjects = projects.filter(project => project.departmentid === currentUser.departmentid);
       }
       
       // Separate planning projects from active projects
@@ -1558,7 +1828,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         for (const ri of allRisksIssues) {
           const project = await storage.getProject(ri.projectId);
-          if (project && project.departmentId === req.currentUser.departmentId) {
+          if (project && project.departmentid === req.currentUser.departmentid) {
             filteredRisksIssues.push(ri);
           }
         }
@@ -1573,6 +1843,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   }));
   
+  // Get project risks and issues
+  app.get("/api/projects/:projectId/risks-issues", isAuthenticated, async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const projectId = parseInt(req.params.projectId);
+      const project = await storage.getProject(projectId);
+      
+      if (!project) {
+        res.status(404).json({ message: "Project not found" });
+        return;
+      }
+      
+      const risksIssues = await storage.getRiskIssuesByProject(projectId);
+      res.json(risksIssues);
+    } catch (error) {
+      console.error("Error fetching project risks and issues:", error);
+      res.status(500).json({ message: "Failed to fetch project risks and issues" });
+    }
+  });
+
   app.post(
     "/api/projects/:projectId/risks-issues", 
     validateBody(insertRiskIssueSchema), 
@@ -1781,7 +2070,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         currentUser.role !== "Administrator" && 
         currentUser.role !== "MainPMO" && 
         currentUser.role !== "Executive" && 
-        currentUser.departmentId !== project.departmentId && 
+        currentUser.departmentid !== project.departmentid && 
         currentUser.id !== project.managerUserId
       ) {
         res.status(403).json({ message: "Forbidden: Cannot view weekly updates from different department's project" });
@@ -1891,7 +2180,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Check if already favorited
-      const isAlreadyFavorited = await storage.isProjectFavorited(userId, projectId);
+      const isAlreadyFavorited = await storage.isProjectFavorite(userId, projectId);
       if (isAlreadyFavorited) {
         res.status(409).json({ message: "Project is already favorited" });
         return;
@@ -1969,11 +2258,301 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return;
       }
       
-      const isFavorited = await storage.isProjectFavorited(userId, projectId);
+      const isFavorited = await storage.isProjectFavorite(userId, projectId);
       res.json({ isFavorited });
     } catch (error) {
       console.error('Error checking if project is favorited:', error);
       res.status(500).json({ message: "Failed to check favorite status" });
+    }
+  });
+
+  // Project Attachment Routes
+  app.get("/api/projects/:projectId/attachments", isAuthenticated, async (req: Request, res: Response): Promise<void> => {
+    try {
+      const projectId = parseInt(req.params.projectId);
+      const project = await storage.getProject(projectId);
+      
+      if (!project) {
+        res.status(404).json({ message: "Project not found" });
+        return;
+      }
+      
+      // Check if user has access to this project
+      const currentUser = req.user;
+      if (
+        currentUser && 
+        currentUser.role !== "Administrator" && 
+        currentUser.role !== "MainPMO" && 
+        currentUser.role !== "Executive" && 
+        currentUser.departmentid !== project.departmentid && 
+        currentUser.id !== project.managerUserId
+      ) {
+        res.status(403).json({ message: "Forbidden: Cannot view attachments from different department's project" });
+        return;
+      }
+      
+      const attachments = await storage.getProjectAttachments(projectId);
+      res.json(attachments);
+    } catch (error) {
+      console.error('Error fetching project attachments:', error);
+      res.status(500).json({ message: "Failed to fetch project attachments" });
+    }
+  });
+
+  app.get("/api/projects/:projectId/plan", isAuthenticated, async (req: Request, res: Response): Promise<void> => {
+    try {
+      const projectId = parseInt(req.params.projectId);
+      const project = await storage.getProject(projectId);
+      
+      if (!project) {
+        res.status(404).json({ message: "Project not found" });
+        return;
+      }
+      
+      // Check if user has access to this project
+      const currentUser = req.user;
+      if (
+        currentUser && 
+        currentUser.role !== "Administrator" && 
+        currentUser.role !== "MainPMO" && 
+        currentUser.role !== "Executive" && 
+        currentUser.departmentid !== project.departmentid && 
+        currentUser.id !== project.managerUserId
+      ) {
+        res.status(403).json({ message: "Forbidden: Cannot view project plan from different department's project" });
+        return;
+      }
+      
+      const projectPlan = await storage.getProjectPlan(projectId);
+      res.json(projectPlan);
+    } catch (error) {
+      console.error('Error fetching project plan:', error);
+      res.status(500).json({ message: "Failed to fetch project plan" });
+    }
+  });
+
+  app.post("/api/projects/:projectId/attachments", isAuthenticated, upload.single('file'), async (req: Request, res: Response): Promise<void> => {
+    try {
+      const projectId = parseInt(req.params.projectId);
+      const project = await storage.getProject(projectId);
+      
+      if (!project) {
+        res.status(404).json({ message: "Project not found" });
+        return;
+      }
+      
+      if (!req.file) {
+        res.status(400).json({ message: "No file uploaded" });
+        return;
+      }
+      
+      const currentUser = req.user;
+      if (!currentUser) {
+        res.status(401).json({ message: "User not authenticated" });
+        return;
+      }
+      
+      // Check if user has permission to upload files to this project
+      if (
+        currentUser.role !== "Administrator" && 
+        currentUser.role !== "MainPMO" && 
+        currentUser.role !== "SubPMO" && 
+        currentUser.role !== "DepartmentDirector" && 
+        currentUser.id !== project.managerUserId &&
+        currentUser.departmentid !== project.departmentid
+      ) {
+        res.status(403).json({ message: "Forbidden: Insufficient permissions to upload files to this project" });
+        return;
+      }
+      
+      const { description = '', category = 'general', isProjectPlan = false } = req.body;
+      
+      // If setting as project plan, ensure only one project plan exists
+      if (isProjectPlan === 'true' || isProjectPlan === true) {
+        // This will be handled by the setProjectPlan method after creation
+      }
+      
+      const attachmentData = {
+        projectid: projectId,
+        uploadeduserid: currentUser.id,
+        filename: req.file.filename,
+        originalname: req.file.originalname,
+        filesize: req.file.size,
+        filetype: req.file.mimetype,
+        filepath: req.file.path,
+        filecategory: category,
+        description: description,
+        isprojectplan: (isProjectPlan === 'true' || isProjectPlan === true),
+      };
+      
+      const newAttachment = await storage.createProjectAttachment(attachmentData);
+      
+      // If this is marked as a project plan, ensure only this one is marked as the plan
+      if (isProjectPlan === 'true' || isProjectPlan === true) {
+        await storage.setProjectPlan(projectId, newAttachment.id);
+      }
+      
+      res.status(201).json(newAttachment);
+    } catch (error) {
+      console.error('Error uploading project attachment:', error);
+      res.status(500).json({ message: "Failed to upload project attachment" });
+    }
+  });
+
+  app.put("/api/projects/:projectId/plan/:attachmentId", isAuthenticated, async (req: Request, res: Response): Promise<void> => {
+    try {
+      const projectId = parseInt(req.params.projectId);
+      const attachmentId = parseInt(req.params.attachmentId);
+      
+      const project = await storage.getProject(projectId);
+      if (!project) {
+        res.status(404).json({ message: "Project not found" });
+        return;
+      }
+      
+      const attachment = await storage.getProjectAttachment(attachmentId);
+      if (!attachment || attachment.projectid !== projectId) {
+        res.status(404).json({ message: "Attachment not found" });
+        return;
+      }
+      
+      const currentUser = req.user;
+      if (!currentUser) {
+        res.status(401).json({ message: "User not authenticated" });
+        return;
+      }
+      
+      // Check permissions
+      if (
+        currentUser.role !== "Administrator" && 
+        currentUser.role !== "MainPMO" && 
+        currentUser.role !== "SubPMO" && 
+        currentUser.role !== "DepartmentDirector" && 
+        currentUser.id !== project.managerUserId
+      ) {
+        res.status(403).json({ message: "Forbidden: Insufficient permissions to set project plan" });
+        return;
+      }
+      
+      const success = await storage.setProjectPlan(projectId, attachmentId);
+      if (success) {
+        res.json({ message: "Project plan updated successfully" });
+      } else {
+        res.status(500).json({ message: "Failed to update project plan" });
+      }
+    } catch (error) {
+      console.error('Error setting project plan:', error);
+      res.status(500).json({ message: "Failed to set project plan" });
+    }
+  });
+
+  app.delete("/api/attachments/:id", isAuthenticated, async (req: Request, res: Response): Promise<void> => {
+    try {
+      const attachmentId = parseInt(req.params.id);
+      const attachment = await storage.getProjectAttachment(attachmentId);
+      
+      if (!attachment) {
+        res.status(404).json({ message: "Attachment not found" });
+        return;
+      }
+      
+      const project = await storage.getProject(attachment.projectid);
+      if (!project) {
+        res.status(404).json({ message: "Project not found" });
+        return;
+      }
+      
+      const currentUser = req.user;
+      if (!currentUser) {
+        res.status(401).json({ message: "User not authenticated" });
+        return;
+      }
+      
+      // Check permissions
+      if (
+        currentUser.role !== "Administrator" && 
+        currentUser.role !== "MainPMO" && 
+        currentUser.role !== "SubPMO" && 
+        currentUser.role !== "DepartmentDirector" && 
+        currentUser.id !== project.managerUserId &&
+        currentUser.id !== attachment.uploadeduserid
+      ) {
+        res.status(403).json({ message: "Forbidden: Insufficient permissions to delete this attachment" });
+        return;
+      }
+      
+      // Delete file from filesystem
+      try {
+        if (fs.existsSync(attachment.filepath)) {
+          fs.unlinkSync(attachment.filepath);
+        }
+      } catch (fsError) {
+        console.error('Error deleting file from filesystem:', fsError);
+        // Continue with database deletion even if file deletion fails
+      }
+      
+      const success = await storage.deleteProjectAttachment(attachmentId);
+      if (success) {
+        res.json({ message: "Attachment deleted successfully" });
+      } else {
+        res.status(500).json({ message: "Failed to delete attachment" });
+      }
+    } catch (error) {
+      console.error('Error deleting project attachment:', error);
+      res.status(500).json({ message: "Failed to delete project attachment" });
+    }
+  });
+
+  app.get("/api/attachments/:id/download", isAuthenticated, async (req: Request, res: Response): Promise<void> => {
+    try {
+      const attachmentId = parseInt(req.params.id);
+      const attachment = await storage.getProjectAttachment(attachmentId);
+      
+      if (!attachment) {
+        res.status(404).json({ message: "Attachment not found" });
+        return;
+      }
+      
+      const project = await storage.getProject(attachment.projectid);
+      if (!project) {
+        res.status(404).json({ message: "Project not found" });
+        return;
+      }
+      
+      const currentUser = req.user;
+      if (!currentUser) {
+        res.status(401).json({ message: "User not authenticated" });
+        return;
+      }
+      
+      // Check if user has access to this project
+      if (
+        currentUser.role !== "Administrator" && 
+        currentUser.role !== "MainPMO" && 
+        currentUser.role !== "Executive" && 
+        currentUser.departmentid !== project.departmentid && 
+        currentUser.id !== project.managerUserId
+      ) {
+        res.status(403).json({ message: "Forbidden: Cannot download attachments from different department's project" });
+        return;
+      }
+      
+      // Check if file exists
+      if (!fs.existsSync(attachment.filepath)) {
+        res.status(404).json({ message: "File not found on server" });
+        return;
+      }
+      
+      // Set appropriate headers for file download
+      res.setHeader('Content-Disposition', `attachment; filename="${attachment.originalname}"`);
+      res.setHeader('Content-Type', attachment.filetype);
+      
+      // Stream the file
+      const fileStream = fs.createReadStream(attachment.filepath);
+      fileStream.pipe(res);
+    } catch (error) {
+      console.error('Error downloading project attachment:', error);
+      res.status(500).json({ message: "Failed to download project attachment" });
     }
   });
 
@@ -2047,7 +2626,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         currentUser.role !== "Administrator" && 
         currentUser.role !== "MainPMO" && 
         currentUser.role !== "Executive" && 
-        currentUser.departmentId !== project.departmentId && 
+        currentUser.departmentid !== project.departmentid && 
         currentUser.id !== project.managerUserId
       ) {
         res.status(403).json({ message: "Forbidden: Cannot view milestones from different department's project" });
@@ -2081,7 +2660,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         currentUser.role !== "Administrator" && 
         currentUser.role !== "MainPMO" && 
         currentUser.role !== "Executive" && 
-        currentUser.departmentId !== project.departmentId && 
+        currentUser.departmentid !== project.departmentid && 
         currentUser.id !== project.managerUserId
       ) {
         res.status(403).json({ message: "Forbidden: Cannot view milestone from different department's project" });
@@ -2132,435 +2711,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
     })
   );
-  
-  app.put(
-    "/api/milestones/:id", 
-    validateBody(updateMilestoneSchema),
-    hasAuth(async (req, res): Promise<void> => {
-      try {
-        const milestoneId = parseInt(req.params.id);
-        const milestone = await storage.getMilestone(milestoneId);
-        
-        if (!milestone) {
-          res.status(404).json({ message: "Milestone not found" });
-          return;
-        }
-        
-        // Check if user has permission to update this milestone
-        const project = await storage.getProject(milestone.projectId);
-        
-        if (
-          req.currentUser.role !== "Administrator" && 
-          req.currentUser.role !== "MainPMO" && 
-          req.currentUser.role !== "SubPMO" && 
-          (project && req.currentUser.role === "DepartmentDirector" && req.currentUser.departmentId !== project.departmentId) && 
-          (project && req.currentUser.id !== project.managerUserId)
-        ) {
-          res.status(403).json({ message: "Forbidden: Insufficient permissions to update this milestone" });
-          return;
-        }
-        
-        const updatedMilestone = await storage.updateMilestone(milestoneId, req.body);
-        res.json(updatedMilestone);
-    } catch (error) {
-        res.status(500).json({ message: "Failed to update milestone" });
-      }
-    })
-  );
-  
-  // Task-Milestone Relationship Routes
-  app.get("/api/tasks/:taskId/milestones", isAuthenticated, async (req: Request, res: Response): Promise<void> => {
-    try {
-      const taskId = parseInt(req.params.taskId);
-      const task = await storage.getTask(taskId);
-      
-      if (!task) {
-        res.status(404).json({ message: "Task not found" });
-        return;
-      }
-      
-      // Check if user has access to this task's project
-      const currentUser = req.user;
-      const project = await storage.getProject(task.projectId);
-      
-      if (
-        currentUser && 
-        project &&
-        currentUser.role !== "Administrator" && 
-        currentUser.role !== "MainPMO" && 
-        currentUser.role !== "Executive" && 
-        currentUser.departmentId !== project.departmentId && 
-        currentUser.id !== project.managerUserId &&
-        currentUser.id !== task.assignedUserId &&
-        currentUser.id !== task.createdByUserId
-      ) {
-        res.status(403).json({ message: "Forbidden: Cannot view task-milestone relationships from different department's project" });
-        return;
-      }
-      
-      const taskMilestones = await storage.getTaskMilestonesByTask(taskId);
-      
-      // Get the full milestone data for each relationship
-      const milestoneDetails = await Promise.all(
-        taskMilestones.map(async (tm) => {
-          const milestone = await storage.getMilestone(tm.milestoneId);
-          return {
-            ...tm,
-            milestone
-          };
-        })
-      );
-      
-      res.json(milestoneDetails);
-    } catch (error) {
-      res.status(500).json({ message: "Failed to fetch task-milestone relationships" });
-    }
-  });
-  
-  app.get("/api/milestones/:milestoneId/tasks", isAuthenticated, async (req: Request, res: Response): Promise<void> => {
-    try {
-      const milestoneId = parseInt(req.params.milestoneId);
-      const milestone = await storage.getMilestone(milestoneId);
-      
-      if (!milestone) {
-        res.status(404).json({ message: "Milestone not found" });
-        return;
-      }
-      
-      // Check if user has access to this milestone's project
-      const currentUser = req.user;
-      const project = await storage.getProject(milestone.projectId);
-      
-      if (
-        currentUser && 
-        project &&
-        currentUser.role !== "Administrator" && 
-        currentUser.role !== "MainPMO" && 
-        currentUser.role !== "Executive" && 
-        currentUser.departmentId !== project.departmentId && 
-        currentUser.id !== project.managerUserId
-      ) {
-        res.status(403).json({ message: "Forbidden: Cannot view milestone-task relationships from different department's project" });
-        return;
-      }
-      
-      const taskMilestones = await storage.getTaskMilestonesByMilestone(milestoneId);
-      
-      // Get the full task data for each relationship
-      const taskDetails = await Promise.all(
-        taskMilestones.map(async (tm) => {
-          const task = await storage.getTask(tm.taskId);
-          return {
-            ...tm,
-            task
-          };
-        })
-      );
-      
-      res.json(taskDetails);
-    } catch (error) {
-      res.status(500).json({ message: "Failed to fetch milestone-task relationships" });
-    }
-  });
-  
-  app.post(
-    "/api/tasks/:taskId/milestones", 
-    validateBody(insertTaskMilestoneSchema),
-    hasAuth(async (req, res): Promise<void> => {
-      try {
-        const taskId = parseInt(req.params.taskId);
-        const task = await storage.getTask(taskId);
-        
-        if (!task) {
-          res.status(404).json({ message: "Task not found" });
-          return;
-        }
-        
-        const milestoneId = req.body.milestoneId;
-        const milestone = await storage.getMilestone(milestoneId);
-        
-        if (!milestone) {
-          res.status(404).json({ message: "Milestone not found" });
-          return;
-        }
-        
-        // Check if task and milestone belong to the same project
-        if (task.projectId !== milestone.projectId) {
-          res.status(400).json({ message: "Task and milestone must belong to the same project" });
-          return;
-        }
-        
-        // Only project manager or higher roles can link tasks to milestones
-        const project = await storage.getProject(task.projectId);
-        
-        if (
-          req.currentUser.role !== "Administrator" && 
-          req.currentUser.role !== "MainPMO" && 
-          req.currentUser.role !== "SubPMO" && 
-          (project && req.currentUser.role === "DepartmentDirector" && req.currentUser.departmentId !== project.departmentId) && 
-          (project && req.currentUser.id !== project.managerUserId)
-        ) {
-          res.status(403).json({ message: "Forbidden: Insufficient permissions to link tasks to milestones" });
-          return;
-        }
-        
-        const taskMilestoneData = {
-          ...req.body,
-          taskId
-        };
-        
-        const newTaskMilestone = await storage.createTaskMilestone(taskMilestoneData);
-        res.status(201).json(newTaskMilestone);
-      } catch (error) {
-        res.status(500).json({ message: "Failed to link task to milestone" });
-      }
-    })
-  );
-  
-  app.put(
-    "/api/task-milestones/:id", 
-    hasAuth(async (req, res): Promise<void> => {
-      try {
-        const taskMilestoneId = parseInt(req.params.id);
-        const taskMilestone = await storage.getTaskMilestone(taskMilestoneId);
-        
-        if (!taskMilestone) {
-          res.status(404).json({ message: "Task-milestone relationship not found" });
-          return;
-        }
-        
-        // Check if user has permission to update this relationship
-        const task = await storage.getTask(taskMilestone.taskId);
-        
-        if (!task) {
-          res.status(404).json({ message: "Task not found" });
-          return;
-        }
-        
-        const project = await storage.getProject(task.projectId);
-        
-        if (
-          req.currentUser.role !== "Administrator" && 
-          req.currentUser.role !== "MainPMO" && 
-          req.currentUser.role !== "SubPMO" && 
-          (project && req.currentUser.role === "DepartmentDirector" && req.currentUser.departmentId !== project.departmentId) && 
-          (project && req.currentUser.id !== project.managerUserId)
-        ) {
-          res.status(403).json({ message: "Forbidden: Insufficient permissions to update task-milestone relationship" });
-          return;
-        }
-        
-        // Only allow updating the weight property
-        const updatedTaskMilestone = await storage.updateTaskMilestone(taskMilestoneId, {
-          weight: req.body.weight
-        });
-        
-        res.json(updatedTaskMilestone);
-      } catch (error) {
-        res.status(500).json({ message: "Failed to update task-milestone relationship" });
-      }
-    })
-  );
 
-  app.delete(
-    "/api/task-milestones/:id", 
-    hasAuth(async (req, res): Promise<void> => {
-      try {
-        const taskMilestoneId = parseInt(req.params.id);
-        const taskMilestone = await storage.getTaskMilestone(taskMilestoneId);
-        
-        if (!taskMilestone) {
-          res.status(404).json({ message: "Task-milestone relationship not found" });
-          return;
-        }
-        
-        // Check if user has permission to delete this relationship
-        const task = await storage.getTask(taskMilestone.taskId);
-        
-        if (!task) {
-          res.status(404).json({ message: "Task not found" });
-          return;
-        }
-        
-        const project = await storage.getProject(task.projectId);
-        
-        if (
-          req.currentUser.role !== "Administrator" && 
-          req.currentUser.role !== "MainPMO" && 
-          req.currentUser.role !== "SubPMO" && 
-          (project && req.currentUser.role === "DepartmentDirector" && req.currentUser.departmentId !== project.departmentId) && 
-          (project && req.currentUser.id !== project.managerUserId)
-        ) {
-          res.status(403).json({ message: "Forbidden: Insufficient permissions to delete task-milestone relationship" });
-          return;
-        }
-        
-        await storage.deleteTaskMilestone(taskMilestoneId);
-        res.json({ message: "Task-milestone relationship deleted successfully" });
-      } catch (error) {
-        res.status(500).json({ message: "Failed to delete task-milestone relationship" });
-      }
-    })
-  );
-
-  // API Routes for Dashboard
-  app.get("/api/dashboard", isAuthenticated, hasAuth(async (req, res): Promise<void> => {
-    try {
-      // Simplified dashboard data for the prototype
-      const projects = await storage.getProjectsByManager(req.currentUser.id);
-      const tasks = await storage.getTasksByAssignee(req.currentUser.id);
-      const assignments = await storage.getAssignmentsByAssignee(req.currentUser.id);
-      // Use getActionItemsByAssignee as implemented in the MemStorage class
-      const actionItems = await storage.getActionItemsByAssignee(req.currentUser.id);
-      
-      // Get recent projects (last 5)
-      const recentProjects = [...projects]
-        .sort((a, b) => {
-          // Use default timestamp if both updatedAt and createdAt are null
-          const aTime = a.updatedAt?.getTime() || a.createdAt?.getTime() || 0;
-          const bTime = b.updatedAt?.getTime() || b.createdAt?.getTime() || 0;
-          return bTime - aTime;
-        })
-        .slice(0, 5);
-      
-      res.json({
-        projects,
-        tasks,
-        assignments,
-        actionItems,
-        recentProjects
-      });
-    } catch (error) {
-      console.error("Error fetching dashboard data:", error);
-      res.status(500).json({ message: "Internal server error" });
-    }
-  }));
-
-  // Get projects that need approval
-  app.get("/api/projects/pending", isAuthenticated, hasRole(["Administrator", "MainPMO", "SubPMO", "DepartmentDirector"]), async (req, res) => {
-    try {
-      const pendingProjects = await storage.getProjectsByStatus("Pending");
-      
-      // Filter based on user role
-      const currentUser = req.user;
-      let filteredProjects = pendingProjects;
-      
-      if (currentUser && (currentUser.role === "SubPMO" || currentUser.role === "DepartmentDirector")) {
-        // Filter to only show projects in their department
-        filteredProjects = pendingProjects.filter(project => project.departmentId === currentUser.departmentId);
-      }
-      
-      res.json(filteredProjects);
-    } catch (error) {
-      res.status(500).json({ message: "Failed to fetch pending projects" });
-    }
-  });
-
-  // Register analytics routes
-  const analyticsRouter = express.Router();
-  registerAnalyticsRoutes(analyticsRouter);
-  app.use(analyticsRouter);
-  app.use(auditLogRouter);
-  
-  // Goal relationships
-  app.get('/api/goals/:goalId/relationships', isAuthenticated, hasAuth(async (req, res): Promise<void> => {
-    try {
-      const goalId = parseInt(req.params.goalId!);
-      const relationships = await storage.getGoalRelationshipsByParent(goalId);
-      res.json(relationships);
-    } catch (error) {
-      console.error('Error fetching goal relationships:', error);
-      res.status(500).json({ message: 'Failed to fetch goal relationships' });
-    }
-  }));
-
-  app.post('/api/goals/:goalId/relationships', isAuthenticated, validateBody(z.object({
-    childGoalId: z.number(),
-    weight: z.number().optional()
-  })), hasAuth(async (req, res): Promise<void> => {
-    try {
-      const goalId = parseInt(req.params.goalId!);
-      const { childGoalId, weight } = req.body;
-      
-      // Check if user has permission to manage goals
-      if (!req.currentUser.role || !['Administrator', 'Project Manager'].includes(req.currentUser.role)) {
-        res.status(403).json({ message: 'Insufficient permissions' });
-        return;
-      }
-      
-      const relationship = await storage.createGoalRelationship({
-        parentGoalId: goalId,
-        childGoalId,
-        weight
-      });
-      
-      res.json(relationship);
-    } catch (error) {
-      console.error('Error creating goal relationship:', error);
-      res.status(500).json({ message: 'Failed to create goal relationship' });
-    }
-  }));
-
-  app.delete('/api/goal-relationships/:id', isAuthenticated, hasAuth(async (req, res): Promise<void> => {
-    try {
-      const relationshipId = parseInt(req.params.id!);
-      
-      // Check if user has permission to manage goals
-      if (!req.currentUser.role || !['Administrator', 'Project Manager'].includes(req.currentUser.role)) {
-        res.status(403).json({ message: 'Insufficient permissions' });
-        return;
-      }
-      
-      const success = await storage.deleteGoalRelationship(relationshipId);
-      
-      if (success) {
-        res.json({ message: 'Goal relationship deleted successfully' });
-      } else {
-        res.status(404).json({ message: 'Goal relationship not found' });
-      }
-    } catch (error) {
-      console.error('Error deleting goal relationship:', error);
-      res.status(500).json({ message: 'Failed to delete goal relationship' });
-    }
-  }));
-
-  // Project-goal relationships
-  app.get('/api/goals/:goalId/projects', isAuthenticated, hasAuth(async (req, res): Promise<void> => {
-    try {
-      const goalId = parseInt(req.params.goalId!);
-      const projectGoals = await storage.getProjectGoalsByGoal(goalId);
-      res.json(projectGoals);
-    } catch (error) {
-      console.error('Error fetching goal projects:', error);
-      res.status(500).json({ message: 'Failed to fetch goal projects' });
-    }
-  }));
-
-  app.delete('/api/project-goals/:id', isAuthenticated, hasAuth(async (req, res): Promise<void> => {
-    try {
-      const id = parseInt(req.params.id!);
-      
-      // Check if user has permission to manage goals
-      if (!req.currentUser.role || !['Administrator', 'Project Manager'].includes(req.currentUser.role)) {
-        res.status(403).json({ message: 'Insufficient permissions' });
-        return;
-      }
-      
-      const success = await storage.deleteProjectGoal(id);
-      
-      if (success) {
-        res.json({ message: 'Project-goal relationship deleted successfully' });
-      } else {
-        res.status(404).json({ message: 'Project-goal relationship not found' });
-      }
-    } catch (error) {
-      console.error('Error deleting project-goal relationship:', error);
-      res.status(500).json({ message: 'Failed to delete project-goal relationship' });
-    }
-  }));
-  
   // Create the HTTP server from the Express app
-  // Note: The server will be started in server/index.ts with the proper port
   const httpServer = http.createServer(app);
   return httpServer;
 }
+  

@@ -101,7 +101,7 @@ export function PendingApprovals({ className = "" }: PendingApprovalsProps) {
       case 'Status':
         return 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300';
       default:
-        return 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-300';
+        return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-100';
     }
   };
   
@@ -153,9 +153,9 @@ export function PendingApprovals({ className = "" }: PendingApprovalsProps) {
   const recentApprovals = pendingRequests.slice(0, 3);
   
   return (
-    <div className={`bg-white dark:bg-gray-800 shadow-lg rounded-lg border ${className || 'border-maroon-200 dark:border-maroon-800'}`}>
-      <div className="p-6 border-b border-maroon-200 dark:border-maroon-800 bg-gradient-to-r from-maroon-100 to-white dark:from-maroon-900/30 dark:to-gray-800 flex justify-between items-center">
-        <h2 className="text-xl font-bold text-maroon-800 dark:text-maroon-200">{t("pendingApprovals")}</h2>
+    <div className={`bg-white dark:bg-gray-800 shadow-lg rounded-lg border ${className || 'border-gray-200 dark:border-gray-700'}`}>
+      <div className="p-6 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 flex justify-between items-center">
+        <h2 className="text-xl font-bold text-gray-900 dark:text-white">{t("pendingApprovals")}</h2>
         {pendingRequests.length > 0 && (
           <span className="px-3 py-1 rounded-full text-xs font-bold bg-maroon-100 text-maroon-800 dark:bg-maroon-900/30 dark:text-maroon-300 shadow-sm">
             {pendingRequests.length} {t("new")}
@@ -175,8 +175,8 @@ export function PendingApprovals({ className = "" }: PendingApprovalsProps) {
         ) : (
           recentApprovals.map((request) => (
             <div key={request.id} 
-              className="border border-maroon-200 dark:border-maroon-800 hover:border-maroon-300 dark:hover:border-maroon-700 
-                bg-white dark:bg-gray-800 hover:bg-maroon-50/50 dark:hover:bg-maroon-900/10 
+              className="border border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 
+                bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700/50 
                 transition-all shadow-sm hover:shadow rounded-lg p-5">
               <div className="flex justify-between items-start mb-3">
                 <div className="flex items-start">
@@ -199,7 +199,7 @@ export function PendingApprovals({ className = "" }: PendingApprovalsProps) {
                   {request.type}
                 </span>
               </div>
-              <p className="text-sm text-gray-700 dark:text-gray-300 bg-gray-50 dark:bg-gray-800 p-3 rounded-lg border border-gray-100 dark:border-gray-700 mb-4">
+              <p className="text-sm text-gray-700 dark:text-gray-200 bg-gray-50 dark:bg-gray-700 p-3 rounded-lg border border-gray-100 dark:border-gray-600 mb-4">
                 {request.details}
               </p>
               <div className="flex mt-4 space-x-3">
@@ -228,7 +228,7 @@ export function PendingApprovals({ className = "" }: PendingApprovalsProps) {
         )}
         
         {pendingRequests.length > 3 && (
-          <div className="text-center pt-3 border-t border-maroon-100 dark:border-maroon-800 mt-6">
+          <div className="text-center pt-3 border-t border-gray-200 dark:border-gray-700 mt-6">
             <Button 
               variant="link" 
               className="text-maroon-700 dark:text-maroon-400 hover:text-maroon-900 dark:hover:text-maroon-300 hover:underline font-medium flex mx-auto items-center gap-1.5"

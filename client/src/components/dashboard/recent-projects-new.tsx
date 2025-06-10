@@ -68,7 +68,7 @@ export function RecentProjects({ className = "" }: RecentProjectsProps) {
       case 'Pending':
         return 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300';
       default:
-        return 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-300';
+        return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-100';
     }
   };
   
@@ -122,10 +122,19 @@ export function RecentProjects({ className = "" }: RecentProjectsProps) {
     }
   };
   
-  // Calculate progress percentage
-  const getProgress = (project: ExtendedProject) => {
-    if (!project.totalTasks || project.totalTasks === 0) return 0;
-    return Math.round((project.completedTasks || 0) / project.totalTasks * 100);
+  // Calculate progress percentage based on milestone completion
+  const getProgress = (project: any) => {
+    // Use milestone-based completion percentage if available
+    if (project.completionPercentage !== null && project.completionPercentage !== undefined) {
+      return project.completionPercentage;
+    }
+    
+    // Fallback: if no milestone data, use task-based calculation if available
+    if (project.totalTasks && project.totalTasks > 0) {
+      return Math.round((project.completedTasks || 0) / project.totalTasks * 100);
+    }
+    
+    return 0;
   };
   
   // Get recent projects (limit to 6)

@@ -132,8 +132,6 @@ declare module '@/components/ui/table' {
 // Toast Component
 declare module '@/components/ui/toast' {
   export const Toaster: React.FC;
-  export const Toast: React.FC<ToastProps>;
-  export const ToastAction: React.FC<ToastActionProps>;
 }
 
 // Tooltip Component
